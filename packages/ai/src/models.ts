@@ -36,6 +36,21 @@ export function getModels<TProvider extends KnownProvider>(
 	return models ? (Array.from(models.values()) as Model<ModelApi<TProvider, keyof (typeof MODELS)[TProvider]>>[]) : [];
 }
 
+/**
+ * Register or replace models at runtime.
+ * Useful for app-specific model extensions without regenerating the bundled catalog.
+ */
+export function registerModels<TApi extends Api>(models: Model<TApi>[]): void {
+	for (const model of models) {
+		let providerModels = modelRegistry.get(model.provider);
+		if (!providerModels) {
+			providerModels = new Map<string, Model<Api>>();
+			modelRegistry.set(model.provider, providerModels);
+		}
+		providerModels.set(model.id, model as Model<Api>);
+	}
+}
+
 export function calculateCost<TApi extends Api>(model: Model<TApi>, usage: Usage): Usage["cost"] {
 	usage.cost.input = (model.cost.input / 1000000) * usage.input;
 	usage.cost.output = (model.cost.output / 1000000) * usage.output;
