@@ -2,6 +2,39 @@ import { LMStudioClient } from "@lmstudio/sdk";
 import type { Model } from "@mariozechner/pi-ai";
 import { Ollama } from "ollama/browser";
 
+function normalizeOpenAIBaseUrl(baseUrl: string): string {
+	const trimmed = baseUrl.trim().replace(/\/+$/, "");
+	return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
+}
+
+function inferReasoningSupport(modelId: string): boolean {
+	const normalized = modelId.toLowerCase();
+	return (
+		normalized.includes("gpt-5") ||
+		normalized.includes("o1") ||
+		normalized.includes("o3") ||
+		normalized.includes("o4") ||
+		normalized.includes("claude") ||
+		normalized.includes("gemini") ||
+		normalized.includes("reason") ||
+		normalized.includes("thinking") ||
+		normalized.includes("r1")
+	);
+}
+
+function inferInputSupport(modelId: string): ("text" | "image")[] {
+	const normalized = modelId.toLowerCase();
+	if (
+		normalized.includes("vision") ||
+		normalized.includes("gpt-4o") ||
+		normalized.includes("gemini") ||
+		normalized.includes("claude")
+	) {
+		return ["text", "image"];
+	}
+	return ["text"];
+}
+
 /**
  * Discover models from an Ollama server.
  * @param baseUrl - Base URL of the Ollama server (e.g., "http://localhost:11434")
@@ -200,6 +233,88 @@ export async function discoverVLLMModels(baseUrl: string, apiKey?: string): Prom
 	}
 }
 
+interface OpenAICompatibleModelResponse {
+	id: string;
+	context_length?: number;
+	max_context_length?: number;
+	max_model_len?: number;
+	max_tokens?: number;
+	owned_by?: string;
+}
+
+function mapOpenAICompatibleModels(
+	baseUrl: string,
+	api: "openai-completions" | "openai-responses",
+	models: OpenAICompatibleModelResponse[],
+): Model<any>[] {
+	const normalizedBaseUrl = normalizeOpenAIBaseUrl(baseUrl);
+	return models.map((model) => {
+		const contextWindow = model.context_length || model.max_context_length || model.max_model_len || 262144;
+		const maxTokens = model.max_tokens || Math.min(contextWindow, 32768);
+		return {
+			id: model.id,
+			name: model.id,
+			api,
+			provider: "", // Will be set by caller
+			baseUrl: normalizedBaseUrl,
+			reasoning: inferReasoningSupport(model.id),
+			input: inferInputSupport(model.id),
+			cost: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+			},
+			contextWindow,
+			maxTokens,
+		};
+	});
+}
+
+async function discoverOpenAICompatibleModels(
+	baseUrl: string,
+	api: "openai-completions" | "openai-responses",
+	apiKey?: string,
+): Promise<Model<any>[]> {
+	try {
+		const headers: HeadersInit = {
+			"Content-Type": "application/json",
+		};
+
+		if (apiKey) {
+			headers.Authorization = `Bearer ${apiKey}`;
+		}
+
+		const normalizedBaseUrl = normalizeOpenAIBaseUrl(baseUrl);
+		const response = await fetch(`${normalizedBaseUrl}/models`, {
+			method: "GET",
+			headers,
+		});
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+		}
+
+		const data = await response.json();
+		if (!data.data || !Array.isArray(data.data)) {
+			throw new Error("Invalid response format from OpenAI-compatible server");
+		}
+
+		return mapOpenAICompatibleModels(normalizedBaseUrl, api, data.data as OpenAICompatibleModelResponse[]);
+	} catch (err) {
+		console.error(`Failed to discover ${api} models:`, err);
+		throw new Error(`OpenAI-compatible discovery failed: ${err instanceof Error ? err.message : String(err)}`);
+	}
+}
+
+export async function discoverOpenAICompletionsModels(baseUrl: string, apiKey?: string): Promise<Model<any>[]> {
+	return discoverOpenAICompatibleModels(baseUrl, "openai-completions", apiKey);
+}
+
+export async function discoverOpenAIResponsesModels(baseUrl: string, apiKey?: string): Promise<Model<any>[]> {
+	return discoverOpenAICompatibleModels(baseUrl, "openai-responses", apiKey);
+}
+
 /**
  * Discover models from an LM Studio server using the LM Studio SDK.
  * @param baseUrl - Base URL of the LM Studio server (e.g., "http://localhost:1234")
@@ -260,7 +375,7 @@ export async function discoverLMStudioModels(baseUrl: string, _apiKey?: string):
  * @returns Array of discovered models
  */
 export async function discoverModels(
-	type: "ollama" | "llama.cpp" | "vllm" | "lmstudio",
+	type: "ollama" | "llama.cpp" | "vllm" | "lmstudio" | "openai-completions" | "openai-responses",
 	baseUrl: string,
 	apiKey?: string,
 ): Promise<Model<any>[]> {
@@ -273,5 +388,9 @@ export async function discoverModels(
 			return discoverVLLMModels(baseUrl, apiKey);
 		case "lmstudio":
 			return discoverLMStudioModels(baseUrl, apiKey);
+		case "openai-completions":
+			return discoverOpenAICompletionsModels(baseUrl, apiKey);
+		case "openai-responses":
+			return discoverOpenAIResponsesModels(baseUrl, apiKey);
 	}
 }

@@ -11,6 +11,8 @@ import { getAppStorage } from "../storage/app-storage.js";
 import type { CustomProvider, CustomProviderType } from "../storage/stores/custom-providers-store.js";
 import { discoverModels } from "../utils/model-discovery.js";
 
+type DiscoveryProviderType = "ollama" | "llama.cpp" | "vllm" | "lmstudio" | "openai-completions" | "openai-responses";
+
 export class CustomProviderDialog extends DialogBase {
 	private provider?: CustomProvider;
 	private initialType?: CustomProviderType;
@@ -69,31 +71,35 @@ export class CustomProviderDialog extends DialogBase {
 			"llama.cpp": "http://localhost:8080",
 			vllm: "http://localhost:8000",
 			lmstudio: "http://localhost:1234",
-			"openai-completions": "",
-			"openai-responses": "",
+			"openai-completions": "http://127.0.0.1:8789",
+			"openai-responses": "http://127.0.0.1:8789",
 			"anthropic-messages": "",
 		};
 
 		this.baseUrl = defaults[this.type] || "";
 	}
 
-	private isAutoDiscoveryType(): boolean {
-		return this.type === "ollama" || this.type === "llama.cpp" || this.type === "vllm" || this.type === "lmstudio";
+	private isDiscoveryType(type: CustomProviderType = this.type): type is DiscoveryProviderType {
+		return (
+			type === "ollama" ||
+			type === "llama.cpp" ||
+			type === "vllm" ||
+			type === "lmstudio" ||
+			type === "openai-completions" ||
+			type === "openai-responses"
+		);
 	}
 
 	private async testConnection() {
-		if (!this.isAutoDiscoveryType()) return;
+		const discoveryType = this.type;
+		if (!this.isDiscoveryType(discoveryType)) return;
 
 		this.testing = true;
 		this.testError = "";
 		this.discoveredModels = [];
 
 		try {
-			const models = await discoverModels(
-				this.type as "ollama" | "llama.cpp" | "vllm" | "lmstudio",
-				this.baseUrl,
-				this.apiKey || undefined,
-			);
+			const models = await discoverModels(discoveryType, this.baseUrl, this.apiKey || undefined);
 
 			this.discoveredModels = models.map((model) => ({
 				...model,
@@ -118,6 +124,12 @@ export class CustomProviderDialog extends DialogBase {
 
 		try {
 			const storage = getAppStorage();
+			const providerModels =
+				this.type === "openai-completions" || this.type === "openai-responses"
+					? this.discoveredModels.map((model) => ({ ...model, provider: this.name }))
+					: this.isDiscoveryType()
+						? undefined
+						: (this.provider?.models || []).map((model) => ({ ...model, provider: this.name }));
 
 			const provider: CustomProvider = {
 				id: this.provider?.id || crypto.randomUUID(),
@@ -125,7 +137,7 @@ export class CustomProviderDialog extends DialogBase {
 				type: this.type,
 				baseUrl: this.baseUrl,
 				apiKey: this.apiKey || undefined,
-				models: this.isAutoDiscoveryType() ? undefined : this.provider?.models || [],
+				models: providerModels,
 			};
 
 			await storage.customProviders.set(provider);
@@ -217,14 +229,18 @@ export class CustomProviderDialog extends DialogBase {
 						</div>
 
 						${
-							this.isAutoDiscoveryType()
+							this.isDiscoveryType()
 								? html`
 									<div class="flex flex-col gap-2">
 										${Button({
 											onClick: () => this.testConnection(),
 											variant: "outline",
 											disabled: this.testing || !this.baseUrl,
-											children: this.testing ? i18n("Testing...") : i18n("Test Connection"),
+											children: this.testing
+												? i18n("Testing...")
+												: this.type === "openai-completions" || this.type === "openai-responses"
+													? "Discover Models"
+													: i18n("Test Connection"),
 										})}
 										${this.testError ? html` <div class="text-sm text-destructive">${this.testError}</div> ` : ""}
 										${
@@ -262,7 +278,11 @@ export class CustomProviderDialog extends DialogBase {
 					${Button({
 						onClick: () => this.save(),
 						variant: "default",
-						disabled: !this.name || !this.baseUrl,
+						disabled:
+							!this.name ||
+							!this.baseUrl ||
+							((this.type === "openai-completions" || this.type === "openai-responses") &&
+								this.discoveredModels.length === 0),
 						children: i18n("Save"),
 					})}
 				</div>

@@ -6,12 +6,11 @@ import { customElement, state } from "lit/decorators.js";
 import "../components/CustomProviderCard.js";
 import "../components/ProviderKeyInput.js";
 import { getAppStorage } from "../storage/app-storage.js";
-import type {
-	AutoDiscoveryProviderType,
-	CustomProvider,
-	CustomProviderType,
-} from "../storage/stores/custom-providers-store.js";
+import type { CustomProvider, CustomProviderType } from "../storage/stores/custom-providers-store.js";
 import { discoverModels } from "../utils/model-discovery.js";
+
+type DiscoveryProviderType = "ollama" | "llama.cpp" | "vllm" | "lmstudio" | "openai-completions" | "openai-responses";
+
 import { CustomProviderDialog } from "./CustomProviderDialog.js";
 import { SettingsTab } from "./SettingsDialog.js";
 
@@ -28,19 +27,25 @@ export class ProvidersModelsTab extends SettingsTab {
 		await this.loadCustomProviders();
 	}
 
+	private isDiscoveryProvider(type: CustomProviderType): type is DiscoveryProviderType {
+		return (
+			type === "ollama" ||
+			type === "llama.cpp" ||
+			type === "vllm" ||
+			type === "lmstudio" ||
+			type === "openai-completions" ||
+			type === "openai-responses"
+		);
+	}
+
 	private async loadCustomProviders() {
 		try {
 			const storage = getAppStorage();
 			this.customProviders = await storage.customProviders.getAll();
 
-			// Check status for auto-discovery providers
+			// Check status for discovery-capable providers
 			for (const provider of this.customProviders) {
-				const isAutoDiscovery =
-					provider.type === "ollama" ||
-					provider.type === "llama.cpp" ||
-					provider.type === "vllm" ||
-					provider.type === "lmstudio";
-				if (isAutoDiscovery) {
+				if (this.isDiscoveryProvider(provider.type)) {
 					this.checkProviderStatus(provider);
 				}
 			}
@@ -54,15 +59,13 @@ export class ProvidersModelsTab extends SettingsTab {
 	}
 
 	private async checkProviderStatus(provider: CustomProvider) {
+		if (!this.isDiscoveryProvider(provider.type)) return;
+
 		this.providerStatus.set(provider.id, { modelCount: 0, status: "checking" });
 		this.requestUpdate();
 
 		try {
-			const models = await discoverModels(
-				provider.type as AutoDiscoveryProviderType,
-				provider.baseUrl,
-				provider.apiKey,
-			);
+			const models = await discoverModels(provider.type, provider.baseUrl, provider.apiKey);
 
 			this.providerStatus.set(provider.id, { modelCount: models.length, status: "connected" });
 		} catch (_error) {
@@ -90,9 +93,6 @@ export class ProvidersModelsTab extends SettingsTab {
 	}
 
 	private renderCustomProviders(): TemplateResult {
-		const isAutoDiscovery = (type: string) =>
-			type === "ollama" || type === "llama.cpp" || type === "vllm" || type === "lmstudio";
-
 		return html`
 			<div class="flex flex-col gap-6">
 				<div class="flex items-center justify-between">
@@ -132,7 +132,7 @@ export class ProvidersModelsTab extends SettingsTab {
 									(provider) => html`
 										<custom-provider-card
 											.provider=${provider}
-											.isAutoDiscovery=${isAutoDiscovery(provider.type)}
+											.isAutoDiscovery=${this.isDiscoveryProvider(provider.type)}
 											.status=${this.providerStatus.get(provider.id)}
 											.onRefresh=${(p: CustomProvider) => this.refreshProvider(p)}
 											.onEdit=${(p: CustomProvider) => this.editProvider(p)}
@@ -162,15 +162,13 @@ export class ProvidersModelsTab extends SettingsTab {
 	}
 
 	private async refreshProvider(provider: CustomProvider) {
+		if (!this.isDiscoveryProvider(provider.type)) return;
+
 		this.providerStatus.set(provider.id, { modelCount: 0, status: "checking" });
 		this.requestUpdate();
 
 		try {
-			const models = await discoverModels(
-				provider.type as AutoDiscoveryProviderType,
-				provider.baseUrl,
-				provider.apiKey,
-			);
+			const models = await discoverModels(provider.type, provider.baseUrl, provider.apiKey);
 
 			this.providerStatus.set(provider.id, { modelCount: models.length, status: "connected" });
 			this.requestUpdate();
