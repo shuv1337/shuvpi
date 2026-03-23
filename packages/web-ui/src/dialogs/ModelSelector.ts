@@ -195,11 +195,23 @@ export class ModelSelector extends DialogBase {
 
 			// Load models from custom providers
 			for (const provider of customProviders) {
+				const modelsById = new Map<string, Model<any>>();
 				const isAutoDiscovery: boolean =
 					provider.type === "ollama" ||
 					provider.type === "llama.cpp" ||
 					provider.type === "vllm" ||
-					provider.type === "lmstudio";
+					provider.type === "lmstudio" ||
+					provider.type === "openai-completions" ||
+					provider.type === "openai-responses";
+
+				if (provider.models) {
+					for (const model of provider.models) {
+						modelsById.set(model.id, {
+							...model,
+							provider: provider.name,
+						});
+					}
+				}
 
 				if (isAutoDiscovery) {
 					try {
@@ -209,19 +221,18 @@ export class ModelSelector extends DialogBase {
 							provider.apiKey,
 						);
 
-						const modelsWithProvider = models.map((model) => ({
-							...model,
-							provider: provider.name,
-						}));
-
-						allCustomModels.push(...modelsWithProvider);
+						for (const model of models) {
+							modelsById.set(model.id, {
+								...model,
+								provider: provider.name,
+							});
+						}
 					} catch (error) {
 						console.debug(`Failed to load models from ${provider.name}:`, error);
 					}
-				} else if (provider.models) {
-					// Manual provider - models already defined
-					allCustomModels.push(...provider.models);
 				}
+
+				allCustomModels.push(...modelsById.values());
 			}
 		} catch (error) {
 			console.error("Failed to load custom providers:", error);

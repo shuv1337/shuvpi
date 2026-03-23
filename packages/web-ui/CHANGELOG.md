@@ -10,6 +10,10 @@
 
 - OpenAI-compatible custom providers now support model discovery, refresh, and saved discovered model catalogs in the provider dialog
 
+### Fixed
+
+- Model selector now merges discovered and stored custom-provider catalogs so saved `proxx` models remain visible even when discovery returns a partial list
+
 ## [0.66.1] - 2026-04-08
 
 ## [0.66.0] - 2026-04-08
