@@ -7,13 +7,22 @@ import { getModels, getProviders, type Model, modelsAreEqual } from "@mariozechn
 import { html, type PropertyValues, type TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createRef, ref } from "lit/directives/ref.js";
-import { Brain, Image as ImageIcon } from "lucide";
+import { Brain, Image as ImageIcon, Star } from "lucide";
 import { Input } from "../components/Input.js";
 import { getAppStorage } from "../storage/app-storage.js";
 import type { AutoDiscoveryProviderType } from "../storage/stores/custom-providers-store.js";
 import { formatModelCost } from "../utils/format.js";
 import { i18n } from "../utils/i18n.js";
 import { discoverModels } from "../utils/model-discovery.js";
+
+const MODEL_FAVORITES_SETTINGS_KEY = "modelSelector.favoriteModels";
+
+type ModelEntry = {
+	provider: string;
+	id: string;
+	model: Model<any>;
+	searchScore?: number;
+};
 
 /**
  * Score a query against a text using subsequence matching.
@@ -46,6 +55,10 @@ function subsequenceScore(query: string, text: string): number {
 	return query.length / (query.length + gaps);
 }
 
+function getModelKey(provider: string, id: string): string {
+	return `${provider}/${id}`;
+}
+
 @customElement("agent-model-selector")
 export class ModelSelector extends DialogBase {
 	@state() currentModel: Model<any> | null = null;
@@ -56,6 +69,7 @@ export class ModelSelector extends DialogBase {
 	@state() selectedIndex = 0;
 	@state() private navigationMode: "mouse" | "keyboard" = "mouse";
 	@state() private customProviderModels: Model<any>[] = [];
+	@state() private favoriteModelKeys: string[] = [];
 
 	private onSelectCallback?: (model: Model<any>) => void;
 	private allowedProviders?: Set<string>;
@@ -63,7 +77,7 @@ export class ModelSelector extends DialogBase {
 	private searchInputRef = createRef<HTMLInputElement>();
 	private lastMousePosition = { x: 0, y: 0 };
 
-	protected override modalWidth = "min(400px, 90vw)";
+	protected override modalWidth = "min(460px, 92vw)";
 
 	static async open(
 		currentModel: Model<any> | null,
@@ -77,6 +91,7 @@ export class ModelSelector extends DialogBase {
 			selector.allowedProviders = new Set(allowedProviders);
 		}
 		selector.open();
+		selector.loadFavoriteModels();
 		selector.loadCustomProviders();
 	}
 
@@ -136,6 +151,38 @@ export class ModelSelector extends DialogBase {
 				}
 			}
 		});
+	}
+
+	private async loadFavoriteModels() {
+		try {
+			const storage = getAppStorage();
+			const favoriteModels = await storage.settings.get<string[]>(MODEL_FAVORITES_SETTINGS_KEY);
+			this.favoriteModelKeys = Array.isArray(favoriteModels) ? favoriteModels : [];
+		} catch (error) {
+			console.error("Failed to load favorite models:", error);
+			this.favoriteModelKeys = [];
+		}
+	}
+
+	private async toggleFavorite(model: Model<any>) {
+		const modelKey = getModelKey(model.provider, model.id);
+		const isFavorite = this.favoriteModelKeys.includes(modelKey);
+		const nextFavoriteModelKeys = isFavorite
+			? this.favoriteModelKeys.filter((key) => key !== modelKey)
+			: [...this.favoriteModelKeys, modelKey];
+
+		this.favoriteModelKeys = nextFavoriteModelKeys;
+
+		try {
+			const storage = getAppStorage();
+			await storage.settings.set(MODEL_FAVORITES_SETTINGS_KEY, nextFavoriteModelKeys);
+		} catch (error) {
+			console.error("Failed to save favorite models:", error);
+		}
+	}
+
+	private isFavorite(model: Model<any>): boolean {
+		return this.favoriteModelKeys.includes(getModelKey(model.provider, model.id));
 	}
 
 	private async loadCustomProviders() {
@@ -198,9 +245,27 @@ export class ModelSelector extends DialogBase {
 		}
 	}
 
-	private getFilteredModels(): Array<{ provider: string; id: string; model: any }> {
+	private compareEntries(a: ModelEntry, b: ModelEntry): number {
+		const aIsFavorite = this.isFavorite(a.model);
+		const bIsFavorite = this.isFavorite(b.model);
+		if (aIsFavorite !== bIsFavorite) return aIsFavorite ? -1 : 1;
+
+		const aIsCurrent = modelsAreEqual(this.currentModel, a.model);
+		const bIsCurrent = modelsAreEqual(this.currentModel, b.model);
+		if (aIsCurrent !== bIsCurrent) return aIsCurrent ? -1 : 1;
+
+		const scoreDelta = (b.searchScore ?? 0) - (a.searchScore ?? 0);
+		if (scoreDelta !== 0) return scoreDelta;
+
+		const providerDelta = a.provider.localeCompare(b.provider);
+		if (providerDelta !== 0) return providerDelta;
+
+		return a.id.localeCompare(b.id);
+	}
+
+	private getFilteredModels(): ModelEntry[] {
 		// Collect all models from known providers
-		const allModels: Array<{ provider: string; id: string; model: any }> = [];
+		const allModels: ModelEntry[] = [];
 		const knownProviders = getProviders();
 
 		for (const provider of knownProviders) {
@@ -216,30 +281,9 @@ export class ModelSelector extends DialogBase {
 		}
 
 		// Filter by allowed providers if set
-		if (this.allowedProviders) {
-			const allowed = this.allowedProviders;
-			allModels.splice(0, allModels.length, ...allModels.filter(({ provider }) => allowed.has(provider)));
-		}
-
-		// Filter models based on search and capability filters
-		let filteredModels = allModels;
-
-		// Apply search filter (subsequence match: characters must appear in order)
-		if (this.searchQuery) {
-			const query = this.searchQuery.toLowerCase().replace(/\s+/g, "");
-			if (query) {
-				const scored: Array<{ item: (typeof allModels)[0]; score: number }> = [];
-				for (const entry of filteredModels) {
-					const searchText = `${entry.provider} ${entry.id} ${entry.model.name}`.toLowerCase();
-					const score = subsequenceScore(query, searchText);
-					if (score > 0) {
-						scored.push({ item: entry, score });
-					}
-				}
-				scored.sort((a, b) => b.score - a.score);
-				filteredModels = scored.map((s) => s.item);
-			}
-		}
+		let filteredModels = this.allowedProviders
+			? allModels.filter(({ provider }) => this.allowedProviders?.has(provider))
+			: allModels;
 
 		// Apply capability filters
 		if (this.filterThinking) {
@@ -249,19 +293,23 @@ export class ModelSelector extends DialogBase {
 			filteredModels = filteredModels.filter(({ model }) => model.input.includes("image"));
 		}
 
-		// Sort: when not searching, current model first then by provider.
-		// When searching, preserve the score-based order from above,
-		// but still float the current model to the top.
-		if (!this.searchQuery) {
-			filteredModels.sort((a, b) => {
-				const aIsCurrent = modelsAreEqual(this.currentModel, a.model);
-				const bIsCurrent = modelsAreEqual(this.currentModel, b.model);
-				if (aIsCurrent && !bIsCurrent) return -1;
-				if (!aIsCurrent && bIsCurrent) return 1;
-				return a.provider.localeCompare(b.provider);
-			});
+		// Apply search filter (subsequence match: characters must appear in order)
+		if (this.searchQuery) {
+			const query = this.searchQuery.toLowerCase().replace(/\s+/g, "");
+			if (query) {
+				filteredModels = filteredModels
+					.map((entry) => {
+						const searchText = `${entry.provider} ${entry.id} ${entry.model.name}`.toLowerCase();
+						return {
+							...entry,
+							searchScore: subsequenceScore(query, searchText),
+						};
+					})
+					.filter((entry) => (entry.searchScore ?? 0) > 0);
+			}
 		}
 
+		filteredModels.sort((a, b) => this.compareEntries(a, b));
 		return filteredModels;
 	}
 
@@ -297,7 +345,7 @@ export class ModelSelector extends DialogBase {
 						}
 					},
 				})}
-				<div class="flex gap-2">
+				<div class="flex gap-2 flex-wrap">
 					${Button({
 						variant: this.filterThinking ? "default" : "secondary",
 						size: "sm",
@@ -325,12 +373,20 @@ export class ModelSelector extends DialogBase {
 						children: html`<span class="inline-flex items-center gap-1">${icon(ImageIcon, "sm")} ${i18n("Vision")}</span>`,
 					})}
 				</div>
+				<div class="text-xs text-muted-foreground">
+					${
+						this.favoriteModelKeys.length > 0
+							? "Star models to keep your favorites pinned to the top."
+							: "Star a model to pin it to the top."
+					}
+				</div>
 			</div>
 
 			<!-- Scrollable model list -->
 			<div class="flex-1 overflow-y-auto" ${ref(this.scrollContainerRef)}>
 				${filteredModels.map(({ provider, id, model }, index) => {
 					const isCurrent = modelsAreEqual(this.currentModel, model);
+					const isFavorite = this.isFavorite(model);
 					const isSelected = index === this.selectedIndex;
 					return html`
 						<div
@@ -351,15 +407,30 @@ export class ModelSelector extends DialogBase {
 									<span class="text-sm font-medium text-foreground truncate">${id}</span>
 									${isCurrent ? html`<span class="text-green-500">✓</span>` : ""}
 								</div>
-								${Badge(provider, "outline")}
+								<div class="flex items-center gap-2 shrink-0">
+									<button
+										type="button"
+										class="inline-flex items-center justify-center rounded p-1 ${
+											isFavorite ? "text-yellow-400" : "text-muted-foreground opacity-60 hover:opacity-100"
+										}"
+										title=${isFavorite ? "Remove favorite" : "Add favorite"}
+										@click=${(e: Event) => {
+											e.stopPropagation();
+											void this.toggleFavorite(model);
+										}}
+									>
+										${icon(Star, "sm")}
+									</button>
+									${Badge(provider, "outline")}
+								</div>
 							</div>
-							<div class="flex items-center justify-between text-xs text-muted-foreground">
-								<div class="flex items-center gap-2">
+							<div class="flex items-center justify-between text-xs text-muted-foreground gap-2">
+								<div class="flex items-center gap-2 min-w-0">
 									<span class="${model.reasoning ? "" : "opacity-30"}">${icon(Brain, "sm")}</span>
 									<span class="${model.input.includes("image") ? "" : "opacity-30"}">${icon(ImageIcon, "sm")}</span>
 									<span>${this.formatTokens(model.contextWindow)}K/${this.formatTokens(model.maxTokens)}K</span>
 								</div>
-								<span>${formatModelCost(model.cost)}</span>
+								<span class="shrink-0">${formatModelCost(model.cost)}</span>
 							</div>
 						</div>
 					`;
