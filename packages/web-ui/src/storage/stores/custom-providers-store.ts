@@ -16,6 +16,7 @@ export interface CustomProvider {
 	type: CustomProviderType;
 	baseUrl: string;
 	apiKey?: string; // Optional, applies to all models
+	disableDiscovery?: boolean; // Use stored model definitions only, even for discovery-capable provider types
 
 	// For manual types ONLY - models stored directly on provider
 	// Auto-discovery types: models fetched on-demand, never stored

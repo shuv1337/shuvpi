@@ -218,21 +218,19 @@ export class AgentInterface extends LitElement {
 		if (!session) throw new Error("No session set on AgentInterface");
 		if (!session.state.model) throw new Error("No model set on AgentInterface");
 
-		// Check if API key exists for the provider (only needed in direct mode)
+		// Ask the host app whether credentials are configured for the selected provider.
+		// Custom providers can source credentials outside providerKeys, so AgentInterface
+		// must not assume providerKeys is the only source of truth.
 		const provider = session.state.model.provider;
-		const apiKey = await getAppStorage().providerKeys.get(provider);
-
-		// If no API key, prompt for it
-		if (!apiKey) {
-			if (!this.onApiKeyRequired) {
-				console.error("No API key configured and no onApiKeyRequired handler set");
+		if (this.onApiKeyRequired) {
+			const success = await this.onApiKeyRequired(provider);
+			if (!success) {
 				return;
 			}
-
-			const success = await this.onApiKeyRequired(provider);
-
-			// If still no API key, abort the send
-			if (!success) {
+		} else {
+			const apiKey = await getAppStorage().providerKeys.get(provider);
+			if (!apiKey) {
+				console.error("No API key configured and no onApiKeyRequired handler set");
 				return;
 			}
 		}

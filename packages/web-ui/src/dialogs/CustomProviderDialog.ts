@@ -1,5 +1,6 @@
 import { i18n } from "@mariozechner/mini-lit";
 import { Button } from "@mariozechner/mini-lit/dist/Button.js";
+import { Checkbox } from "@mariozechner/mini-lit/dist/Checkbox.js";
 import { DialogBase } from "@mariozechner/mini-lit/dist/DialogBase.js";
 import { Input } from "@mariozechner/mini-lit/dist/Input.js";
 import { Label } from "@mariozechner/mini-lit/dist/Label.js";
@@ -22,6 +23,7 @@ export class CustomProviderDialog extends DialogBase {
 	@state() private type: CustomProviderType = "openai-completions";
 	@state() private baseUrl = "";
 	@state() private apiKey = "";
+	@state() private disableDiscovery = false;
 	@state() private testing = false;
 	@state() private testError = "";
 	@state() private discoveredModels: Model<any>[] = [];
@@ -50,6 +52,7 @@ export class CustomProviderDialog extends DialogBase {
 			this.type = this.provider.type;
 			this.baseUrl = this.provider.baseUrl;
 			this.apiKey = this.provider.apiKey || "";
+			this.disableDiscovery = this.provider.disableDiscovery || false;
 			this.discoveredModels = this.provider.models || [];
 		} else {
 			this.name = "";
@@ -57,6 +60,7 @@ export class CustomProviderDialog extends DialogBase {
 			this.baseUrl = "";
 			this.updateDefaultBaseUrl();
 			this.apiKey = "";
+			this.disableDiscovery = false;
 			this.discoveredModels = [];
 		}
 		this.testError = "";
@@ -92,7 +96,7 @@ export class CustomProviderDialog extends DialogBase {
 
 	private async testConnection() {
 		const discoveryType = this.type;
-		if (!this.isDiscoveryType(discoveryType)) return;
+		if (!this.isDiscoveryType(discoveryType) || this.disableDiscovery) return;
 
 		this.testing = true;
 		this.testError = "";
@@ -127,9 +131,12 @@ export class CustomProviderDialog extends DialogBase {
 			const providerModels =
 				this.type === "openai-completions" || this.type === "openai-responses"
 					? this.discoveredModels.map((model) => ({ ...model, provider: this.name }))
-					: this.isDiscoveryType()
+					: this.isDiscoveryType() && !this.disableDiscovery
 						? undefined
-						: (this.provider?.models || []).map((model) => ({ ...model, provider: this.name }));
+						: (this.provider?.models || this.discoveredModels || []).map((model) => ({
+								...model,
+								provider: this.name,
+							}));
 
 			const provider: CustomProvider = {
 				id: this.provider?.id || crypto.randomUUID(),
@@ -137,6 +144,7 @@ export class CustomProviderDialog extends DialogBase {
 				type: this.type,
 				baseUrl: this.baseUrl,
 				apiKey: this.apiKey || undefined,
+				disableDiscovery: this.disableDiscovery || undefined,
 				models: providerModels,
 			};
 
@@ -231,11 +239,28 @@ export class CustomProviderDialog extends DialogBase {
 						${
 							this.isDiscoveryType()
 								? html`
+									<label class="flex items-center gap-3 text-sm text-foreground">
+										${Checkbox({
+											checked: this.disableDiscovery,
+											onChange: (checked: boolean) => {
+												this.disableDiscovery = checked;
+												this.requestUpdate();
+											},
+										})}
+										<span>Disable model discovery and use only saved model definitions</span>
+									</label>
+								`
+								: ""
+						}
+
+						${
+							this.isDiscoveryType()
+								? html`
 									<div class="flex flex-col gap-2">
 										${Button({
 											onClick: () => this.testConnection(),
 											variant: "outline",
-											disabled: this.testing || !this.baseUrl,
+											disabled: this.testing || !this.baseUrl || this.disableDiscovery,
 											children: this.testing
 												? i18n("Testing...")
 												: this.type === "openai-completions" || this.type === "openai-responses"
@@ -281,7 +306,8 @@ export class CustomProviderDialog extends DialogBase {
 						disabled:
 							!this.name ||
 							!this.baseUrl ||
-							((this.type === "openai-completions" || this.type === "openai-responses") &&
+							(!this.disableDiscovery &&
+								(this.type === "openai-completions" || this.type === "openai-responses") &&
 								this.discoveredModels.length === 0),
 						children: i18n("Save"),
 					})}

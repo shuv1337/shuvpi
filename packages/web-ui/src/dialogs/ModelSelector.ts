@@ -197,12 +197,13 @@ export class ModelSelector extends DialogBase {
 			for (const provider of customProviders) {
 				const modelsById = new Map<string, Model<any>>();
 				const isAutoDiscovery: boolean =
-					provider.type === "ollama" ||
-					provider.type === "llama.cpp" ||
-					provider.type === "vllm" ||
-					provider.type === "lmstudio" ||
-					provider.type === "openai-completions" ||
-					provider.type === "openai-responses";
+					!provider.disableDiscovery &&
+					(provider.type === "ollama" ||
+						provider.type === "llama.cpp" ||
+						provider.type === "vllm" ||
+						provider.type === "lmstudio" ||
+						provider.type === "openai-completions" ||
+						provider.type === "openai-responses");
 
 				if (provider.models) {
 					for (const model of provider.models) {
@@ -222,6 +223,7 @@ export class ModelSelector extends DialogBase {
 						);
 
 						for (const model of models) {
+							if (modelsById.has(model.id)) continue;
 							modelsById.set(model.id, {
 								...model,
 								provider: provider.name,

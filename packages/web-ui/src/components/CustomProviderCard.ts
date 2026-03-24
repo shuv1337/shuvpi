@@ -18,6 +18,14 @@ export class CustomProviderCard extends LitElement {
 	}
 
 	private renderStatus(): TemplateResult {
+		if (this.provider.disableDiscovery) {
+			return html`
+				<div class="text-xs text-muted-foreground mt-1">
+					Discovery disabled • ${i18n("Models")}: ${this.provider.models?.length || 0}
+				</div>
+			`;
+		}
+
 		if (!this.isAutoDiscovery) {
 			return html`
 				<div class="text-xs text-muted-foreground mt-1">
@@ -63,7 +71,7 @@ export class CustomProviderCard extends LitElement {
 					</div>
 					<div class="flex gap-2">
 						${
-							this.isAutoDiscovery && this.onRefresh
+							this.isAutoDiscovery && !this.provider.disableDiscovery && this.onRefresh
 								? Button({
 										onClick: () => this.onRefresh?.(this.provider),
 										variant: "ghost",

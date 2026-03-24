@@ -43,9 +43,9 @@ export class ProvidersModelsTab extends SettingsTab {
 			const storage = getAppStorage();
 			this.customProviders = await storage.customProviders.getAll();
 
-			// Check status for discovery-capable providers
+			// Check status for discovery-capable providers unless discovery is disabled
 			for (const provider of this.customProviders) {
-				if (this.isDiscoveryProvider(provider.type)) {
+				if (this.isDiscoveryProvider(provider.type) && !provider.disableDiscovery) {
 					this.checkProviderStatus(provider);
 				}
 			}
@@ -59,7 +59,7 @@ export class ProvidersModelsTab extends SettingsTab {
 	}
 
 	private async checkProviderStatus(provider: CustomProvider) {
-		if (!this.isDiscoveryProvider(provider.type)) return;
+		if (!this.isDiscoveryProvider(provider.type) || provider.disableDiscovery) return;
 
 		this.providerStatus.set(provider.id, { modelCount: 0, status: "checking" });
 		this.requestUpdate();
@@ -162,7 +162,7 @@ export class ProvidersModelsTab extends SettingsTab {
 	}
 
 	private async refreshProvider(provider: CustomProvider) {
-		if (!this.isDiscoveryProvider(provider.type)) return;
+		if (!this.isDiscoveryProvider(provider.type) || provider.disableDiscovery) return;
 
 		this.providerStatus.set(provider.id, { modelCount: 0, status: "checking" });
 		this.requestUpdate();

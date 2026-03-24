@@ -13,6 +13,9 @@
 ### Fixed
 
 - Model selector now merges discovered and stored custom-provider catalogs so saved `proxx` models remain visible even when discovery returns a partial list
+- AgentInterface now defers provider credential checks to the host app so custom providers with non-standard key storage do not trigger false API-key prompts before send
+- Model selector no longer lets auto-discovery overwrite stored custom-provider model definitions, preserving app-supplied API compatibility metadata for gateways like `proxx`
+- Custom providers can now disable model discovery and rely exclusively on their saved model definitions
 
 ## [0.66.1] - 2026-04-08
 
