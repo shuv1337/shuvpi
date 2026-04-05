@@ -7,7 +7,10 @@
 	"types": "dist/index.d.ts",
 	"exports": {
 		".": "./dist/index.js",
-		"./app.css": "./dist/app.css"
+		"./app.css": "./dist/app.css",
+		"./components/*": "./dist/components/*",
+		"./sandbox/*": "./dist/components/sandbox/*",
+		"./storage/*": "./dist/storage/*"
 	},
 	"scripts": {
 		"clean": "shx rm -rf dist",
