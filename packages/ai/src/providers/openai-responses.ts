@@ -16,6 +16,7 @@ import type {
 import { AssistantMessageEventStream } from "../utils/event-stream.js";
 import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.js";
 import { convertResponsesMessages, convertResponsesTools, processResponsesStream } from "./openai-responses-shared.js";
+import { createProxxLoggedFetch, logProxxStreamError, logProxxStreamStart } from "./proxx-debug.js";
 import { buildBaseOptions, clampReasoning } from "./simple-options.js";
 
 const OPENAI_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode"]);
@@ -88,6 +89,18 @@ export const streamOpenAIResponses: StreamFunction<"openai-responses", OpenAIRes
 		try {
 			// Create OpenAI client
 			const apiKey = options?.apiKey || getEnvApiKey(model.provider) || "";
+			logProxxStreamStart(model, context, {
+				hasApiKey: Boolean(apiKey),
+				headerKeys: Object.keys(options?.headers || {}),
+				hasOnPayload: Boolean(options?.onPayload),
+				hasAbortSignal: Boolean(options?.signal),
+				maxTokens: options?.maxTokens,
+				temperature: options?.temperature,
+				reasoningEffort: options?.reasoningEffort,
+				reasoningSummary: options?.reasoningSummary,
+				serviceTier: options?.serviceTier,
+				sessionId: options?.sessionId,
+			});
 			const client = createClient(model, context, apiKey, options?.headers);
 			let params = buildParams(model, context, options);
 			const nextParams = await options?.onPayload?.(params, model);
@@ -119,6 +132,12 @@ export const streamOpenAIResponses: StreamFunction<"openai-responses", OpenAIRes
 			for (const block of output.content) delete (block as { index?: number }).index;
 			output.stopReason = options?.signal?.aborted ? "aborted" : "error";
 			output.errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+			logProxxStreamError(model, error, {
+				stopReason: output.stopReason,
+				messageCount: context.messages.length,
+				toolCount: context.tools?.length || 0,
+				errorMessage: output.errorMessage,
+			});
 			stream.push({ type: "error", reason: output.stopReason, error: output });
 			stream.end();
 		}
@@ -181,6 +200,7 @@ function createClient(
 		baseURL: model.baseUrl,
 		dangerouslyAllowBrowser: true,
 		defaultHeaders: headers,
+		fetch: createProxxLoggedFetch(model),
 	});
 }
 

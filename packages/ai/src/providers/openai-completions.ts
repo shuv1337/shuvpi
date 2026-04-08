@@ -30,6 +30,7 @@ import { AssistantMessageEventStream } from "../utils/event-stream.js";
 import { parseStreamingJson } from "../utils/json-parse.js";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.js";
 import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.js";
+import { createProxxLoggedFetch, logProxxStreamError, logProxxStreamStart } from "./proxx-debug.js";
 import { buildBaseOptions, clampReasoning } from "./simple-options.js";
 import { transformMessages } from "./transform-messages.js";
 
@@ -85,6 +86,17 @@ export const streamOpenAICompletions: StreamFunction<"openai-completions", OpenA
 
 		try {
 			const apiKey = options?.apiKey || getEnvApiKey(model.provider) || "";
+			logProxxStreamStart(model, context, {
+				hasApiKey: Boolean(apiKey),
+				headerKeys: Object.keys(options?.headers || {}),
+				hasOnPayload: Boolean(options?.onPayload),
+				hasAbortSignal: Boolean(options?.signal),
+				maxTokens: options?.maxTokens,
+				temperature: options?.temperature,
+				reasoningEffort: options?.reasoningEffort,
+				toolChoice: options?.toolChoice,
+				sessionId: options?.sessionId,
+			});
 			const client = createClient(model, context, apiKey, options?.headers);
 			let params = buildParams(model, context, options);
 			const nextParams = await options?.onPayload?.(params, model);
@@ -295,6 +307,12 @@ export const streamOpenAICompletions: StreamFunction<"openai-completions", OpenA
 			// Some providers via OpenRouter give additional information in this field.
 			const rawMetadata = (error as any)?.error?.metadata?.raw;
 			if (rawMetadata) output.errorMessage += `\n${rawMetadata}`;
+			logProxxStreamError(model, error, {
+				stopReason: output.stopReason,
+				messageCount: context.messages.length,
+				toolCount: context.tools?.length || 0,
+				errorMessage: output.errorMessage,
+			});
 			stream.push({ type: "error", reason: output.stopReason, error: output });
 			stream.end();
 		}
@@ -359,6 +377,7 @@ function createClient(
 		baseURL: model.baseUrl,
 		dangerouslyAllowBrowser: true,
 		defaultHeaders: headers,
+		fetch: createProxxLoggedFetch(model),
 	});
 }
 

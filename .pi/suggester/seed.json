@@ -1,0 +1,105 @@
+{
+  "seedVersion": 3,
+  "generatedAt": "2026-03-19T07:39:15.894Z",
+  "sourceCommit": "3fff6fff53b6a1c38054deff8ce43e1f3e576f6e",
+  "generatorVersion": "2026-03-11.2",
+  "seederPromptVersion": "2026-03-11.2",
+  "suggestionPromptVersion": "2026-03-11.1",
+  "configFingerprint": "sha256:21f83c4eb1e4bc24e4d35c839c914e7a8354b1bc0bfd27a728b2998d79ec1922",
+  "projectIntentSummary": "This is the pi-mono monorepo — a collection of tools for building AI agents and managing LLM deployments, created by Mario Zechner (@badlogic). The repository contains seven packages: pi-ai (unified multi-provider LLM API), pi-agent-core (agent runtime with tool calling), pi-coding-agent (interactive coding agent CLI), pi-mom (Slack bot), pi-tui (terminal UI library), pi-web-ui (web components for AI chat), and pi-pods (vLLM deployment manager).\n\nThe 'prompt-suggester' functionality appears to be an integrated feature within the pi coding agent ecosystem rather than a standalone package. Evidence exists in the `.pi/suggester/` directory which contains session data and logs, and the session metadata references 'suggester-state/suggester-usage pi session entries.' The suggester tracks sessions tied to the agent's session files and manages interaction data. Prompt templates exist in `.pi/prompts/` (issue analysis, PR review, changelog). The suggester likely provides contextual prompt suggestions to users of the pi coding agent based on repository state and session history.\n\nNo dedicated 'pi-prompt-suggester' package exists in this repository. The functionality is embedded within the pi agent/coding-agent infrastructure and exposed through the `.pi/` configuration directory structure.",
+  "objectivesSummary": "Since prompt-suggester is not a standalone package but an embedded feature, its objectives can be inferred from the session data structure: (1) Track user interaction sessions with the pi coding agent, (2) Provide contextual prompt suggestions based on repository state (evidenced by cwd tracking in session metadata), (3) Manage prompt templates for common workflows like issue analysis, PR review, and changelog generation (`.pi/prompts/`), (4) Support extensions that enhance the suggestion experience (`.pi/extensions/` contains widgets like prompt-url-widget.ts).",
+  "constraintsSummary": "The project follows strict development rules documented in AGENTS.md: no `any` types, no inline imports, no dynamic imports for types. All keybindings must be configurable. Code changes require `npm run check` to pass with zero errors/warnings. Tests must be run from package root. The project uses TypeScript with biome for linting/formatting, vitest for testing, and follows a monorepo structure with npm workspaces. Style constraints include no emojis in commits/issues/code, technical prose only, and concise communication.",
+  "principlesGuidelinesSummary": "Development principles from AGENTS.md include: (1) Never remove functionality without asking, (2) Never hardcode key checks — all keybindings configurable, (3) Never commit unless user asks, (4) Always verify independently rather than trusting issue descriptions, (5) Read all related code in full before proposing changes, (6) Each package maintains its own CHANGELOG.md with strict versioning rules — unreleased entries only, never modify released sections, (7) PR workflow: analyze without pulling, work in feature branches, merge to main when ready, (8) Keep answers short and concise with no fluff.",
+  "implementationStatusSummary": "The prompt-suggester feature exists as runtime data in `.pi/suggester/` with sessions, logs, and interaction tracking. At least one session exists with schema version 1 and legacy migration support. The feature appears operational but its implementation is likely within the packages/coding-agent or packages/agent source code rather than in a separate package. No dedicated source code files for 'prompt-suggester' were found in the packages directory.",
+  "topObjectives": [
+    "Provide contextual prompt suggestions for the pi coding agent",
+    "Track and manage user interaction sessions",
+    "Support prompt templates for common development workflows (issues, PRs, changelogs)",
+    "Enable extensibility through the .pi/extensions system"
+  ],
+  "constraints": [
+    "No standalone prompt-suggester package — functionality embedded in agent ecosystem",
+    "TypeScript strict mode, no `any` types",
+    "No inline or dynamic imports",
+    "All keybindings must be configurable",
+    "npm run check must pass with zero errors before commits",
+    "Monorepo npm workspace structure",
+    "MIT licensed"
+  ],
+  "keyFiles": [
+    {
+      "path": "AGENTS.md",
+      "hash": "sha256:f7fb37c3fcee0054ba250d6fb79f239543102d0633be8b35d305db6afcc47002",
+      "whyImportant": "Primary development rules and coding guidelines for all packages",
+      "category": "principles_guidelines"
+    },
+    {
+      "path": "README.md",
+      "hash": "sha256:0a85f433ef98fb4bddf711e22be67d25f3381426e384dbc727ab4e4e69436835",
+      "whyImportant": "Project overview, package descriptions, and development setup",
+      "category": "vision"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "hash": "sha256:977f3ad7b9b39c45d7533426e318e9555768d5dc0f2fec5881550858d08335b3",
+      "whyImportant": "Contribution guidelines",
+      "category": "principles_guidelines"
+    },
+    {
+      "path": ".pi/suggester/sessions/a96fa49b-20c7-4b28-94fd-4d80f94a3a3d/meta.json",
+      "hash": "sha256:b4d0b048773235388987ee78b3eb5617d134cab32bc9f16590f87122d1efcfe7",
+      "whyImportant": "Reveals suggester session schema and data model",
+      "category": "architecture"
+    },
+    {
+      "path": ".pi/prompts/is.md",
+      "hash": "sha256:e633b996d8ec975c34457206945342f7a0fdce51295c12d66c68e21750c4e02f",
+      "whyImportant": "Example prompt template for issue analysis — shows prompt structure",
+      "category": "other"
+    },
+    {
+      "path": "package.json",
+      "hash": "sha256:9db001386b0105c39434fbf39f4d1b04d80e6f14fd443c003c59443b7a02e871",
+      "whyImportant": "Monorepo root configuration and workspace definitions",
+      "category": "code_entrypoint"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "hash": "sha256:478a425fe9f8f39dee52d1e3485e612e892113278e8f4430545600ad30a01bac",
+      "whyImportant": "Base TypeScript configuration for all packages",
+      "category": "architecture"
+    }
+  ],
+  "categoryFindings": {
+    "vision": {
+      "found": true,
+      "rationale": "README.md describes the monorepo's purpose as 'tools for building AI agents and managing LLM deployments'. No dedicated vision document for prompt-suggester specifically — the feature is embedded within the broader pi ecosystem.",
+      "files": [
+        "README.md"
+      ]
+    },
+    "architecture": {
+      "found": false,
+      "rationale": "No architecture documentation was found for the prompt-suggester feature. The .pi/suggester/ directory contains runtime data (sessions, logs) but no design docs. The suggester implementation appears to live within packages/coding-agent or packages/agent source code but no explicit architecture document exists.",
+      "files": []
+    },
+    "principles_guidelines": {
+      "found": true,
+      "rationale": "AGENTS.md provides comprehensive development rules covering code quality, testing, PR workflow, changelog management, and style guidelines. CONTRIBUTING.md exists for contribution guidelines.",
+      "files": [
+        "AGENTS.md",
+        "CONTRIBUTING.md"
+      ]
+    }
+  },
+  "openQuestions": [
+    "Where is the prompt-suggester feature actually implemented? Likely in packages/coding-agent or packages/agent source code but not confirmed.",
+    "What is the full schema and data flow for suggester sessions and interactions?",
+    "How do .pi/prompts/ templates integrate with the suggester feature?",
+    "How do .pi/extensions/ (like prompt-url-widget.ts) relate to prompt suggestions?",
+    "Is 'pi-prompt-suggester' intended to become a standalone package, or will it remain an embedded feature?"
+  ],
+  "reseedNotes": "The repository name 'pi-prompt-suggester' does not correspond to a standalone package. The suggester is an embedded feature within the pi coding agent ecosystem, with data stored in .pi/suggester/. A deeper investigation into packages/coding-agent and packages/agent source code would be needed to find the actual implementation. Consider reseeding with focus on those packages if prompt-suggester source code is located there.",
+  "lastReseedReason": "initial_missing",
+  "lastChangedFiles": []
+}
