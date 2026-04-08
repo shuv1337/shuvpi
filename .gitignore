@@ -37,4 +37,5 @@ todo.md
 plans/
 .pi/hf-sessions/
 .pi/hf-sessions-backup/
+.pi/suggester/
 collect.sh
