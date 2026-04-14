@@ -37,15 +37,7 @@ import {
 	visibleWidth,
 } from "@mariozechner/pi-tui";
 import { spawn, spawnSync } from "child_process";
-import {
-	APP_NAME,
-	getAgentDir,
-	getAuthPath,
-	getDebugLogPath,
-	getShareViewerUrl,
-	getUpdateInstruction,
-	VERSION,
-} from "../../config.js";
+import { APP_NAME, getAuthPath, getDebugLogPath, getShareViewerUrl, VERSION } from "../../config.js";
 import { type AgentSession, type AgentSessionEvent, parseSkillBlock } from "../../core/agent-session.js";
 import type { AgentSessionRuntime } from "../../core/agent-session-runtime.js";
 import type {
@@ -59,7 +51,6 @@ import { FooterDataProvider, type ReadonlyFooterDataProvider } from "../../core/
 import { type AppKeybinding, KeybindingsManager } from "../../core/keybindings.js";
 import { createCompactionSummaryMessage } from "../../core/messages.js";
 import { findExactModelReferenceMatch, resolveModelScope } from "../../core/model-resolver.js";
-import { DefaultPackageManager } from "../../core/package-manager.js";
 import type { ResourceDiagnostic } from "../../core/resource-loader.js";
 import { formatMissingSessionCwdPrompt, MissingSessionCwdError } from "../../core/session-cwd.js";
 import { type SessionContext, SessionManager } from "../../core/session-manager.js";
@@ -129,13 +120,6 @@ type CompactionQueuedMessage = {
 	mode: "steer" | "followUp";
 };
 
-const ANTHROPIC_SUBSCRIPTION_AUTH_WARNING =
-	"Anthropic subscription auth is active. Third-party usage now draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage.";
-
-function isAnthropicSubscriptionAuthKey(apiKey: string | undefined): boolean {
-	return typeof apiKey === "string" && apiKey.startsWith("sk-ant-oat");
-}
-
 /**
  * Options for InteractiveMode initialization.
  */
@@ -182,7 +166,6 @@ export class InteractiveMode {
 	private lastEscapeTime = 0;
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
-	private anthropicSubscriptionWarningShown = false;
 
 	// Status line tracking (for mutating immediately-sequential status updates)
 	private lastStatusSpacer: Spacer | undefined = undefined;
@@ -590,19 +573,7 @@ export class InteractiveMode {
 	async run(): Promise<void> {
 		await this.init();
 
-		// Start version check asynchronously
-		this.checkForNewVersion().then((newVersion) => {
-			if (newVersion) {
-				this.showNewVersionNotification(newVersion);
-			}
-		});
-
-		// Start package update check asynchronously
-		this.checkForPackageUpdates().then((updates) => {
-			if (updates.length > 0) {
-				this.showPackageUpdateNotification(updates);
-			}
-		});
+		// Version and package update checks disabled
 
 		// Check tmux keyboard setup asynchronously
 		this.checkTmuxKeyboardSetup().then((warning) => {
@@ -626,8 +597,6 @@ export class InteractiveMode {
 		if (modelFallbackMessage) {
 			this.showWarning(modelFallbackMessage);
 		}
-
-		void this.maybeWarnAboutAnthropicSubscriptionAuth();
 
 		// Process initial messages
 		if (initialMessage) {
@@ -659,49 +628,6 @@ export class InteractiveMode {
 				const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
 				this.showError(errorMessage);
 			}
-		}
-	}
-
-	/**
-	 * Check npm registry for a newer version.
-	 */
-	private async checkForNewVersion(): Promise<string | undefined> {
-		if (process.env.PI_SKIP_VERSION_CHECK || process.env.PI_OFFLINE) return undefined;
-
-		try {
-			const response = await fetch("https://registry.npmjs.org/@mariozechner/pi-coding-agent/latest", {
-				signal: AbortSignal.timeout(10000),
-			});
-			if (!response.ok) return undefined;
-
-			const data = (await response.json()) as { version?: string };
-			const latestVersion = data.version;
-
-			if (latestVersion && latestVersion !== this.version) {
-				return latestVersion;
-			}
-
-			return undefined;
-		} catch {
-			return undefined;
-		}
-	}
-
-	private async checkForPackageUpdates(): Promise<string[]> {
-		if (process.env.PI_OFFLINE) {
-			return [];
-		}
-
-		try {
-			const packageManager = new DefaultPackageManager({
-				cwd: this.sessionManager.getCwd(),
-				agentDir: getAgentDir(),
-				settingsManager: this.settingsManager,
-			});
-			const updates = await packageManager.checkForAvailableUpdates();
-			return updates.map((update) => update.displayName);
-		} catch {
-			return [];
 		}
 	}
 
@@ -2984,7 +2910,6 @@ export class InteractiveMode {
 				const thinkingStr =
 					result.model.reasoning && result.thinkingLevel !== "off" ? ` (thinking: ${result.thinkingLevel})` : "";
 				this.showStatus(`Switched to ${result.model.name || result.model.id}${thinkingStr}`);
-				void this.maybeWarnAboutAnthropicSubscriptionAuth(result.model);
 			}
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
@@ -3089,46 +3014,6 @@ export class InteractiveMode {
 	showWarning(warningMessage: string): void {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Text(theme.fg("warning", `Warning: ${warningMessage}`), 1, 0));
-		this.ui.requestRender();
-	}
-
-	showNewVersionNotification(newVersion: string): void {
-		const action = theme.fg("accent", getUpdateInstruction("@mariozechner/pi-coding-agent"));
-		const updateInstruction = theme.fg("muted", `New version ${newVersion} is available. `) + action;
-		const changelogUrl = theme.fg(
-			"accent",
-			"https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/CHANGELOG.md",
-		);
-		const changelogLine = theme.fg("muted", "Changelog: ") + changelogUrl;
-
-		this.chatContainer.addChild(new Spacer(1));
-		this.chatContainer.addChild(new DynamicBorder((text) => theme.fg("warning", text)));
-		this.chatContainer.addChild(
-			new Text(
-				`${theme.bold(theme.fg("warning", "Update Available"))}\n${updateInstruction}\n${changelogLine}`,
-				1,
-				0,
-			),
-		);
-		this.chatContainer.addChild(new DynamicBorder((text) => theme.fg("warning", text)));
-		this.ui.requestRender();
-	}
-
-	showPackageUpdateNotification(packages: string[]): void {
-		const action = theme.fg("accent", `${APP_NAME} update`);
-		const updateInstruction = theme.fg("muted", "Package updates are available. Run ") + action;
-		const packageLines = packages.map((pkg) => `- ${pkg}`).join("\n");
-
-		this.chatContainer.addChild(new Spacer(1));
-		this.chatContainer.addChild(new DynamicBorder((text) => theme.fg("warning", text)));
-		this.chatContainer.addChild(
-			new Text(
-				`${theme.bold(theme.fg("warning", "Package Updates Available"))}\n${updateInstruction}\n${theme.fg("muted", "Packages:")}\n${packageLines}`,
-				1,
-				0,
-			),
-		);
-		this.chatContainer.addChild(new DynamicBorder((text) => theme.fg("warning", text)));
 		this.ui.requestRender();
 	}
 
@@ -3481,7 +3366,6 @@ export class InteractiveMode {
 				this.footer.invalidate();
 				this.updateEditorBorderColor();
 				this.showStatus(`Model: ${model.id}`);
-				void this.maybeWarnAboutAnthropicSubscriptionAuth(model);
 				this.checkDaxnutsEasterEgg(model);
 			} catch (error) {
 				this.showError(error instanceof Error ? error.message : String(error));
@@ -3517,35 +3401,6 @@ export class InteractiveMode {
 		this.footerDataProvider.setAvailableProviderCount(uniqueProviders.size);
 	}
 
-	private async maybeWarnAboutAnthropicSubscriptionAuth(
-		model: Model<any> | undefined = this.session.model,
-	): Promise<void> {
-		if (this.anthropicSubscriptionWarningShown) {
-			return;
-		}
-		if (!model || model.provider !== "anthropic") {
-			return;
-		}
-
-		const storedCredential = this.session.modelRegistry.authStorage.get("anthropic");
-		if (storedCredential?.type === "oauth") {
-			this.anthropicSubscriptionWarningShown = true;
-			this.showWarning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING);
-			return;
-		}
-
-		try {
-			const apiKey = await this.session.modelRegistry.getApiKeyForProvider(model.provider);
-			if (!isAnthropicSubscriptionAuthKey(apiKey)) {
-				return;
-			}
-			this.anthropicSubscriptionWarningShown = true;
-			this.showWarning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING);
-		} catch {
-			// Ignore auth lookup failures for warning-only checks.
-		}
-	}
-
 	private showModelSelector(initialSearchInput?: string): void {
 		this.showSelector((done) => {
 			const selector = new ModelSelectorComponent(
@@ -3561,7 +3416,6 @@ export class InteractiveMode {
 						this.updateEditorBorderColor();
 						done();
 						this.showStatus(`Model: ${model.id}`);
-						void this.maybeWarnAboutAnthropicSubscriptionAuth(model);
 						this.checkDaxnutsEasterEgg(model);
 					} catch (error) {
 						done();
