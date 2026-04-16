@@ -441,13 +441,14 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 };
 
 /**
- * Check if a model supports adaptive thinking (Opus 4.6 and Sonnet 4.6)
+ * Check if a model supports adaptive thinking (Opus 4.6/4.7 and Sonnet 4.6)
  */
 function supportsAdaptiveThinking(modelId: string): boolean {
-	// Opus 4.6 and Sonnet 4.6 model IDs (with or without date suffix)
 	return (
 		modelId.includes("opus-4-6") ||
 		modelId.includes("opus-4.6") ||
+		modelId.includes("opus-4-7") ||
+		modelId.includes("opus-4.7") ||
 		modelId.includes("sonnet-4-6") ||
 		modelId.includes("sonnet-4.6")
 	);
@@ -455,7 +456,7 @@ function supportsAdaptiveThinking(modelId: string): boolean {
 
 /**
  * Map ThinkingLevel to Anthropic effort levels for adaptive thinking.
- * Note: effort "max" is only valid on Opus 4.6.
+ * Note: effort "max" is valid on Opus 4.6 and 4.7.
  */
 function mapThinkingLevelToEffort(level: SimpleStreamOptions["reasoning"], modelId: string): AnthropicEffort {
 	switch (level) {
@@ -468,7 +469,12 @@ function mapThinkingLevelToEffort(level: SimpleStreamOptions["reasoning"], model
 		case "high":
 			return "high";
 		case "xhigh":
-			return modelId.includes("opus-4-6") || modelId.includes("opus-4.6") ? "max" : "high";
+			return modelId.includes("opus-4-6") ||
+				modelId.includes("opus-4.6") ||
+				modelId.includes("opus-4-7") ||
+				modelId.includes("opus-4.7")
+				? "max"
+				: "high";
 		default:
 			return "high";
 	}
@@ -489,7 +495,7 @@ export const streamSimpleAnthropic: StreamFunction<"anthropic-messages", SimpleS
 		return streamAnthropic(model, context, { ...base, thinkingEnabled: false } satisfies AnthropicOptions);
 	}
 
-	// For Opus 4.6 and Sonnet 4.6: use adaptive thinking with effort level
+	// For Opus 4.6/4.7 and Sonnet 4.6: use adaptive thinking with effort level
 	// For older models: use budget-based thinking
 	if (supportsAdaptiveThinking(model.id)) {
 		const effort = mapThinkingLevelToEffort(options.reasoning, model.id);
@@ -526,8 +532,8 @@ function createClient(
 	optionsHeaders?: Record<string, string>,
 	dynamicHeaders?: Record<string, string>,
 ): { client: Anthropic; isOAuthToken: boolean } {
-	// Adaptive thinking models (Opus 4.6, Sonnet 4.6) have interleaved thinking built-in.
-	// The beta header is deprecated on Opus 4.6 and redundant on Sonnet 4.6, so skip it.
+	// Adaptive thinking models (Opus 4.6/4.7, Sonnet 4.6) have interleaved thinking built-in.
+	// The beta header is deprecated on Opus 4.6/4.7 and redundant on Sonnet 4.6, so skip it.
 	const needsInterleavedBeta = interleavedThinking && !supportsAdaptiveThinking(model.id);
 
 	// Copilot: Bearer auth, selective betas (no fine-grained-tool-streaming)
@@ -654,7 +660,7 @@ function buildParams(
 		params.tools = convertTools(context.tools, isOAuthToken);
 	}
 
-	// Configure thinking mode: adaptive (Opus 4.6 and Sonnet 4.6),
+	// Configure thinking mode: adaptive (Opus 4.6/4.7 and Sonnet 4.6),
 	// budget-based (older models), or explicitly disabled.
 	if (model.reasoning) {
 		if (options?.thinkingEnabled) {

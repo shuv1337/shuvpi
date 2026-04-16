@@ -664,7 +664,10 @@ async function generateModels() {
 
 	// Temporary overrides until upstream model metadata is corrected.
 	for (const candidate of allModels) {
-		if (candidate.provider === "amazon-bedrock" && candidate.id.includes("anthropic.claude-opus-4-6-v1")) {
+		if (
+			candidate.provider === "amazon-bedrock" &&
+			(candidate.id.includes("anthropic.claude-opus-4-6") || candidate.id.includes("anthropic.claude-opus-4-7"))
+		) {
 			candidate.cost.cacheRead = 0.5;
 			candidate.cost.cacheWrite = 6.25;
 		}
@@ -674,8 +677,10 @@ async function generateModels() {
 				candidate.provider === "opencode-go" ||
 				candidate.provider === "github-copilot") &&
 			(candidate.id === "claude-opus-4-6" ||
+				candidate.id === "claude-opus-4-7" ||
 				candidate.id === "claude-sonnet-4-6" ||
 				candidate.id === "claude-opus-4.6" ||
+				candidate.id === "claude-opus-4.7" ||
 				candidate.id === "claude-sonnet-4.6")
 		) {
 			candidate.contextWindow = 1000000;
