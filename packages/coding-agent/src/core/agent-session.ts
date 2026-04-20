@@ -67,6 +67,7 @@ import {
 	type TurnStartEvent,
 	wrapRegisteredTools,
 } from "./extensions/index.js";
+import { supportsFastMode as modelSupportsFastMode } from "./fast-mode.js";
 import type { BashExecutionMessage, CustomMessage } from "./messages.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { expandPromptTemplate, type PromptTemplate } from "./prompt-templates.js";
@@ -286,6 +287,7 @@ export class AgentSession {
 
 	// Model registry for API key resolution
 	private _modelRegistry: ModelRegistry;
+	private _fastMode = false;
 
 	// Tool registry for extension getTools/setTools
 	private _toolRegistry: Map<string, AgentTool> = new Map();
@@ -842,6 +844,27 @@ export class AgentSession {
 	/** Scoped models for cycling (from --models flag) */
 	get scopedModels(): ReadonlyArray<{ model: Model<any>; thinkingLevel?: ThinkingLevel }> {
 		return this._scopedModels;
+	}
+
+	get fastMode(): boolean {
+		return this._fastMode;
+	}
+
+	setFastMode(enabled: boolean): void {
+		this._fastMode = enabled;
+	}
+
+	toggleFastMode(): boolean {
+		this._fastMode = !this._fastMode;
+		return this._fastMode;
+	}
+
+	supportsFastMode(model: Model<any> | undefined = this.model): boolean {
+		return modelSupportsFastMode(model);
+	}
+
+	isFastModeActiveForCurrentModel(): boolean {
+		return this._fastMode && this.supportsFastMode();
 	}
 
 	/** Update scoped models for cycling */

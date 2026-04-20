@@ -6,6 +6,7 @@ import { AgentSession } from "./agent-session.js";
 import { AuthStorage } from "./auth-storage.js";
 import { DEFAULT_THINKING_LEVEL } from "./defaults.js";
 import type { ExtensionRunner, LoadExtensionsResult, SessionStartEvent, ToolDefinition } from "./extensions/index.js";
+import { applyFastModeToPayload } from "./fast-mode.js";
 import { convertToLlm } from "./messages.js";
 import { ModelRegistry } from "./model-registry.js";
 import { findInitialModel } from "./model-resolver.js";
@@ -287,6 +288,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	};
 
 	const extensionRunnerRef: { current?: ExtensionRunner } = {};
+	const sessionRef: { current?: AgentSession } = {};
 
 	agent = new Agent({
 		initialState: {
@@ -307,12 +309,18 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 				headers: auth.headers || options?.headers ? { ...auth.headers, ...options?.headers } : undefined,
 			});
 		},
-		onPayload: async (payload, _model) => {
+		onPayload: async (payload, model) => {
+			let nextPayload = applyFastModeToPayload(
+				payload,
+				model,
+				sessionRef.current?.isFastModeActiveForCurrentModel() ?? false,
+			);
 			const runner = extensionRunnerRef.current;
 			if (!runner?.hasHandlers("before_provider_request")) {
-				return payload;
+				return nextPayload;
 			}
-			return runner.emitBeforeProviderRequest(payload);
+			nextPayload = await runner.emitBeforeProviderRequest(nextPayload);
+			return nextPayload;
 		},
 		sessionId: sessionManager.getSessionId(),
 		transformContext: async (messages) => {
@@ -354,6 +362,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		extensionRunnerRef,
 		sessionStartEvent: options.sessionStartEvent,
 	});
+	sessionRef.current = session;
 	const extensionsResult = resourceLoader.getExtensions();
 
 	return {

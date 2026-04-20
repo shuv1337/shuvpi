@@ -154,13 +154,16 @@ export class FooterComponent implements Component {
 		// Calculate available space for padding (minimum 2 spaces between stats and model)
 		const minPadding = 2;
 
-		// Add thinking level indicator if model supports reasoning
-		let rightSideWithoutProvider = modelName;
+		// Add fast-mode and thinking indicators on the right side
+		const rightSideParts = [modelName];
+		if (this.session.isFastModeActiveForCurrentModel()) {
+			rightSideParts.push("fast");
+		}
 		if (state.model?.reasoning) {
 			const thinkingLevel = state.thinkingLevel || "off";
-			rightSideWithoutProvider =
-				thinkingLevel === "off" ? `${modelName} • thinking off` : `${modelName} • ${thinkingLevel}`;
+			rightSideParts.push(thinkingLevel === "off" ? "thinking off" : thinkingLevel);
 		}
+		const rightSideWithoutProvider = rightSideParts.join(" • ");
 
 		// Prepend the provider in parentheses if there are multiple providers and there's enough room
 		let rightSide = rightSideWithoutProvider;

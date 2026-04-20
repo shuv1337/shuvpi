@@ -378,6 +378,19 @@ export class InteractiveMode {
 			};
 		}
 
+		const fastCommand = slashCommands.find((command) => command.name === "fast");
+		if (fastCommand) {
+			fastCommand.getArgumentCompletions = (prefix: string): AutocompleteItem[] | null => {
+				const options = ["on", "off", "status"];
+				const filtered = fuzzyFilter(options, prefix, (option) => option);
+				if (filtered.length === 0) return null;
+				return filtered.map((option) => ({
+					value: option,
+					label: option,
+				}));
+			};
+		}
+
 		// Convert prompt templates to SlashCommand format for autocomplete
 		const templateCommands: SlashCommand[] = this.session.promptTemplates.map((cmd) => ({
 			name: cmd.name,
@@ -2127,6 +2140,11 @@ export class InteractiveMode {
 				await this.handleClearCommand();
 				return;
 			}
+			if (text === "/fast" || text.startsWith("/fast ")) {
+				this.editor.setText("");
+				this.handleFastCommand(text);
+				return;
+			}
 			if (text === "/compact" || text.startsWith("/compact ")) {
 				const customInstructions = text.startsWith("/compact ") ? text.slice(9).trim() : undefined;
 				this.editor.setText("");
@@ -2909,7 +2927,8 @@ export class InteractiveMode {
 				this.updateEditorBorderColor();
 				const thinkingStr =
 					result.model.reasoning && result.thinkingLevel !== "off" ? ` (thinking: ${result.thinkingLevel})` : "";
-				this.showStatus(`Switched to ${result.model.name || result.model.id}${thinkingStr}`);
+				const fastStr = this.getFastModeModelStatusSuffix();
+				this.showStatus(`Switched to ${result.model.name || result.model.id}${thinkingStr}${fastStr}`);
 			}
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
@@ -3353,6 +3372,84 @@ export class InteractiveMode {
 		});
 	}
 
+	private getFastModeModelStatusSuffix(): string {
+		if (!this.session.fastMode || this.session.isFastModeActiveForCurrentModel()) {
+			return "";
+		}
+		return " (fast mode inactive for current model)";
+	}
+
+	private handleFastCommand(text: string): void {
+		const args = text.trim().split(/\s+/).slice(1);
+		const command = args[0]?.toLowerCase();
+		if (args.length > 1) {
+			this.showError("Usage: /fast [on|off|status]");
+			return;
+		}
+
+		if (!command) {
+			if (this.session.fastMode) {
+				this.session.setFastMode(false);
+				this.footer.invalidate();
+				this.showStatus("Fast mode disabled");
+				return;
+			}
+			if (!this.session.supportsFastMode()) {
+				this.showWarning("Fast mode is only available for supported OpenAI GPT-5.4 models.");
+				return;
+			}
+			this.session.toggleFastMode();
+			this.footer.invalidate();
+			this.showStatus("Fast mode enabled");
+			return;
+		}
+
+		if (command === "status") {
+			if (!this.session.fastMode) {
+				this.showStatus("Fast mode is off");
+				return;
+			}
+			if (this.session.isFastModeActiveForCurrentModel()) {
+				this.showStatus("Fast mode is on");
+				return;
+			}
+			this.showWarning("Fast mode is enabled but inactive for the current model");
+			return;
+		}
+
+		if (command === "on") {
+			if (this.session.fastMode) {
+				if (this.session.isFastModeActiveForCurrentModel()) {
+					this.showStatus("Fast mode already enabled");
+				} else {
+					this.showWarning("Fast mode is enabled but inactive for the current model");
+				}
+				return;
+			}
+			if (!this.session.supportsFastMode()) {
+				this.showWarning("Fast mode is only available for supported OpenAI GPT-5.4 models.");
+				return;
+			}
+			this.session.setFastMode(true);
+			this.footer.invalidate();
+			this.showStatus("Fast mode enabled");
+			return;
+		}
+
+		if (command === "off") {
+			if (!this.session.fastMode) {
+				this.showStatus("Fast mode already disabled");
+				return;
+			}
+			this.session.setFastMode(false);
+			this.footer.invalidate();
+			this.showStatus("Fast mode disabled");
+			return;
+		}
+
+		this.showError("Usage: /fast [on|off|status]");
+	}
+
 	private async handleModelCommand(searchTerm?: string): Promise<void> {
 		if (!searchTerm) {
 			this.showModelSelector();
@@ -3365,7 +3462,7 @@ export class InteractiveMode {
 				await this.session.setModel(model);
 				this.footer.invalidate();
 				this.updateEditorBorderColor();
-				this.showStatus(`Model: ${model.id}`);
+				this.showStatus(`Model: ${model.id}${this.getFastModeModelStatusSuffix()}`);
 				this.checkDaxnutsEasterEgg(model);
 			} catch (error) {
 				this.showError(error instanceof Error ? error.message : String(error));
@@ -3415,7 +3512,7 @@ export class InteractiveMode {
 						this.footer.invalidate();
 						this.updateEditorBorderColor();
 						done();
-						this.showStatus(`Model: ${model.id}`);
+						this.showStatus(`Model: ${model.id}${this.getFastModeModelStatusSuffix()}`);
 						this.checkDaxnutsEasterEgg(model);
 					} catch (error) {
 						done();
