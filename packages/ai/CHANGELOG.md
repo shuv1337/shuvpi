@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Treated GPT-5.5 like GPT-5.4 for `xhigh` reasoning support and Codex minimal-effort clamping.
 - Bumped default Antigravity User-Agent version to `1.21.9` ([#2901](https://github.com/badlogic/pi-mono/pull/2901) by [@aadishv](https://github.com/aadishv))
 - Fixed thinking levels for Gemma 4 models to use `thinkingLevel` and map Pi reasoning levels to the model's supported thinking levels ([#2903](https://github.com/badlogic/pi-mono/pull/2903) by [@aadishv](https://github.com/aadishv))
 

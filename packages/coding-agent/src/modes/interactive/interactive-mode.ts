@@ -3395,7 +3395,7 @@ export class InteractiveMode {
 				return;
 			}
 			if (!this.session.supportsFastMode()) {
-				this.showWarning("Fast mode is only available for supported OpenAI GPT-5.4 models.");
+				this.showWarning("Fast mode is only available for supported OpenAI GPT-5.4/5.5 models.");
 				return;
 			}
 			this.session.toggleFastMode();
@@ -3427,7 +3427,7 @@ export class InteractiveMode {
 				return;
 			}
 			if (!this.session.supportsFastMode()) {
-				this.showWarning("Fast mode is only available for supported OpenAI GPT-5.4 models.");
+				this.showWarning("Fast mode is only available for supported OpenAI GPT-5.4/5.5 models.");
 				return;
 			}
 			this.session.setFastMode(true);

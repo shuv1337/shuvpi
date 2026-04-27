@@ -1,6 +1,6 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
 
-const FAST_MODE_ELIGIBLE_MODEL_IDS = new Set(["gpt-5.4", "gpt-5.4-mini"]);
+const FAST_MODE_ELIGIBLE_MODEL_IDS = new Set(["gpt-5.4", "gpt-5.4-mini", "gpt-5.5"]);
 const FAST_MODE_ELIGIBLE_APIS = new Set(["openai-responses", "openai-codex-responses"]);
 const FAST_MODE_ELIGIBLE_PROVIDERS = new Set(["openai", "openai-codex"]);
 

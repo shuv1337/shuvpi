@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Added GPT-5.5 support to `/fast` priority processing.
 - Updated `antigravity-image-gen.ts` example extension to use User-Agent version `1.21.9` ([#2901](https://github.com/badlogic/pi-mono/pull/2901) by [@aadishv](https://github.com/aadishv))
 ### Added
 

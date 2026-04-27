@@ -33,7 +33,7 @@ function createTempDir(prefix: string): TempSessionResources {
 
 async function createOpenAISession(options?: {
 	provider?: "openai" | "openai-codex";
-	modelId?: "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.4-pro";
+	modelId?: "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.4-pro" | "gpt-5.5";
 	resourceLoader?: ReturnType<typeof createTestResourceLoader>;
 }) {
 	const { tempDir, cleanup } = createTempDir("pi-fast-mode-test");
@@ -41,8 +41,8 @@ async function createOpenAISession(options?: {
 	const requestedModelId = options?.modelId ?? "gpt-5.4";
 	const model =
 		provider === "openai-codex"
-			? getModel("openai-codex", requestedModelId as "gpt-5.4" | "gpt-5.4-mini")
-			: getModel("openai", requestedModelId);
+			? getModel("openai-codex", requestedModelId as "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.5")
+			: getModel("openai", requestedModelId as "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.4-pro");
 	if (!model) {
 		throw new Error(`${provider} model not found for test`);
 	}
@@ -140,6 +140,17 @@ describe("fast mode payload mutation", () => {
 		const codexMutated = await codexSupported.session.agent.onPayload?.(codexPayload, codexSupported.model);
 		expect(codexMutated).toMatchObject({
 			model: codexSupported.model.id,
+			service_tier: "priority",
+		});
+
+		const codexSupported55 = await createOpenAISession({ provider: "openai-codex", modelId: "gpt-5.5" });
+		cleanups.push(codexSupported55.cleanup);
+		codexSupported55.session.setFastMode(true);
+
+		const codex55Payload = { model: codexSupported55.model.id, input: [] };
+		const codex55Mutated = await codexSupported55.session.agent.onPayload?.(codex55Payload, codexSupported55.model);
+		expect(codex55Mutated).toMatchObject({
+			model: codexSupported55.model.id,
 			service_tier: "priority",
 		});
 
@@ -254,7 +265,7 @@ describe("InteractiveMode fast command", () => {
 
 		expect(harness.session.fastMode).toBe(false);
 		expect(harness.showWarning).toHaveBeenCalledWith(
-			"Fast mode is only available for supported OpenAI GPT-5.4 models.",
+			"Fast mode is only available for supported OpenAI GPT-5.4/5.5 models.",
 		);
 	});
 
