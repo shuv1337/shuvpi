@@ -35,6 +35,7 @@ export const defaultModelPerProvider: Record<KnownProvider, string> = {
 	opencode: "claude-opus-4-7",
 	"opencode-go": "kimi-k2.5",
 	"kimi-coding": "kimi-k2-thinking",
+	fireworks: "accounts/fireworks/routers/kimi-k2p6-turbo",
 };
 
 export interface ScopedModel {

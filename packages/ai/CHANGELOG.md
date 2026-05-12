@@ -5,6 +5,7 @@
 ### Added
 
 - Added GPT-5.5 to OpenAI Codex model generation.
+- Added native `fireworks` provider support with the Fire Pass `accounts/fireworks/routers/kimi-k2p6-turbo` (Kimi K2.6 Turbo) model via the Anthropic-compatible Messages API at `https://api.fireworks.ai/inference`. Set `FIREWORKS_API_KEY` to use.
 
 ### Fixed
 

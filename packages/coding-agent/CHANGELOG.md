@@ -9,6 +9,7 @@
 ### Added
 
 - Set `PI_CODING_AGENT=true` environment variable at startup so sub-processes can detect they are running inside the coding agent ([#2868](https://github.com/badlogic/pi-mono/issues/2868))
+- Added `fireworks` to the known provider list with a default of `accounts/fireworks/routers/kimi-k2p6-turbo` (Kimi K2.6 Turbo Fire Pass router). `FIREWORKS_API_KEY` is now recognized by the CLI help, providers docs, and README.
 
 ## [0.66.1] - 2026-04-08
 

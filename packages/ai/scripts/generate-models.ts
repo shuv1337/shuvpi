@@ -604,6 +604,11 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 			}
 		}
 
+		// Process Fireworks models (Anthropic-compatible API)
+		// NOTE: We don't fetch from models.dev for fireworks - we only ship the
+		// Fire Pass turbo router for Kimi K2.6 statically below to keep this
+		// minimal. Add more entries here if needed.
+
 		// Process Kimi For Coding models
 		if (data["kimi-for-coding"]?.models) {
 			for (const [modelId, model] of Object.entries(data["kimi-for-coding"].models)) {
@@ -1507,6 +1512,30 @@ async function generateModels() {
 	// Only add if not already present from models.dev
 	for (const model of kimiCodingModels) {
 		if (!allModels.some(m => m.provider === "kimi-coding" && m.id === model.id)) {
+			allModels.push(model);
+		}
+	}
+
+	// Fireworks Fire Pass: Kimi K2.6 Turbo router (Anthropic-compatible API).
+	// Only model exposed via Fire Pass; mirrors the upstream Kimi K2.5 Turbo entry
+	// from badlogic/pi-mono with the model ID bumped to K2.6.
+	const FIREWORKS_BASE_URL = "https://api.fireworks.ai/inference";
+	const fireworksModels: Model<"anthropic-messages">[] = [
+		{
+			id: "accounts/fireworks/routers/kimi-k2p6-turbo",
+			name: "Kimi K2.6 Turbo",
+			api: "anthropic-messages",
+			provider: "fireworks",
+			baseUrl: FIREWORKS_BASE_URL,
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 256000,
+			maxTokens: 256000,
+		},
+	];
+	for (const model of fireworksModels) {
+		if (!allModels.some(m => m.provider === "fireworks" && m.id === model.id)) {
 			allModels.push(model);
 		}
 	}

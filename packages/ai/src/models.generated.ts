@@ -2715,6 +2715,25 @@ export const MODELS = {
 			maxTokens: 40000,
 		} satisfies Model<"openai-completions">,
 	},
+	"fireworks": {
+		"accounts/fireworks/routers/kimi-k2p6-turbo": {
+			id: "accounts/fireworks/routers/kimi-k2p6-turbo",
+			name: "Kimi K2.6 Turbo",
+			api: "anthropic-messages",
+			provider: "fireworks",
+			baseUrl: "https://api.fireworks.ai/inference",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+			},
+			contextWindow: 256000,
+			maxTokens: 256000,
+		} satisfies Model<"anthropic-messages">,
+	},
 	"github-copilot": {
 		"claude-haiku-4.5": {
 			id: "claude-haiku-4.5",

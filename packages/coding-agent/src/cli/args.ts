@@ -315,6 +315,7 @@ ${chalk.bold("Environment Variables:")}
   MINIMAX_API_KEY                  - MiniMax API key
   OPENCODE_API_KEY                 - OpenCode Zen/OpenCode Go API key
   KIMI_API_KEY                     - Kimi For Coding API key
+  FIREWORKS_API_KEY                - Fireworks AI API key (Fire Pass)
   AWS_PROFILE                      - AWS profile for Amazon Bedrock
   AWS_ACCESS_KEY_ID                - AWS access key for Amazon Bedrock
   AWS_SECRET_ACCESS_KEY            - AWS secret key for Amazon Bedrock
