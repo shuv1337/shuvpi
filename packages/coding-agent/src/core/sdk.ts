@@ -1,8 +1,9 @@
 import { join } from "node:path";
 import { Agent, type AgentMessage, type ThinkingLevel } from "@mariozechner/pi-agent-core";
 import { type Message, type Model, streamSimple } from "@mariozechner/pi-ai";
-import { getAgentDir, getDocsPath } from "../config.js";
+import { getAgentDir } from "../config.js";
 import { AgentSession } from "./agent-session.js";
+import { formatNoModelsAvailableMessage } from "./auth-guidance.js";
 import { AuthStorage } from "./auth-storage.js";
 import { DEFAULT_THINKING_LEVEL } from "./defaults.js";
 import type { ExtensionRunner, LoadExtensionsResult, SessionStartEvent, ToolDefinition } from "./extensions/index.js";
@@ -16,9 +17,6 @@ import { getDefaultSessionDir, SessionManager } from "./session-manager.js";
 import { SettingsManager } from "./settings-manager.js";
 import { time } from "./timings.js";
 import {
-	allTools,
-	bashTool,
-	codingTools,
 	createBashTool,
 	createCodingTools,
 	createEditTool,
@@ -28,16 +26,8 @@ import {
 	createReadOnlyTools,
 	createReadTool,
 	createWriteTool,
-	editTool,
-	findTool,
-	grepTool,
-	lsTool,
-	readOnlyTools,
-	readTool,
-	type Tool,
 	type ToolName,
 	withFileMutationQueue,
-	writeTool,
 } from "./tools/index.js";
 
 export interface CreateAgentSessionOptions {
@@ -58,8 +48,22 @@ export interface CreateAgentSessionOptions {
 	/** Models available for cycling (Ctrl+P in interactive mode) */
 	scopedModels?: Array<{ model: Model<any>; thinkingLevel?: ThinkingLevel }>;
 
-	/** Built-in tools to use. Default: codingTools [read, bash, edit, write] */
-	tools?: Tool[];
+	/**
+	 * Optional default tool suppression mode when no explicit allowlist is provided.
+	 *
+	 * - "all": start with no tools enabled
+	 * - "builtin": disable the default built-in tools (read, bash, edit, write)
+	 *   but keep extension/custom tools enabled
+	 */
+	noTools?: "all" | "builtin";
+	/**
+	 * Optional allowlist of tool names.
+	 *
+	 * When omitted, pi enables the default built-in tools (read, bash, edit, write)
+	 * and leaves extension/custom tools enabled unless `noTools` changes that default.
+	 * When provided, only the listed tool names are enabled.
+	 */
+	tools?: string[];
 	/** Custom tools to register (in addition to built-in tools). */
 	customTools?: ToolDefinition[];
 
@@ -102,17 +106,6 @@ export type { Skill } from "./skills.js";
 export type { Tool } from "./tools/index.js";
 
 export {
-	// Pre-built tools (use process.cwd())
-	readTool,
-	bashTool,
-	editTool,
-	writeTool,
-	grepTool,
-	findTool,
-	lsTool,
-	codingTools,
-	readOnlyTools,
-	allTools as allBuiltInTools,
 	withFileMutationQueue,
 	// Tool factories (for custom cwd)
 	createCodingTools,
@@ -168,7 +161,7 @@ function getDefaultAgentDir(): string {
  * ```
  */
 export async function createAgentSession(options: CreateAgentSessionOptions = {}): Promise<CreateAgentSessionResult> {
-	const cwd = options.cwd ?? process.cwd();
+	const cwd = options.cwd ?? options.sessionManager?.getCwd() ?? process.cwd();
 	const agentDir = options.agentDir ?? getDefaultAgentDir();
 	let resourceLoader = options.resourceLoader;
 
@@ -218,7 +211,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		});
 		model = result.model;
 		if (!model) {
-			modelFallbackMessage = `No models available. Use /login or set an API key environment variable. See ${join(getDocsPath(), "providers.md")}. Then use /model to select a model.`;
+			modelFallbackMessage = formatNoModelsAvailableMessage();
 		} else if (modelFallbackMessage) {
 			modelFallbackMessage += `. Using ${model.provider}/${model.id}`;
 		}
@@ -244,9 +237,12 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	}
 
 	const defaultActiveToolNames: ToolName[] = ["read", "bash", "edit", "write"];
-	const initialActiveToolNames: ToolName[] = options.tools
-		? options.tools.map((t) => t.name).filter((n): n is ToolName => n in allTools)
-		: defaultActiveToolNames;
+	const allowedToolNames = options.tools ?? (options.noTools === "all" ? [] : undefined);
+	const initialActiveToolNames: string[] = options.tools
+		? [...options.tools]
+		: options.noTools
+			? []
+			: defaultActiveToolNames;
 
 	let agent: Agent;
 
@@ -303,9 +299,13 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 			if (!auth.ok) {
 				throw new Error(auth.error);
 			}
+			const providerRetrySettings = settingsManager.getProviderRetrySettings();
 			return streamSimple(model, context, {
 				...options,
 				apiKey: auth.apiKey,
+				timeoutMs: options?.timeoutMs ?? providerRetrySettings.timeoutMs,
+				maxRetries: options?.maxRetries ?? providerRetrySettings.maxRetries,
+				maxRetryDelayMs: options?.maxRetryDelayMs ?? providerRetrySettings.maxRetryDelayMs,
 				headers: auth.headers || options?.headers ? { ...auth.headers, ...options?.headers } : undefined,
 			});
 		},
@@ -322,6 +322,17 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 			nextPayload = await runner.emitBeforeProviderRequest(nextPayload);
 			return nextPayload;
 		},
+		onResponse: async (response, _model) => {
+			const runner = extensionRunnerRef.current;
+			if (!runner?.hasHandlers("after_provider_response")) {
+				return;
+			}
+			await runner.emit({
+				type: "after_provider_response",
+				status: response.status,
+				headers: response.headers,
+			});
+		},
 		sessionId: sessionManager.getSessionId(),
 		transformContext: async (messages) => {
 			const runner = extensionRunnerRef.current;
@@ -332,7 +343,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		followUpMode: settingsManager.getFollowUpMode(),
 		transport: settingsManager.getTransport(),
 		thinkingBudgets: settingsManager.getThinkingBudgets(),
-		maxRetryDelayMs: settingsManager.getRetrySettings().maxDelayMs,
+		maxRetryDelayMs: settingsManager.getProviderRetrySettings().maxRetryDelayMs,
 	});
 
 	// Restore messages if session has existing data
@@ -359,6 +370,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		customTools: options.customTools,
 		modelRegistry,
 		initialActiveToolNames,
+		allowedToolNames,
 		extensionRunnerRef,
 		sessionStartEvent: options.sessionStartEvent,
 	});

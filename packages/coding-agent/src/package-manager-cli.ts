@@ -6,12 +6,18 @@ import { SettingsManager } from "./core/settings-manager.js";
 
 export type PackageCommand = "install" | "remove" | "update" | "list";
 
+type UpdateTarget = { type: "all" } | { type: "extensions"; source?: string };
+
 interface PackageCommandOptions {
 	command: PackageCommand;
 	source?: string;
+	updateTarget?: UpdateTarget;
 	local: boolean;
 	help: boolean;
 	invalidOption?: string;
+	invalidArgument?: string;
+	missingOptionValue?: string;
+	conflictingOptions?: string;
 }
 
 function reportSettingsErrors(settingsManager: SettingsManager, context: string): void {
@@ -31,7 +37,7 @@ function getPackageCommandUsage(command: PackageCommand): string {
 		case "remove":
 			return `${APP_NAME} remove <source> [-l]`;
 		case "update":
-			return `${APP_NAME} update [source]`;
+			return `${APP_NAME} update [source] [--extensions] [--extension <source>]`;
 		case "list":
 			return `${APP_NAME} list`;
 	}
@@ -79,7 +85,14 @@ Examples:
   ${getPackageCommandUsage("update")}
 
 Update installed packages.
-If <source> is provided, only that package is updated.
+
+Options:
+  --extensions            Update installed packages only
+  --extension <source>    Update one package only
+
+Short forms:
+  ${APP_NAME} update                Update all packages
+  ${APP_NAME} update <source>       Update one package
 `);
 			return;
 
@@ -108,9 +121,15 @@ function parsePackageCommand(args: string[]): PackageCommandOptions | undefined 
 	let local = false;
 	let help = false;
 	let invalidOption: string | undefined;
+	let invalidArgument: string | undefined;
+	let missingOptionValue: string | undefined;
+	let conflictingOptions: string | undefined;
 	let source: string | undefined;
+	let extensionsFlag = false;
+	let extensionFlagSource: string | undefined;
 
-	for (const arg of rest) {
+	for (let index = 0; index < rest.length; index++) {
+		const arg = rest[index];
 		if (arg === "-h" || arg === "--help") {
 			help = true;
 			continue;
@@ -125,6 +144,34 @@ function parsePackageCommand(args: string[]): PackageCommandOptions | undefined 
 			continue;
 		}
 
+		if (arg === "--extensions") {
+			if (command === "update") {
+				extensionsFlag = true;
+			} else {
+				invalidOption = invalidOption ?? arg;
+			}
+			continue;
+		}
+
+		if (arg === "--extension") {
+			if (command !== "update") {
+				invalidOption = invalidOption ?? arg;
+				continue;
+			}
+
+			const value = rest[index + 1];
+			if (!value || value.startsWith("-")) {
+				missingOptionValue = missingOptionValue ?? arg;
+			} else if (extensionFlagSource) {
+				conflictingOptions = conflictingOptions ?? "--extension can only be provided once";
+				index++;
+			} else {
+				extensionFlagSource = value;
+				index++;
+			}
+			continue;
+		}
+
 		if (arg.startsWith("-")) {
 			invalidOption = invalidOption ?? arg;
 			continue;
@@ -132,10 +179,48 @@ function parsePackageCommand(args: string[]): PackageCommandOptions | undefined 
 
 		if (!source) {
 			source = arg;
+		} else {
+			invalidArgument = invalidArgument ?? arg;
 		}
 	}
 
-	return { command, source, local, help, invalidOption };
+	let updateTarget: UpdateTarget | undefined;
+	if (command === "update") {
+		if (extensionFlagSource) {
+			if (extensionsFlag) {
+				conflictingOptions = conflictingOptions ?? "--extension cannot be combined with --extensions";
+			}
+			if (source) {
+				conflictingOptions = conflictingOptions ?? "--extension cannot be combined with a positional source";
+			}
+			updateTarget = { type: "extensions", source: extensionFlagSource };
+		} else if (source) {
+			if (extensionsFlag) {
+				conflictingOptions = conflictingOptions ?? "positional update targets cannot be combined with --extensions";
+			}
+			updateTarget = { type: "extensions", source };
+		} else if (extensionsFlag) {
+			updateTarget = { type: "extensions" };
+		} else {
+			updateTarget = { type: "all" };
+		}
+	}
+
+	return {
+		command,
+		source,
+		updateTarget,
+		local,
+		help,
+		invalidOption,
+		invalidArgument,
+		missingOptionValue,
+		conflictingOptions,
+	};
+}
+
+function updateTargetIncludesExtensions(target: UpdateTarget): boolean {
+	return target.type === "all" || target.type === "extensions";
 }
 
 export async function handleConfigCommand(args: string[]): Promise<boolean> {
@@ -174,6 +259,27 @@ export async function handlePackageCommand(args: string[]): Promise<boolean> {
 	if (options.invalidOption) {
 		console.error(chalk.red(`Unknown option ${options.invalidOption} for "${options.command}".`));
 		console.error(chalk.dim(`Use "${APP_NAME} --help" or "${getPackageCommandUsage(options.command)}".`));
+		process.exitCode = 1;
+		return true;
+	}
+
+	if (options.missingOptionValue) {
+		console.error(chalk.red(`Missing value for ${options.missingOptionValue}.`));
+		console.error(chalk.dim(`Usage: ${getPackageCommandUsage(options.command)}`));
+		process.exitCode = 1;
+		return true;
+	}
+
+	if (options.invalidArgument) {
+		console.error(chalk.red(`Unexpected argument ${options.invalidArgument}.`));
+		console.error(chalk.dim(`Usage: ${getPackageCommandUsage(options.command)}`));
+		process.exitCode = 1;
+		return true;
+	}
+
+	if (options.conflictingOptions) {
+		console.error(chalk.red(options.conflictingOptions));
+		console.error(chalk.dim(`Usage: ${getPackageCommandUsage(options.command)}`));
 		process.exitCode = 1;
 		return true;
 	}
@@ -252,14 +358,19 @@ export async function handlePackageCommand(args: string[]): Promise<boolean> {
 				return true;
 			}
 
-			case "update":
-				await packageManager.update(source);
-				if (source) {
-					console.log(chalk.green(`Updated ${source}`));
-				} else {
-					console.log(chalk.green("Updated packages"));
+			case "update": {
+				const target = options.updateTarget ?? { type: "all" };
+				if (updateTargetIncludesExtensions(target)) {
+					const updateSource = target.type === "extensions" ? target.source : undefined;
+					await packageManager.update(updateSource);
+					if (updateSource) {
+						console.log(chalk.green(`Updated ${updateSource}`));
+					} else {
+						console.log(chalk.green("Updated packages"));
+					}
 				}
 				return true;
+			}
 		}
 	} catch (error: unknown) {
 		const message = error instanceof Error ? error.message : "Unknown package command error";

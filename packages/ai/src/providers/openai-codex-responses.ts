@@ -33,6 +33,7 @@ import type {
 	Usage,
 } from "../types.js";
 import { AssistantMessageEventStream } from "../utils/event-stream.js";
+import { headersToRecord } from "../utils/headers.js";
 import { convertResponsesMessages, convertResponsesTools, processResponsesStream } from "./openai-responses-shared.js";
 import { buildBaseOptions, clampReasoning } from "./simple-options.js";
 
@@ -214,6 +215,10 @@ export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses"
 						body: bodyJson,
 						signal: options?.signal,
 					});
+					await options?.onResponse?.(
+						{ status: response.status, headers: headersToRecord(response.headers) },
+						model,
+					);
 
 					if (response.ok) {
 						break;
@@ -268,6 +273,10 @@ export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses"
 			stream.push({ type: "done", reason: output.stopReason as "stop" | "length" | "toolUse", message: output });
 			stream.end();
 		} catch (error) {
+			for (const block of output.content) {
+				// partialJson is only a streaming scratch buffer; never persist it.
+				delete (block as { partialJson?: string }).partialJson;
+			}
 			output.stopReason = options?.signal?.aborted ? "aborted" : "error";
 			output.errorMessage = error instanceof Error ? error.message : String(error);
 			stream.push({ type: "error", reason: output.stopReason, error: output });
@@ -316,7 +325,7 @@ function buildRequestBody(
 		stream: true,
 		instructions: context.systemPrompt,
 		input: messages,
-		text: { verbosity: options?.textVerbosity || "medium" },
+		text: { verbosity: options?.textVerbosity || "low" },
 		include: ["reasoning.encrypted_content"],
 		prompt_cache_key: options?.sessionId,
 		tool_choice: "auto",
@@ -331,7 +340,7 @@ function buildRequestBody(
 		body.service_tier = options.serviceTier;
 	}
 
-	if (context.tools) {
+	if (context.tools && context.tools.length > 0) {
 		body.tools = convertResponsesTools(context.tools, { strict: null });
 	}
 
@@ -357,19 +366,26 @@ function clampReasoningEffort(modelId: string, effort: string): string {
 	return effort;
 }
 
-function getServiceTierCostMultiplier(serviceTier: ResponseCreateParamsStreaming["service_tier"] | undefined): number {
+function getServiceTierCostMultiplier(
+	model: Pick<Model<"openai-codex-responses">, "id">,
+	serviceTier: ResponseCreateParamsStreaming["service_tier"] | undefined,
+): number {
 	switch (serviceTier) {
 		case "flex":
 			return 0.5;
 		case "priority":
-			return 2;
+			return model.id === "gpt-5.5" ? 2.5 : 2;
 		default:
 			return 1;
 	}
 }
 
-function applyServiceTierPricing(usage: Usage, serviceTier: ResponseCreateParamsStreaming["service_tier"] | undefined) {
-	const multiplier = getServiceTierCostMultiplier(serviceTier);
+function applyServiceTierPricing(
+	usage: Usage,
+	serviceTier: ResponseCreateParamsStreaming["service_tier"] | undefined,
+	model: Pick<Model<"openai-codex-responses">, "id">,
+) {
+	const multiplier = getServiceTierCostMultiplier(model, serviceTier);
 	if (multiplier === 1) return;
 
 	usage.cost.input *= multiplier;
@@ -377,6 +393,16 @@ function applyServiceTierPricing(usage: Usage, serviceTier: ResponseCreateParams
 	usage.cost.cacheRead *= multiplier;
 	usage.cost.cacheWrite *= multiplier;
 	usage.cost.total = usage.cost.input + usage.cost.output + usage.cost.cacheRead + usage.cost.cacheWrite;
+}
+
+function resolveCodexServiceTier(
+	responseServiceTier: ResponseCreateParamsStreaming["service_tier"] | undefined,
+	requestServiceTier: ResponseCreateParamsStreaming["service_tier"] | undefined,
+): ResponseCreateParamsStreaming["service_tier"] | undefined {
+	if (responseServiceTier === "default" && (requestServiceTier === "flex" || requestServiceTier === "priority")) {
+		return requestServiceTier;
+	}
+	return responseServiceTier ?? requestServiceTier;
 }
 
 function resolveCodexUrl(baseUrl?: string): string {
@@ -407,7 +433,8 @@ async function processStream(
 ): Promise<void> {
 	await processResponsesStream(mapCodexEvents(parseSSE(response)), output, stream, model, {
 		serviceTier: options?.serviceTier,
-		applyServiceTierPricing,
+		resolveServiceTier: resolveCodexServiceTier,
+		applyServiceTierPricing: (usage, serviceTier) => applyServiceTierPricing(usage, serviceTier, model),
 	});
 }
 
@@ -526,14 +553,6 @@ function getWebSocketConstructor(): WebSocketConstructor | null {
 	const ctor = (globalThis as { WebSocket?: unknown }).WebSocket;
 	if (typeof ctor !== "function") return null;
 	return ctor as unknown as WebSocketConstructor;
-}
-
-function headersToRecord(headers: Headers): Record<string, string> {
-	const out: Record<string, string> = {};
-	for (const [key, value] of headers.entries()) {
-		out[key] = value;
-	}
-	return out;
 }
 
 function getWebSocketReadyState(socket: WebSocketLike): number | undefined {
@@ -849,7 +868,8 @@ async function processWebSocketStream(
 		stream.push({ type: "start", partial: output });
 		await processResponsesStream(mapCodexEvents(parseWebSocket(socket, options?.signal)), output, stream, model, {
 			serviceTier: options?.serviceTier,
-			applyServiceTierPricing,
+			resolveServiceTier: resolveCodexServiceTier,
+			applyServiceTierPricing: (usage, serviceTier) => applyServiceTierPricing(usage, serviceTier, model),
 		});
 		if (options?.signal?.aborted) {
 			keepConnection = false;
@@ -949,6 +969,7 @@ function buildSSEHeaders(
 
 	if (sessionId) {
 		headers.set("session_id", sessionId);
+		headers.set("x-client-request-id", sessionId);
 	}
 
 	return headers;

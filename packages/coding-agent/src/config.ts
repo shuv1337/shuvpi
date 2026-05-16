@@ -24,49 +24,6 @@ export const isBunRuntime = !!process.versions.bun;
 // Install Method Detection
 // =============================================================================
 
-export type InstallMethod = "bun-binary" | "npm" | "pnpm" | "yarn" | "bun" | "unknown";
-
-export function detectInstallMethod(): InstallMethod {
-	if (isBunBinary) {
-		return "bun-binary";
-	}
-
-	const resolvedPath = `${__dirname}\0${process.execPath || ""}`.toLowerCase();
-
-	if (resolvedPath.includes("/pnpm/") || resolvedPath.includes("/.pnpm/") || resolvedPath.includes("\\pnpm\\")) {
-		return "pnpm";
-	}
-	if (resolvedPath.includes("/yarn/") || resolvedPath.includes("/.yarn/") || resolvedPath.includes("\\yarn\\")) {
-		return "yarn";
-	}
-	if (isBunRuntime) {
-		return "bun";
-	}
-	if (resolvedPath.includes("/npm/") || resolvedPath.includes("/node_modules/") || resolvedPath.includes("\\npm\\")) {
-		return "npm";
-	}
-
-	return "unknown";
-}
-
-export function getUpdateInstruction(packageName: string): string {
-	const method = detectInstallMethod();
-	switch (method) {
-		case "bun-binary":
-			return `Download from: https://github.com/badlogic/pi-mono/releases/latest`;
-		case "pnpm":
-			return `Run: pnpm install -g ${packageName}`;
-		case "yarn":
-			return `Run: yarn global add ${packageName}`;
-		case "bun":
-			return `Run: bun install -g ${packageName}`;
-		case "npm":
-			return `Run: npm install -g ${packageName}`;
-		default:
-			return `Run: npm install -g ${packageName}`;
-	}
-}
-
 // =============================================================================
 // Package Asset Paths (shipped with executable)
 // =============================================================================
@@ -110,7 +67,7 @@ export function getPackageDir(): string {
  */
 export function getThemesDir(): string {
 	if (isBunBinary) {
-		return join(dirname(process.execPath), "theme");
+		return join(getPackageDir(), "theme");
 	}
 	// Theme is in modes/interactive/theme/ relative to src/ or dist/
 	const packageDir = getPackageDir();
@@ -126,7 +83,7 @@ export function getThemesDir(): string {
  */
 export function getExportTemplateDir(): string {
 	if (isBunBinary) {
-		return join(dirname(process.execPath), "export-html");
+		return join(getPackageDir(), "export-html");
 	}
 	const packageDir = getPackageDir();
 	const srcOrDist = existsSync(join(packageDir, "src")) ? "src" : "dist";
@@ -166,7 +123,7 @@ export function getChangelogPath(): string {
  */
 export function getInteractiveAssetsDir(): string {
 	if (isBunBinary) {
-		return join(dirname(process.execPath), "assets");
+		return join(getPackageDir(), "assets");
 	}
 	const packageDir = getPackageDir();
 	const srcOrDist = existsSync(join(packageDir, "src")) ? "src" : "dist";
@@ -182,11 +139,23 @@ export function getBundledInteractiveAssetPath(name: string): string {
 // App Config (from package.json piConfig)
 // =============================================================================
 
-const pkg = JSON.parse(readFileSync(getPackageJsonPath(), "utf-8"));
+interface PackageJson {
+	name?: string;
+	version?: string;
+	piConfig?: {
+		name?: string;
+		configDir?: string;
+	};
+}
 
-export const APP_NAME: string = pkg.piConfig?.name || "pi";
+const pkg = JSON.parse(readFileSync(getPackageJsonPath(), "utf-8")) as PackageJson;
+
+const piConfigName: string | undefined = pkg.piConfig?.name;
+export const PACKAGE_NAME: string = pkg.name || "@mariozechner/pi-coding-agent";
+export const APP_NAME: string = piConfigName || "pi";
+export const APP_TITLE: string = piConfigName ? APP_NAME : "π";
 export const CONFIG_DIR_NAME: string = pkg.piConfig?.configDir || ".pi";
-export const VERSION: string = pkg.version;
+export const VERSION: string = pkg.version || "0.0.0";
 
 // e.g., PI_CODING_AGENT_DIR or TAU_CODING_AGENT_DIR
 export const ENV_AGENT_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_DIR`;

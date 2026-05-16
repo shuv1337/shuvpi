@@ -4,37 +4,42 @@ import type { Context } from "../src/types.js";
 
 const mockState = vi.hoisted(() => ({
 	constructorOpts: undefined as Record<string, unknown> | undefined,
-	streamParams: undefined as Record<string, unknown> | undefined,
+	createParams: undefined as Record<string, unknown> | undefined,
 }));
 
 vi.mock("@anthropic-ai/sdk", () => {
-	const fakeStream = {
-		async *[Symbol.asyncIterator]() {
-			yield {
+	function createSseResponse(): Response {
+		const body = [
+			`event: message_start\ndata: ${JSON.stringify({
 				type: "message_start",
 				message: {
+					id: "msg_test",
 					usage: { input_tokens: 10, output_tokens: 0 },
 				},
-			};
-			yield {
+			})}\n`,
+			`event: message_delta\ndata: ${JSON.stringify({
 				type: "message_delta",
 				delta: { stop_reason: "end_turn" },
 				usage: { output_tokens: 5 },
-			};
-		},
-		finalMessage: async () => ({
-			usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
-		}),
-	};
+			})}\n`,
+		].join("\n");
+
+		return new Response(body, {
+			status: 200,
+			headers: { "content-type": "text/event-stream" },
+		});
+	}
 
 	class FakeAnthropic {
 		constructor(opts: Record<string, unknown>) {
 			mockState.constructorOpts = opts;
 		}
 		messages = {
-			stream: (params: Record<string, unknown>) => {
-				mockState.streamParams = params;
-				return fakeStream;
+			create: (params: Record<string, unknown>) => {
+				mockState.createParams = params;
+				return {
+					asResponse: async () => createSseResponse(),
+				};
 			},
 		};
 	}
@@ -49,7 +54,7 @@ describe("Copilot Claude via Anthropic Messages", () => {
 	};
 
 	it("uses Bearer auth, Copilot headers, and valid Anthropic Messages payload", async () => {
-		const model = getModel("github-copilot", "claude-sonnet-4");
+		const model = getModel("github-copilot", "claude-sonnet-4.5");
 		expect(model.api).toBe("anthropic-messages");
 
 		const { streamAnthropic } = await import("../src/providers/anthropic.js");
@@ -79,15 +84,15 @@ describe("Copilot Claude via Anthropic Messages", () => {
 		expect(beta).not.toContain("fine-grained-tool-streaming");
 
 		// Payload is valid Anthropic Messages format
-		const params = mockState.streamParams!;
-		expect(params.model).toBe("claude-sonnet-4");
+		const params = mockState.createParams!;
+		expect(params.model).toBe("claude-sonnet-4.5");
 		expect(params.stream).toBe(true);
 		expect(params.max_tokens).toBeGreaterThan(0);
 		expect(Array.isArray(params.messages)).toBe(true);
 	});
 
 	it("includes interleaved-thinking beta when reasoning is enabled", async () => {
-		const model = getModel("github-copilot", "claude-sonnet-4");
+		const model = getModel("github-copilot", "claude-sonnet-4.5");
 		const { streamAnthropic } = await import("../src/providers/anthropic.js");
 		const s = streamAnthropic(model, context, {
 			apiKey: "tid_copilot_session_test_token",
