@@ -318,6 +318,7 @@ ${chalk.bold("Environment Variables:")}
   KIMI_API_KEY                     - Kimi For Coding API key
   CLOUDFLARE_API_KEY               - Cloudflare API token (Workers AI)
   CLOUDFLARE_ACCOUNT_ID            - Cloudflare account id (required for Workers AI)
+  FIREWORKS_API_KEY                - Fireworks AI API key (Fire Pass)
   AWS_PROFILE                      - AWS profile for Amazon Bedrock
   AWS_ACCESS_KEY_ID                - AWS access key for Amazon Bedrock
   AWS_SECRET_ACCESS_KEY            - AWS secret key for Amazon Bedrock

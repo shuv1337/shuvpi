@@ -5,6 +5,7 @@
 ### Added
 
 - Added `AssistantMessage.responseModel` on the openai-completions path: surfaces the concrete `chunk.model` when it differs from the requested id (e.g. OpenRouter `auto` -> `anthropic/...`).
+- Added Fireworks Fire Pass `accounts/fireworks/routers/kimi-k2p6-turbo` (Kimi K2.6 Turbo) router to the native `fireworks` provider catalog and `defaultModelPerProvider`.
 
 ### Fixed
 

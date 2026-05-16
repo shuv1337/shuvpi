@@ -128,6 +128,7 @@ For each built-in provider, pi maintains a list of tool-capable models, updated 
 - Hugging Face
 - Fireworks
 - Kimi For Coding
+- Fireworks (Fire Pass)
 - MiniMax
 
 See [docs/providers.md](docs/providers.md) for detailed setup instructions.

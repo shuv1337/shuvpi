@@ -421,6 +421,7 @@
 
 - Added full `openRouterRouting` field support in `models.json`, including fallbacks, parameter requirements, data collection, ZDR, ignore lists, quantizations, provider sorting, max price, and preferred throughput and latency constraints ([#2904](https://github.com/badlogic/pi-mono/pull/2904) by [@zmberber](https://github.com/zmberber))
 - Set `PI_CODING_AGENT=true` environment variable at startup so sub-processes can detect they are running inside the coding agent ([#2868](https://github.com/badlogic/pi-mono/issues/2868))
+- Added `fireworks` to the known provider list with a default of `accounts/fireworks/routers/kimi-k2p6-turbo` (Kimi K2.6 Turbo Fire Pass router). `FIREWORKS_API_KEY` is now recognized by the CLI help, providers docs, and README.
 
 ### Fixed
 
