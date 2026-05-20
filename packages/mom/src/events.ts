@@ -2,9 +2,9 @@ import { Cron } from "croner";
 import { existsSync, type FSWatcher, mkdirSync, readdirSync, statSync, unlinkSync } from "fs";
 import { readFile } from "fs/promises";
 import { join } from "path";
-import { closeWatcher, FS_WATCH_RETRY_DELAY_MS, watchWithErrorHandler } from "./fs-watch.js";
-import * as log from "./log.js";
-import type { SlackBot, SlackEvent } from "./slack.js";
+import { closeWatcher, FS_WATCH_RETRY_DELAY_MS, watchWithErrorHandler } from "./fs-watch.ts";
+import * as log from "./log.ts";
+import type { SlackBot, SlackEvent } from "./slack.ts";
 
 // ============================================================================
 // Event Types
@@ -50,11 +50,12 @@ export class EventsWatcher {
 	private watcherRetryTimer: NodeJS.Timeout | null = null;
 	private knownFiles: Set<string> = new Set();
 	private stopped = true;
+	private eventsDir: string;
+	private slack: SlackBot;
 
-	constructor(
-		private eventsDir: string,
-		private slack: SlackBot,
-	) {
+	constructor(eventsDir: string, slack: SlackBot) {
+		this.eventsDir = eventsDir;
+		this.slack = slack;
 		this.startTime = Date.now();
 	}
 

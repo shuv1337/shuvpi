@@ -3,16 +3,16 @@ import { Select } from "@mariozechner/mini-lit/dist/Select.js";
 import { getProviders } from "@mariozechner/pi-ai";
 import { html, type TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import "../components/CustomProviderCard.js";
-import "../components/ProviderKeyInput.js";
-import { getAppStorage } from "../storage/app-storage.js";
-import type { CustomProvider, CustomProviderType } from "../storage/stores/custom-providers-store.js";
-import { discoverModels } from "../utils/model-discovery.js";
+import "../components/CustomProviderCard.ts";
+import "../components/ProviderKeyInput.ts";
+import { getAppStorage } from "../storage/app-storage.ts";
+import type { CustomProvider, CustomProviderType } from "../storage/stores/custom-providers-store.ts";
+import { discoverModels } from "../utils/model-discovery.ts";
 
 type DiscoveryProviderType = "ollama" | "llama.cpp" | "vllm" | "lmstudio" | "openai-completions" | "openai-responses";
 
-import { CustomProviderDialog } from "./CustomProviderDialog.js";
-import { SettingsTab } from "./SettingsDialog.js";
+import { CustomProviderDialog } from "./CustomProviderDialog.ts";
+import { SettingsTab } from "./SettingsDialog.ts";
 
 @customElement("providers-models-tab")
 export class ProvidersModelsTab extends SettingsTab {

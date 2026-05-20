@@ -2,8 +2,8 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { ImageContent, TextContent } from "@mariozechner/pi-ai";
 import { extname } from "path";
 import { Type } from "typebox";
-import type { Executor } from "../sandbox.js";
-import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
+import type { Executor } from "../sandbox.ts";
+import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.ts";
 
 /**
  * Map of file extensions to MIME types for common image formats

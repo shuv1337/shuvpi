@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { extractRetryDelay } from "../src/providers/google-gemini-cli.js";
+import { extractRetryDelay } from "../src/providers/google-gemini-cli.ts";
 
 describe("extractRetryDelay header parsing", () => {
 	afterEach(() => {

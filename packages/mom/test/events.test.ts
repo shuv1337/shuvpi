@@ -2,8 +2,8 @@ import { existsSync, type FSWatcher, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EventsWatcher } from "../src/events.js";
-import type { SlackBot, SlackEvent } from "../src/slack.js";
+import { EventsWatcher } from "../src/events.ts";
+import type { SlackBot, SlackEvent } from "../src/slack.ts";
 
 describe("EventsWatcher fs.watch error handling", () => {
 	let tempDir: string;

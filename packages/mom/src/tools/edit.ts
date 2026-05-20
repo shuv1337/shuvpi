@@ -1,7 +1,7 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import * as Diff from "diff";
 import { Type } from "typebox";
-import type { Executor } from "../sandbox.js";
+import type { Executor } from "../sandbox.ts";
 
 /**
  * Generate a unified diff string with line numbers and context

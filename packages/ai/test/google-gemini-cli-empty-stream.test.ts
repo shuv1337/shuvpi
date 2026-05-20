@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { streamGoogleGeminiCli } from "../src/providers/google-gemini-cli.js";
-import type { Context, Model } from "../src/types.js";
+import { streamGoogleGeminiCli } from "../src/providers/google-gemini-cli.ts";
+import type { Context, Model } from "../src/types.ts";
 
 const originalFetch = global.fetch;
 

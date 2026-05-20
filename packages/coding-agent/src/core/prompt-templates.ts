@@ -1,9 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { homedir } from "os";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "path";
-import { CONFIG_DIR_NAME } from "../config.js";
-import { parseFrontmatter } from "../utils/frontmatter.js";
-import { createSyntheticSourceInfo, type SourceInfo } from "./source-info.js";
+import { CONFIG_DIR_NAME } from "../config.ts";
+import { parseFrontmatter } from "../utils/frontmatter.ts";
+import { createSyntheticSourceInfo, type SourceInfo } from "./source-info.ts";
 
 /**
  * Represents a prompt template loaded from a markdown file
@@ -37,7 +37,7 @@ export function parseCommandArgs(argsString: string): string[] {
 			}
 		} else if (char === '"' || char === "'") {
 			inQuote = char;
-		} else if (char === " " || char === "\t") {
+		} else if (/\s/.test(char)) {
 			if (current) {
 				args.push(current);
 				current = "";
@@ -282,9 +282,11 @@ export function loadPromptTemplates(options: LoadPromptTemplatesOptions): Prompt
 export function expandPromptTemplate(text: string, templates: PromptTemplate[]): string {
 	if (!text.startsWith("/")) return text;
 
-	const spaceIndex = text.indexOf(" ");
-	const templateName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
-	const argsString = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1);
+	const match = text.match(/^\/([^\s]+)(?:\s+([\s\S]*))?$/);
+	if (!match) return text;
+
+	const templateName = match[1];
+	const argsString = match[2] ?? "";
 
 	const template = templates.find((t) => t.name === templateName);
 	if (template) {

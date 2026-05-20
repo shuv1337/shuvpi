@@ -159,6 +159,13 @@ export const VERSION: string = pkg.version || "0.0.0";
 
 // e.g., PI_CODING_AGENT_DIR or TAU_CODING_AGENT_DIR
 export const ENV_AGENT_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_DIR`;
+export const ENV_SESSION_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_SESSION_DIR`;
+
+export function expandTildePath(path: string): string {
+	if (path === "~") return homedir();
+	if (path.startsWith("~/")) return homedir() + path.slice(1);
+	return path;
+}
 
 const DEFAULT_SHARE_VIEWER_URL = "https://pi.dev/session/";
 

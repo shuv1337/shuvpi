@@ -186,8 +186,8 @@ export function convertToLlm(messages: AgentMessage[]): Message[] {
 				case "toolResult":
 					return m;
 				default:
-					// biome-ignore lint/correctness/noSwitchDeclarations: fine
-					const _exhaustiveCheck: never = m;
+					// Drop unhandled message types (e.g., web-ui artifact/attachment messages
+					// not relevant to the coding-agent LLM-message transformation pipeline).
 					return undefined;
 			}
 		})

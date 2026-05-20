@@ -1,4 +1,4 @@
-import type { Api, Context, Model } from "../types.js";
+import type { Api, Context, Model } from "../types.ts";
 
 const PROXX_PROVIDER_NAME = "proxx";
 const LOG_PREFIX = "[ProxxDebug]";
@@ -73,9 +73,9 @@ function sanitizeUnknown(value: unknown, key?: string, depth = 0, seen = new Wea
 
 	if (typeof Headers !== "undefined" && value instanceof Headers) {
 		const result: Record<string, string> = {};
-		for (const [headerKey, headerValue] of value.entries()) {
+		value.forEach((headerValue, headerKey) => {
 			result[headerKey] = isSensitiveKey(headerKey) ? redactString(headerValue) : truncateString(headerValue);
-		}
+		});
 		return result;
 	}
 

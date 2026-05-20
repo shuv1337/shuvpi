@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
-import type { Config, Pod } from "./types.js";
+import type { Config, Pod } from "./types.ts";
 
 // Get config directory from env or use default
 const getConfigDir = (): string => {

@@ -8,9 +8,9 @@ import { Select } from "@mariozechner/mini-lit/dist/Select.js";
 import type { Model } from "@mariozechner/pi-ai";
 import { html, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
-import { getAppStorage } from "../storage/app-storage.js";
-import type { CustomProvider, CustomProviderType } from "../storage/stores/custom-providers-store.js";
-import { discoverModels } from "../utils/model-discovery.js";
+import { getAppStorage } from "../storage/app-storage.ts";
+import type { CustomProvider, CustomProviderType } from "../storage/stores/custom-providers-store.ts";
+import { discoverModels } from "../utils/model-discovery.ts";
 
 type DiscoveryProviderType = "ollama" | "llama.cpp" | "vllm" | "lmstudio" | "openai-completions" | "openai-responses";
 

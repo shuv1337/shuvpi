@@ -1,7 +1,7 @@
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { streamGoogleGeminiCli } from "../src/providers/google-gemini-cli.js";
-import type { Context, Model, ToolCall } from "../src/types.js";
+import { streamGoogleGeminiCli } from "../src/providers/google-gemini-cli.ts";
+import type { Context, Model, ToolCall } from "../src/types.ts";
 
 const emptySchema = Type.Object({});
 

@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, parse } from "node:path";
 import { fauxAssistantMessage, registerFauxProvider } from "@mariozechner/pi-ai";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -8,9 +8,9 @@ import {
 	createAgentSessionFromServices,
 	createAgentSessionRuntime,
 	createAgentSessionServices,
-} from "../../src/core/agent-session-runtime.js";
-import { AuthStorage } from "../../src/core/auth-storage.js";
-import { SessionManager } from "../../src/core/session-manager.js";
+} from "../../src/core/agent-session-runtime.ts";
+import { AuthStorage } from "../../src/core/auth-storage.ts";
+import { SessionManager } from "../../src/core/session-manager.ts";
 import type {
 	ExtensionAPI,
 	ExtensionFactory,
@@ -18,7 +18,7 @@ import type {
 	SessionBeforeSwitchEvent,
 	SessionShutdownEvent,
 	SessionStartEvent,
-} from "../../src/index.js";
+} from "../../src/index.ts";
 
 type RecordedSessionEvent =
 	| SessionBeforeSwitchEvent
@@ -119,6 +119,47 @@ describe("AgentSessionRuntime characterization", () => {
 
 		return { runtime, faux, tempDir };
 	}
+
+	it("persists message_end assistant replacements to the session manager", async () => {
+		const { runtime } = await createRuntimeForTest((pi: ExtensionAPI) => {
+			pi.on("message_end", (event) => {
+				if (event.message.role !== "assistant") return;
+
+				return {
+					message: {
+						...event.message,
+						usage: {
+							...event.message.usage,
+							cost: {
+								...event.message.usage.cost,
+								total: 0.123,
+							},
+						},
+					},
+				};
+			});
+		});
+
+		await runtime.session.prompt("hello");
+
+		const sessionAssistant = runtime.session.messages.find((message) => message.role === "assistant");
+		expect(sessionAssistant?.role).toBe("assistant");
+		if (sessionAssistant?.role !== "assistant") {
+			throw new Error("missing assistant message");
+		}
+		expect(sessionAssistant.usage.cost.total).toBe(0.123);
+
+		const persistedAssistant = runtime.session.sessionManager
+			.getEntries()
+			.filter((entry) => entry.type === "message")
+			.map((entry) => entry.message)
+			.find((message) => message.role === "assistant");
+		expect(persistedAssistant?.role).toBe("assistant");
+		if (persistedAssistant?.role !== "assistant") {
+			throw new Error("missing persisted assistant message");
+		}
+		expect(persistedAssistant.usage.cost.total).toBe(0.123);
+	});
 
 	it("emits session_before_switch and session_start for new and resume flows", async () => {
 		const events: RecordedSessionEvent[] = [];
@@ -233,6 +274,8 @@ describe("AgentSessionRuntime characterization", () => {
 			{ type: "session_shutdown", reason: "fork", targetSessionFile: runtime.session.sessionFile },
 			{ type: "session_start", reason: "fork", previousSessionFile },
 		]);
+		const sessionFileName = parse(runtime.session.sessionFile!).name;
+		expect(sessionFileName.endsWith(`_${runtime.session.sessionId}`)).toBe(true);
 
 		events.length = 0;
 		cancelNextFork = true;

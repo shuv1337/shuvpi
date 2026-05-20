@@ -1,8 +1,8 @@
 import chalk from "chalk";
-import { selectConfig } from "./cli/config-selector.js";
-import { APP_NAME, getAgentDir } from "./config.js";
-import { DefaultPackageManager } from "./core/package-manager.js";
-import { SettingsManager } from "./core/settings-manager.js";
+import { selectConfig } from "./cli/config-selector.ts";
+import { APP_NAME, getAgentDir } from "./config.ts";
+import { DefaultPackageManager } from "./core/package-manager.ts";
+import { SettingsManager } from "./core/settings-manager.ts";
 
 export type PackageCommand = "install" | "remove" | "update" | "list";
 
