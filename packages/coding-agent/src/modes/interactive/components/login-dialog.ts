@@ -1,4 +1,4 @@
-import { getOAuthProviders } from "@mariozechner/pi-ai/oauth";
+import { getOAuthProviders, type OAuthDeviceCodeInfo } from "@mariozechner/pi-ai/oauth";
 import { Container, type Focusable, getKeybindings, Input, Spacer, Text, type TUI } from "@mariozechner/pi-tui";
 import { exec } from "child_process";
 import { theme } from "../theme/theme.ts";
@@ -101,11 +101,36 @@ export class LoginDialogComponent extends Container implements Focusable {
 			this.contentContainer.addChild(new Text(theme.fg("warning", instructions), 1, 0));
 		}
 
-		// Try to open browser
-		const openCmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-		exec(`${openCmd} "${url}"`);
-
+		this.openUrl(url);
 		this.tui.requestRender();
+	}
+
+	/**
+	 * Called by onDeviceCode callback - show URL and user code.
+	 */
+	showDeviceCode(info: OAuthDeviceCodeInfo): void {
+		this.contentContainer.clear();
+		this.contentContainer.addChild(new Spacer(1));
+		const linkedUrl = `\x1b]8;;${info.verificationUri}\x07${info.verificationUri}\x1b]8;;\x07`;
+		this.contentContainer.addChild(new Text(theme.fg("accent", linkedUrl), 1, 0));
+
+		const clickHint = process.platform === "darwin" ? "Cmd+click to open" : "Ctrl+click to open";
+		const hyperlink = `\x1b]8;;${info.verificationUri}\x07${clickHint}\x1b]8;;\x07`;
+		this.contentContainer.addChild(new Text(theme.fg("dim", hyperlink), 1, 0));
+		this.contentContainer.addChild(new Spacer(1));
+		this.contentContainer.addChild(new Text(theme.fg("warning", `Enter code: ${info.userCode}`), 1, 0));
+
+		this.openUrl(info.verificationUri);
+		this.tui.requestRender();
+	}
+
+	private openUrl(url: string): void {
+		const openCmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+		try {
+			exec(`${openCmd} "${url}"`, () => {});
+		} catch {
+			// Ignore browser launch failures. The URL remains visible for manual opening/copying.
+		}
 	}
 
 	/**

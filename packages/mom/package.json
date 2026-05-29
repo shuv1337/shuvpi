@@ -20,9 +20,9 @@
 	},
 	"dependencies": {
 		"@anthropic-ai/sandbox-runtime": "0.0.26",
-		"@mariozechner/pi-agent-core": "0.75.4",
-		"@mariozechner/pi-ai": "0.75.4",
-		"@mariozechner/pi-coding-agent": "0.75.4",
+		"@mariozechner/pi-agent-core": "0.77.0",
+		"@mariozechner/pi-ai": "0.77.0",
+		"@mariozechner/pi-coding-agent": "0.77.0",
 		"typebox": "1.1.38",
 		"@slack/socket-mode": "2.0.7",
 		"@slack/web-api": "7.16.0",

@@ -129,8 +129,8 @@ pi [options] [@files...] [messages...]
 pi install <source> [-l]     # Install package, -l for project-local
 pi remove <source> [-l]      # Remove package
 pi uninstall <source> [-l]   # Alias for remove
-pi update [source|self|pi]   # Update pi and packages; skips pinned packages
-pi update --extensions       # Update packages only
+pi update [source|self|pi]   # Update pi and packages; reconcile pinned git refs
+pi update --extensions       # Update packages only; reconcile pinned git refs
 pi update --self             # Update pi only
 pi update --extension <src>  # Update one package
 pi list                      # List installed packages
@@ -184,6 +184,7 @@ cat README.md | pi -p "Summarize this text"
 | Option | Description |
 |--------|-------------|
 | `--tools <list>`, `-t <list>` | Allowlist specific built-in, extension, and custom tools |
+| `--exclude-tools <list>`, `-xt <list>` | Disable specific built-in, extension, and custom tools |
 | `--no-builtin-tools`, `-nbt` | Disable built-in tools but keep extension/custom tools enabled |
 | `--no-tools`, `-nt` | Disable all tools |
 
@@ -255,6 +256,9 @@ pi --models "claude-*,gpt-4o"
 
 # Read-only mode
 pi --tools read,grep,find,ls -p "Review the code"
+
+# Disable one extension or built-in tool while keeping the rest available
+pi --exclude-tools ask_question
 ```
 
 ### Environment Variables

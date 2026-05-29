@@ -66,7 +66,7 @@ export interface BedrockOptions extends StreamOptions {
 	 * - "omitted": Thinking content is redacted but the signature still travels back
 	 *   for multi-turn continuity, reducing time-to-first-text-token.
 	 *
-	 * Note: Anthropic's API default for Claude Opus 4.7 and Mythos Preview is
+	 * Note: Anthropic's API default for Claude Opus 4.8 and Mythos Preview is
 	 * "omitted". We default to "summarized" here to keep behavior consistent with
 	 * older Claude 4 models. Only applies to Claude models on Bedrock.
 	 */
@@ -183,12 +183,13 @@ export const streamBedrock: StreamFunction<"bedrock-converse-stream", BedrockOpt
 		try {
 			const client = new BedrockRuntimeClient(config);
 			const cacheRetention = resolveCacheRetention(options.cacheRetention);
+			const inferenceMaxTokens = options.maxTokens ?? (isAnthropicClaudeModel(model) ? model.maxTokens : undefined);
 			let commandInput = {
 				modelId: model.id,
 				messages: convertMessages(context, model, cacheRetention),
 				system: buildSystemPrompt(context.systemPrompt, model, cacheRetention),
 				inferenceConfig: {
-					...(options.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+					...(inferenceMaxTokens !== undefined && { maxTokens: inferenceMaxTokens }),
 					...(options.temperature !== undefined && { temperature: options.temperature }),
 				},
 				toolConfig: convertToolConfig(context.tools, options.toolChoice),

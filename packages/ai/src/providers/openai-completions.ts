@@ -161,7 +161,7 @@ export const streamOpenAICompletions: StreamFunction<"openai-completions", OpenA
 			const requestOptions = {
 				...(options?.signal ? { signal: options.signal } : {}),
 				...(options?.timeoutMs !== undefined ? { timeout: options.timeoutMs } : {}),
-				...(options?.maxRetries !== undefined ? { maxRetries: options.maxRetries } : {}),
+				maxRetries: options?.maxRetries ?? 0,
 			};
 			const { data: openaiStream, response } = await client.chat.completions
 				.create(params, requestOptions)
@@ -612,6 +612,13 @@ function buildParams(
 		togetherParams.reasoning = { enabled: !!options?.reasoningEffort };
 		if (options?.reasoningEffort && compat.supportsReasoningEffort) {
 			togetherParams.reasoning_effort = model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort;
+		}
+	} else if (compat.thinkingFormat === "string-thinking" && model.reasoning) {
+		const stringThinkingParams = params as typeof params & { thinking?: string };
+		if (options?.reasoningEffort) {
+			stringThinkingParams.thinking = model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort;
+		} else if (model.thinkingLevelMap?.off !== null) {
+			stringThinkingParams.thinking = model.thinkingLevelMap?.off ?? "none";
 		}
 	} else if (options?.reasoningEffort && model.reasoning && compat.supportsReasoningEffort) {
 		// OpenAI-style reasoning_effort
