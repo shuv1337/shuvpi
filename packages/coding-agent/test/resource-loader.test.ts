@@ -539,7 +539,7 @@ Content`,
 			writeFileSync(
 				join(ext1Dir, "index.ts"),
 				`
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
 import { Type } from "typebox";
 export default function(pi: ExtensionAPI) {
   pi.registerTool({
@@ -554,7 +554,7 @@ export default function(pi: ExtensionAPI) {
 			writeFileSync(
 				join(ext2Dir, "index.ts"),
 				`
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
 import { Type } from "typebox";
 export default function(pi: ExtensionAPI) {
   pi.registerTool({
@@ -581,7 +581,7 @@ export default function(pi: ExtensionAPI) {
 			writeFileSync(
 				join(globalExtDir, "global.ts"),
 				`
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
 import { Type } from "typebox";
 export default function(pi: ExtensionAPI) {
   pi.registerTool({
@@ -600,7 +600,7 @@ export default function(pi: ExtensionAPI) {
 			writeFileSync(
 				explicitExtPath,
 				`
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
 import { Type } from "typebox";
 export default function(pi: ExtensionAPI) {
   pi.registerTool({

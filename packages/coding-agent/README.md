@@ -5,7 +5,7 @@
 </p>
 <p align="center">
   <a href="https://discord.com/invite/3cU7Bz4UPx"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
-  <a href="https://www.npmjs.com/package/@mariozechner/pi-coding-agent"><img alt="npm" src="https://img.shields.io/npm/v/@mariozechner/pi-coding-agent?style=flat-square" /></a>
+  <a href="https://www.npmjs.com/package/@shuv1337/pi-coding-agent"><img alt="npm" src="https://img.shields.io/npm/v/@shuv1337/pi-coding-agent?style=flat-square" /></a>
 </p>
 <p align="center">
   <a href="https://pi.dev">pi.dev</a> domain graciously donated by
@@ -68,7 +68,7 @@ I regularly publish my own `pi-mono` work sessions here:
 ## Quick Start
 
 ```bash
-npm install -g --ignore-scripts @mariozechner/pi-coding-agent
+npm install -g --ignore-scripts @shuv1337/pi-coding-agent
 ```
 
 `--ignore-scripts` disables dependency lifecycle scripts during install. Pi does not require install scripts for normal npm installs.
@@ -436,7 +436,7 @@ See [docs/packages.md](docs/packages.md).
 ### SDK
 
 ```typescript
-import { AuthStorage, createAgentSession, ModelRegistry, SessionManager } from "@mariozechner/pi-coding-agent";
+import { AuthStorage, createAgentSession, ModelRegistry, SessionManager } from "@shuv1337/pi-coding-agent";
 
 const authStorage = AuthStorage.create();
 const modelRegistry = ModelRegistry.create(authStorage);
@@ -654,6 +654,6 @@ MIT
 
 ## See Also
 
-- [@mariozechner/pi-ai](https://www.npmjs.com/package/@mariozechner/pi-ai): Core LLM toolkit
-- [@mariozechner/pi-agent-core](https://www.npmjs.com/package/@mariozechner/pi-agent-core): Agent framework
-- [@mariozechner/pi-tui](https://www.npmjs.com/package/@mariozechner/pi-tui): Terminal UI components
+- [@shuv1337/pi-ai](https://www.npmjs.com/package/@shuv1337/pi-ai): Core LLM toolkit
+- [@shuv1337/pi-agent-core](https://www.npmjs.com/package/@shuv1337/pi-agent-core): Agent framework
+- [@shuv1337/pi-tui](https://www.npmjs.com/package/@shuv1337/pi-tui): Terminal UI components

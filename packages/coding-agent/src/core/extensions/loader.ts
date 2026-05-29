@@ -7,11 +7,11 @@ import * as fs from "node:fs";
 import { createRequire } from "node:module";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as _bundledPiAgentCore from "@mariozechner/pi-agent-core";
-import * as _bundledPiAi from "@mariozechner/pi-ai";
-import * as _bundledPiAiOauth from "@mariozechner/pi-ai/oauth";
-import type { KeyId } from "@mariozechner/pi-tui";
-import * as _bundledPiTui from "@mariozechner/pi-tui";
+import * as _bundledPiAgentCore from "@shuv1337/pi-agent-core";
+import * as _bundledPiAi from "@shuv1337/pi-ai";
+import * as _bundledPiAiOauth from "@shuv1337/pi-ai/oauth";
+import type { KeyId } from "@shuv1337/pi-tui";
+import * as _bundledPiTui from "@shuv1337/pi-tui";
 import { createJiti } from "jiti/static";
 // Static imports of packages that extensions may use.
 // These MUST be static so Bun bundles them into the compiled binary.
@@ -21,7 +21,7 @@ import * as _bundledTypeboxCompile from "typebox/compile";
 import * as _bundledTypeboxValue from "typebox/value";
 import { CONFIG_DIR_NAME, getAgentDir, isBunBinary } from "../../config.ts";
 // NOTE: This import works because loader.ts exports are NOT re-exported from index.ts,
-// avoiding a circular dependency. Extensions can import from @mariozechner/pi-coding-agent.
+// avoiding a circular dependency. Extensions can import from @shuv1337/pi-coding-agent.
 import * as _bundledPiCodingAgent from "../../index.ts";
 import { resolvePath } from "../../utils/paths.ts";
 import { createEventBus, type EventBus } from "../event-bus.ts";
@@ -48,11 +48,11 @@ const VIRTUAL_MODULES: Record<string, unknown> = {
 	"@sinclair/typebox": _bundledTypebox,
 	"@sinclair/typebox/compile": _bundledTypeboxCompile,
 	"@sinclair/typebox/value": _bundledTypeboxValue,
-	"@mariozechner/pi-agent-core": _bundledPiAgentCore,
-	"@mariozechner/pi-tui": _bundledPiTui,
-	"@mariozechner/pi-ai": _bundledPiAi,
-	"@mariozechner/pi-ai/oauth": _bundledPiAiOauth,
-	"@mariozechner/pi-coding-agent": _bundledPiCodingAgent,
+	"@shuv1337/pi-agent-core": _bundledPiAgentCore,
+	"@shuv1337/pi-tui": _bundledPiTui,
+	"@shuv1337/pi-ai": _bundledPiAi,
+	"@shuv1337/pi-ai/oauth": _bundledPiAiOauth,
+	"@shuv1337/pi-coding-agent": _bundledPiCodingAgent,
 };
 
 const require = createRequire(import.meta.url);
@@ -83,17 +83,17 @@ function getAliases(): Record<string, string> {
 	};
 
 	const piCodingAgentEntry = packageIndex;
-	const piAgentCoreEntry = resolveWorkspaceOrImport("agent/dist/index.js", "@mariozechner/pi-agent-core");
-	const piTuiEntry = resolveWorkspaceOrImport("tui/dist/index.js", "@mariozechner/pi-tui");
-	const piAiEntry = resolveWorkspaceOrImport("ai/dist/index.js", "@mariozechner/pi-ai");
-	const piAiOauthEntry = resolveWorkspaceOrImport("ai/dist/oauth.js", "@mariozechner/pi-ai/oauth");
+	const piAgentCoreEntry = resolveWorkspaceOrImport("agent/dist/index.js", "@shuv1337/pi-agent-core");
+	const piTuiEntry = resolveWorkspaceOrImport("tui/dist/index.js", "@shuv1337/pi-tui");
+	const piAiEntry = resolveWorkspaceOrImport("ai/dist/index.js", "@shuv1337/pi-ai");
+	const piAiOauthEntry = resolveWorkspaceOrImport("ai/dist/oauth.js", "@shuv1337/pi-ai/oauth");
 
 	_aliases = {
-		"@mariozechner/pi-coding-agent": piCodingAgentEntry,
-		"@mariozechner/pi-agent-core": piAgentCoreEntry,
-		"@mariozechner/pi-tui": piTuiEntry,
-		"@mariozechner/pi-ai": piAiEntry,
-		"@mariozechner/pi-ai/oauth": piAiOauthEntry,
+		"@shuv1337/pi-coding-agent": piCodingAgentEntry,
+		"@shuv1337/pi-agent-core": piAgentCoreEntry,
+		"@shuv1337/pi-tui": piTuiEntry,
+		"@shuv1337/pi-ai": piAiEntry,
+		"@shuv1337/pi-ai/oauth": piAiOauthEntry,
 		typebox: typeboxEntry,
 		"typebox/compile": typeboxCompileEntry,
 		"typebox/value": typeboxValueEntry,

@@ -7,7 +7,7 @@
  * Usage: /session-name [name] - set or show session name
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
 	pi.registerCommand("session-name", {

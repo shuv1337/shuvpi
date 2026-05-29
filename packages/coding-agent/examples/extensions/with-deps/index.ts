@@ -5,7 +5,7 @@
  * Requires: npm install in this directory
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
 import ms from "ms";
 import { Type } from "typebox";
 

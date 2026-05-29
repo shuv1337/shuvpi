@@ -1,5 +1,5 @@
 {
-	"name": "@mariozechner/pi-agent-core",
+	"name": "@shuv1337/pi-agent-core",
 	"version": "0.77.0",
 	"description": "General-purpose agent with transport abstraction, state management, and attachment support",
 	"type": "module",
@@ -29,7 +29,7 @@
 		"prepublishOnly": "npm run clean && npm run build"
 	},
 	"dependencies": {
-		"@mariozechner/pi-ai": "^0.77.0",
+		"@shuv1337/pi-ai": "^0.77.0",
 		"ignore": "7.0.5",
 		"typebox": "1.1.38",
 		"yaml": "2.9.0"
@@ -45,7 +45,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/earendil-works/pi-mono.git",
+		"url": "git+https://github.com/shuv1337/pi-mono.git",
 		"directory": "packages/agent"
 	},
 	"engines": {

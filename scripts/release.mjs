@@ -15,7 +15,8 @@
  * 6. Commit and tag the release
  * 7. Add new [Unreleased] section to changelogs
  * 8. Commit next-cycle changelog updates
- * 9. Push main and the tag to trigger CI publishing
+ * 9. Publish packages to npm (local; this fork has no CI publish job)
+ * 10. Push main and the tag
  */
 
 import { execSync } from "child_process";
@@ -194,10 +195,18 @@ stageChangedFiles();
 run(`git commit -m "Add [Unreleased] section for next cycle"`);
 console.log();
 
-// 9. Push
+// 9. Publish to npm (local; this fork removed .github, so there is no CI publish job).
+//    Done before pushing so a publish failure aborts the release with the tag still
+//    only local — fix the cause, re-run `npm run publish` (it skips already-published
+//    packages), then `git push origin main && git push origin v${version}`.
+console.log("Publishing packages to npm...");
+run("npm run publish");
+console.log();
+
+// 10. Push
 console.log("Pushing to remote...");
 run("git push origin main");
 run(`git push origin v${version}`);
 console.log();
 
-console.log(`=== Prepared release v${version}; CI publishing starts after the tag push ===`);
+console.log(`=== Released v${version}: published to npm and pushed main + tag v${version} ===`);

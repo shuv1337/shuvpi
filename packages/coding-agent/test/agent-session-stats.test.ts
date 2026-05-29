@@ -1,5 +1,5 @@
-import { Agent } from "@mariozechner/pi-agent-core";
-import { type AssistantMessage, getModel, type Usage } from "@mariozechner/pi-ai";
+import { Agent } from "@shuv1337/pi-agent-core";
+import { type AssistantMessage, getModel, type Usage } from "@shuv1337/pi-ai";
 import { describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";

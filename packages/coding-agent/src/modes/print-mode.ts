@@ -6,7 +6,7 @@
  * - `pi --mode json "prompt"` - JSON event stream
  */
 
-import type { AssistantMessage, ImageContent } from "@mariozechner/pi-ai";
+import type { AssistantMessage, ImageContent } from "@shuv1337/pi-ai";
 import type { AgentSessionRuntime } from "../core/agent-session-runtime.ts";
 import { flushRawStdout, writeRawStdout } from "../core/output-guard.ts";
 import { killTrackedDetachedChildren } from "../utils/shell.ts";

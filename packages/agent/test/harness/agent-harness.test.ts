@@ -1,4 +1,4 @@
-import { fauxAssistantMessage, fauxToolCall, getModel, registerFauxProvider } from "@mariozechner/pi-ai";
+import { fauxAssistantMessage, fauxToolCall, getModel, registerFauxProvider } from "@shuv1337/pi-ai";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentHarness } from "../../src/harness/agent-harness.ts";
 import { NodeExecutionEnv } from "../../src/harness/env/nodejs.ts";

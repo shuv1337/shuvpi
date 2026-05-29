@@ -1,4 +1,4 @@
-import { complete, createAssistantMessageEventStream, getModel, getProviders, Type } from "@mariozechner/pi-ai";
+import { complete, createAssistantMessageEventStream, getModel, getProviders, Type } from "@shuv1337/pi-ai";
 import {
 	Agent,
 	bashExecutionToText,
@@ -15,7 +15,7 @@ import {
 	streamProxy,
 	toError,
 	truncateHead,
-} from "@mariozechner/pi-agent-core";
+} from "@shuv1337/pi-agent-core";
 
 // Keep this entry browser-safe. It is bundled by scripts/check-browser-smoke.mjs
 // to catch accidental Node-only runtime imports in browser-facing package exports.

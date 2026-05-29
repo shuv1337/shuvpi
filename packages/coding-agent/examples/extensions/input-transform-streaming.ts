@@ -11,7 +11,7 @@
  * Start pi with this extension:
  *   pi -e ./examples/extensions/input-transform-streaming.ts
  */
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
 
 const TRIGGER = /\b(changes?|diff|modified)\b/i;
 

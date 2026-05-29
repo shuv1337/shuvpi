@@ -1,5 +1,5 @@
 {
-	"name": "@mariozechner/pi-tui",
+	"name": "@shuv1337/pi-tui",
 	"version": "0.77.0",
 	"description": "Terminal User Interface library with differential rendering for efficient text-based applications",
 	"type": "module",
@@ -29,7 +29,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/earendil-works/pi-mono.git",
+		"url": "git+https://github.com/shuv1337/pi-mono.git",
 		"directory": "packages/tui"
 	},
 	"engines": {

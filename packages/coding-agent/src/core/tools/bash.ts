@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import { access as fsAccess } from "node:fs/promises";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
-import { Container, Text, truncateToWidth } from "@mariozechner/pi-tui";
+import type { AgentTool } from "@shuv1337/pi-agent-core";
+import { Container, Text, truncateToWidth } from "@shuv1337/pi-tui";
 import { spawn } from "child_process";
 import { type Static, Type } from "typebox";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.ts";

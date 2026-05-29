@@ -11,9 +11,8 @@ import { isLegacyEnvVarNameConfigValue } from "./core/resolve-config-value.ts";
 import { stripJsonComments } from "./utils/json.ts";
 
 const MIGRATION_GUIDE_URL =
-	"https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/CHANGELOG.md#extensions-migration";
-const EXTENSIONS_DOC_URL =
-	"https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/docs/extensions.md";
+	"https://github.com/shuv1337/pi-mono/blob/main/packages/coding-agent/CHANGELOG.md#extensions-migration";
+const EXTENSIONS_DOC_URL = "https://github.com/shuv1337/pi-mono/blob/main/packages/coding-agent/docs/extensions.md";
 
 /**
  * Migrate legacy oauth.json and settings.json apiKeys to auth.json.

@@ -1,4 +1,4 @@
-import type { Component } from "@mariozechner/pi-tui";
+import type { Component } from "@shuv1337/pi-tui";
 import { readFileSync } from "fs";
 import { describe, expect, it } from "vitest";
 import { ansiLinesToHtml } from "../src/core/export-html/ansi-to-html.ts";

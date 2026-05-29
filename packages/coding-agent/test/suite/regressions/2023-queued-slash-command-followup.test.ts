@@ -1,6 +1,6 @@
-import type { AgentTool } from "@mariozechner/pi-agent-core";
-import { fauxAssistantMessage, fauxToolCall } from "@mariozechner/pi-ai";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { AgentTool } from "@shuv1337/pi-agent-core";
+import { fauxAssistantMessage, fauxToolCall } from "@shuv1337/pi-ai";
+import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import { createHarness, getAssistantTexts, getUserTexts, type Harness } from "../harness.ts";

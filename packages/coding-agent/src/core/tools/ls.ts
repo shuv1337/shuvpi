@@ -1,6 +1,6 @@
 import { readdir as fsReaddir, stat as fsStat } from "node:fs/promises";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
-import { Text } from "@mariozechner/pi-tui";
+import type { AgentTool } from "@shuv1337/pi-agent-core";
+import { Text } from "@shuv1337/pi-tui";
 import nodePath from "path";
 import { type Static, Type } from "typebox";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.ts";

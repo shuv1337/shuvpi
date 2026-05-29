@@ -5,7 +5,7 @@ import type {
 	ToolCall,
 	ToolResultMessage as ToolResultMessageType,
 	UserMessage as UserMessageType,
-} from "@mariozechner/pi-ai";
+} from "@shuv1337/pi-ai";
 import { html, LitElement, type TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { renderTool } from "../tools/index.ts";
@@ -13,7 +13,7 @@ import type { Attachment } from "../utils/attachment-utils.ts";
 import { formatUsage } from "../utils/format.ts";
 import { i18n } from "../utils/i18n.ts";
 import "./ThinkingBlock.ts";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
+import type { AgentTool } from "@shuv1337/pi-agent-core";
 
 export type UserMessageWithAttachments = {
 	role: "user-with-attachments";
@@ -32,7 +32,7 @@ export interface ArtifactMessage {
 	timestamp: string;
 }
 
-declare module "@mariozechner/pi-agent-core" {
+declare module "@shuv1337/pi-agent-core" {
 	interface CustomAgentMessages {
 		"user-with-attachments": UserMessageWithAttachments;
 		artifact: ArtifactMessage;
@@ -296,8 +296,8 @@ export class AbortedMessage extends LitElement {
 // Default Message Transformer
 // ============================================================================
 
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { Message } from "@mariozechner/pi-ai";
+import type { AgentMessage } from "@shuv1337/pi-agent-core";
+import type { Message } from "@shuv1337/pi-ai";
 
 /**
  * Convert attachments to content blocks for LLM.

@@ -20,7 +20,7 @@ import {
 	type Model,
 	type SimpleStreamOptions,
 	Type,
-} from "@mariozechner/pi-ai";
+} from "@shuv1337/pi-ai";
 import {
 	getOpenAICodexWebSocketDebugStats,
 	streamSimpleOpenAICodexResponses,

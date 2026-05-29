@@ -15,15 +15,8 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
-import type {
-	Agent,
-	AgentEvent,
-	AgentMessage,
-	AgentState,
-	AgentTool,
-	ThinkingLevel,
-} from "@mariozechner/pi-agent-core";
-import type { AssistantMessage, ImageContent, Message, Model, TextContent } from "@mariozechner/pi-ai";
+import type { Agent, AgentEvent, AgentMessage, AgentState, AgentTool, ThinkingLevel } from "@shuv1337/pi-agent-core";
+import type { AssistantMessage, ImageContent, Message, Model, TextContent } from "@shuv1337/pi-ai";
 import {
 	clampThinkingLevel,
 	cleanupSessionResources,
@@ -32,7 +25,7 @@ import {
 	modelsAreEqual,
 	resetApiProviders,
 	streamSimple,
-} from "@mariozechner/pi-ai";
+} from "@shuv1337/pi-ai";
 import { theme } from "../modes/interactive/theme/theme.ts";
 import { stripFrontmatter } from "../utils/frontmatter.ts";
 import { resolvePath } from "../utils/paths.ts";
