@@ -332,7 +332,7 @@ By default pi sends per-tool `eager_input_streaming: true`. If a proxy or Anthro
       },
       "models": [
         {
-          "id": "claude-opus-4-7",
+          "id": "claude-opus-4-8",
           "reasoning": true,
           "input": ["text", "image"]
         }

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Changed the default model for the Anthropic and Amazon Bedrock providers to Claude Opus 4.8 (`claude-opus-4-8` and `us.anthropic.claude-opus-4-8`).
+
 ## [0.75.4] - 2026-05-20
 
 ### New Features

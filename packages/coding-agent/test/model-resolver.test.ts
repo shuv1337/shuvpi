@@ -385,8 +385,8 @@ describe("default model selection", () => {
 		expect(defaultModelPerProvider.cerebras).toBe("zai-glm-4.7");
 	});
 
-	test("ai-gateway default is opus 4.7", () => {
-		expect(defaultModelPerProvider["vercel-ai-gateway"]).toBe("anthropic/claude-opus-4.7");
+	test("ai-gateway default is opus 4.8", () => {
+		expect(defaultModelPerProvider["vercel-ai-gateway"]).toBe("anthropic/claude-opus-4.8");
 	});
 
 	test("findInitialModel accepts explicit provider custom model ids", async () => {
@@ -408,8 +408,8 @@ describe("default model selection", () => {
 
 	test("findInitialModel selects ai-gateway default when available", async () => {
 		const aiGatewayModel: Model<"anthropic-messages"> = {
-			id: "anthropic/claude-opus-4.7",
-			name: "Claude Opus 4.7",
+			id: "anthropic/claude-opus-4.8",
+			name: "Claude Opus 4.8",
 			api: "anthropic-messages",
 			provider: "vercel-ai-gateway",
 			baseUrl: "https://ai-gateway.vercel.sh",
@@ -431,6 +431,6 @@ describe("default model selection", () => {
 		});
 
 		expect(result.model?.provider).toBe("vercel-ai-gateway");
-		expect(result.model?.id).toBe("anthropic/claude-opus-4.7");
+		expect(result.model?.id).toBe("anthropic/claude-opus-4.8");
 	});
 });
