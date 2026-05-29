@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added Claude Opus 4.8 (`claude-opus-4-8`) on the Anthropic Messages API and the corresponding Bedrock cross-region inference profiles (`us.`, `eu.`, `global.`, `jp.`, `au.`, and the bare `anthropic.claude-opus-4-8`). Pricing, 1M context window, 128k max output, adaptive thinking with `xhigh` effort, and bedrock cache pricing all match Opus 4.7. The Anthropic and Bedrock providers now recognise Opus 4.8 for adaptive thinking and native `xhigh` effort.
+- Added a new `SystemMessage` (`role: "system"`) variant to the `Message` union for mid-conversation system messages. The Anthropic provider forwards these as `role: "system"` `MessageParam` blocks (Claude Opus 4.8+); every other provider's message converter silently drops them via `transformMessages`.
+- Added `AnthropicOptions.speed` (`"default" | "fast"`) to opt in to the Claude Opus 4.8 fast mode research preview. The value is forwarded as `speed` in the Messages API request payload.
+- Added structured `AssistantMessage.stopDetails` (currently `{ type: "refusal"; category; explanation }`). The Anthropic provider populates this from the `message_delta.stop_details` event so callers can distinguish refusal categories (Claude Opus 4.7+) from other error stops.
+
 ## [0.75.4] - 2026-05-20
 
 ### Changed

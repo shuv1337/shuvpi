@@ -270,9 +270,38 @@ export interface Usage {
 
 export type StopReason = "stop" | "length" | "toolUse" | "error" | "aborted";
 
+/**
+ * Structured details about why generation stopped. Currently used to surface
+ * Anthropic refusal categories (Claude Opus 4.7+) on responses where
+ * `stopReason === "error"`. Providers that do not emit structured stop
+ * details leave this undefined.
+ */
+export type StopDetails = {
+	type: "refusal";
+	/** Provider-specified refusal category (e.g. "cyber", "bio"). Null when no category is reported. */
+	category: string | null;
+	/** Optional human-readable explanation of the refusal. Not guaranteed to be stable across versions. */
+	explanation?: string | null;
+};
+
 export interface UserMessage {
 	role: "user";
 	content: string | (TextContent | ImageContent)[];
+	timestamp: number; // Unix timestamp in milliseconds
+}
+
+/**
+ * Mid-conversation system message. Used to append updated instructions to a
+ * long-running conversation without restating the full system prompt.
+ *
+ * Currently honoured by the Anthropic Messages API on Claude Opus 4.8 and
+ * newer, where `role: "system"` is accepted immediately after a user turn.
+ * Providers that do not support mid-conversation system messages silently
+ * drop these entries during message conversion.
+ */
+export interface SystemMessage {
+	role: "system";
+	content: string | TextContent[];
 	timestamp: number; // Unix timestamp in milliseconds
 }
 
@@ -287,6 +316,11 @@ export interface AssistantMessage {
 	diagnostics?: AssistantMessageDiagnostic[]; // Redacted provider/runtime diagnostics for failures and recoveries.
 	usage: Usage;
 	stopReason: StopReason;
+	/**
+	 * Structured details about why generation stopped. Currently populated by the
+	 * Anthropic provider for refusals on Claude Opus 4.7+.
+	 */
+	stopDetails?: StopDetails;
 	errorMessage?: string;
 	timestamp: number; // Unix timestamp in milliseconds
 }
@@ -301,7 +335,7 @@ export interface ToolResultMessage<TDetails = any> {
 	timestamp: number; // Unix timestamp in milliseconds
 }
 
-export type Message = UserMessage | AssistantMessage | ToolResultMessage;
+export type Message = UserMessage | AssistantMessage | ToolResultMessage | SystemMessage;
 
 export type ImagesInputContent = TextContent | ImageContent;
 export type ImagesOutputContent = TextContent | ImageContent;

@@ -68,7 +68,13 @@ export function transformMessages<TApi extends Api>(
 ): Message[] {
 	// Build a map of original tool call IDs to normalized IDs
 	const toolCallIdMap = new Map<string, string>();
-	const imageAwareMessages = downgradeUnsupportedImages(messages, model);
+	// Mid-conversation system messages are currently only honoured by the
+	// Anthropic Messages API (Claude Opus 4.8+). For every other provider,
+	// silently drop them here so the downstream converters never have to
+	// reason about the role.
+	const systemAwareMessages: Message[] =
+		model.api === "anthropic-messages" ? messages : messages.filter((m) => m.role !== "system");
+	const imageAwareMessages = downgradeUnsupportedImages(systemAwareMessages, model);
 
 	// First pass: transform messages (unsupported image downgrade, thinking blocks, tool call ID normalization)
 	const transformed = imageAwareMessages.map((msg) => {

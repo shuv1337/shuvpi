@@ -214,6 +214,13 @@ export interface AnthropicOptions extends StreamOptions {
 	 */
 	thinkingDisplay?: AnthropicThinkingDisplay;
 	interleavedThinking?: boolean;
+	/**
+	 * Fast mode (Claude Opus 4.8 research preview).
+	 * Set to `"fast"` to opt in to higher output tokens-per-second at premium pricing.
+	 * Set to `"default"` or omit to use standard inference speed.
+	 * Providers/models that do not support `speed` will reject this field.
+	 */
+	speed?: "default" | "fast";
 	toolChoice?: "auto" | "any" | "none" | { type: "tool"; name: string };
 	/**
 	 * Pre-built Anthropic client instance. When provided, skips internal client
@@ -639,6 +646,18 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 					if (event.delta.stop_reason) {
 						output.stopReason = mapStopReason(event.delta.stop_reason);
 					}
+					// Surface structured refusal details (Claude Opus 4.7+) so callers can
+					// distinguish refusal categories from other error stops.
+					const stopDetails = (
+						event.delta as { stop_details?: { category?: string | null; explanation?: string | null } | null }
+					).stop_details;
+					if (stopDetails) {
+						output.stopDetails = {
+							type: "refusal",
+							category: stopDetails.category ?? null,
+							explanation: stopDetails.explanation ?? null,
+						};
+					}
 					// Only update usage fields if present (not null).
 					// Preserves input_tokens from message_start when proxies omit it in message_delta.
 					if (event.usage.input_tokens != null) {
@@ -696,6 +715,8 @@ function supportsAdaptiveThinking(modelId: string): boolean {
 		modelId.includes("opus-4.6") ||
 		modelId.includes("opus-4-7") ||
 		modelId.includes("opus-4.7") ||
+		modelId.includes("opus-4-8") ||
+		modelId.includes("opus-4.8") ||
 		modelId.includes("sonnet-4-6") ||
 		modelId.includes("sonnet-4.6")
 	);
@@ -929,6 +950,12 @@ function buildParams(
 		params.temperature = options.temperature;
 	}
 
+	// Fast mode (Claude Opus 4.8+ research preview). The SDK types do not yet
+	// expose `speed`, so attach it as an extra param after the fact.
+	if (options?.speed) {
+		(params as unknown as { speed: "default" | "fast" }).speed = options.speed;
+	}
+
 	if (context.tools && context.tools.length > 0) {
 		const compat = getAnthropicCompat(model);
 		params.tools = convertTools(
@@ -1095,6 +1122,21 @@ function convertMessages(
 				role: "assistant",
 				content: blocks,
 			});
+		} else if (msg.role === "system") {
+			// Mid-conversation system message (Claude Opus 4.8+). Per Anthropic's
+			// placement rules these are only valid immediately after a user turn;
+			// we forward as-is and let the API enforce placement.
+			const blocks: ContentBlockParam[] =
+				typeof msg.content === "string"
+					? [{ type: "text", text: sanitizeSurrogates(msg.content) }]
+					: msg.content.map((item) => ({
+							type: "text",
+							text: sanitizeSurrogates(item.text),
+						}));
+			const filtered = blocks.filter((b) => b.type !== "text" || b.text.trim().length > 0);
+			if (filtered.length === 0) continue;
+			// The SDK MessageParam type does not yet include `role: "system"`, so cast.
+			params.push({ role: "system", content: filtered } as unknown as MessageParam);
 		} else if (msg.role === "toolResult") {
 			// Collect all consecutive toolResult messages, needed for z.ai Anthropic endpoint
 			const toolResults: ContentBlockParam[] = [];

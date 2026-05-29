@@ -172,6 +172,11 @@ function messageToText(message: Message): string {
 	if (message.role === "assistant") {
 		return assistantContentToText(message.content);
 	}
+	if (message.role === "system") {
+		return typeof message.content === "string"
+			? message.content
+			: message.content.map((part) => part.text).join("\n");
+	}
 	return toolResultToText(message);
 }
 

@@ -540,6 +540,12 @@ function toChatMessages(messages: Message[], supportsImages: boolean): ChatCompl
 			continue;
 		}
 
+		if (msg.role === "system") {
+			// Mid-conversation system messages are Anthropic-only; transformMessages
+			// already filters them out for other providers, but guard here too.
+			continue;
+		}
+
 		const toolContent: ContentChunk[] = [];
 		const textResult = msg.content
 			.filter((part) => part.type === "text")
