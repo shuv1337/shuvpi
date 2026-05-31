@@ -619,8 +619,19 @@ function convertMessages(
 	const result: Message[] = [];
 	const transformedMessages = transformMessages(context.messages, model, normalizeToolCallId);
 
+	// Bedrock (like the Anthropic Messages API) only needs the thinking blocks from
+	// the most recent assistant turn. Adaptive thinking models (Opus 4.8+) can emit a
+	// trailing thinking block after their tool calls; replaying that block once the
+	// turn is no longer the latest assistant message trips an extended-thinking
+	// validation error. Strip thinking from every assistant turn except the last.
+	let lastAssistantIndex = -1;
+	for (let i = 0; i < transformedMessages.length; i++) {
+		if (transformedMessages[i].role === "assistant") lastAssistantIndex = i;
+	}
+
 	for (let i = 0; i < transformedMessages.length; i++) {
 		const m = transformedMessages[i];
+		const stripThinking = m.role === "assistant" && i !== lastAssistantIndex;
 
 		switch (m.role) {
 			case "user": {
@@ -668,6 +679,8 @@ function convertMessages(
 							});
 							break;
 						case "thinking":
+							// Only the latest assistant turn's thinking is replayed (see above).
+							if (stripThinking) continue;
 							// Skip empty thinking blocks
 							if (c.thinking.trim().length === 0) continue;
 							// Only Anthropic models support the signature field in reasoningText.

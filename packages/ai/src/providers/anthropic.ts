@@ -1040,8 +1040,22 @@ function convertMessages(
 	// Transform messages for cross-provider compatibility
 	const transformedMessages = transformMessages(messages, model, normalizeToolCallId);
 
+	// Anthropic only validates (and only needs) the thinking blocks in the most
+	// recent assistant turn. Adaptive thinking models (Opus 4.8+) can emit a
+	// trailing thinking block AFTER their tool calls; once such a turn is no
+	// longer the latest assistant message, replaying its thinking trips the API's
+	// "thinking blocks in the latest assistant message cannot be modified" 400 and
+	// bricks the whole conversation. Strip thinking from every assistant turn
+	// except the last one — this matches Anthropic's documented guidance and saves
+	// input tokens, while preserving the latest turn's blocks for replay continuity.
+	let lastAssistantIndex = -1;
+	for (let i = 0; i < transformedMessages.length; i++) {
+		if (transformedMessages[i].role === "assistant") lastAssistantIndex = i;
+	}
+
 	for (let i = 0; i < transformedMessages.length; i++) {
 		const msg = transformedMessages[i];
+		const stripThinking = msg.role === "assistant" && i !== lastAssistantIndex;
 
 		if (msg.role === "user") {
 			if (typeof msg.content === "string") {
@@ -1092,6 +1106,8 @@ function convertMessages(
 						text: sanitizeSurrogates(block.text),
 					});
 				} else if (block.type === "thinking") {
+					// Only the latest assistant turn's thinking is replayed (see above).
+					if (stripThinking) continue;
 					// Redacted thinking: pass the opaque payload back as redacted_thinking
 					if (block.redacted) {
 						blocks.push({

@@ -9,6 +9,10 @@
 - Added `AnthropicOptions.speed` (`"default" | "fast"`) to opt in to the Claude Opus 4.8 fast mode research preview. The value is forwarded as `speed` in the Messages API request payload.
 - Added structured `AssistantMessage.stopDetails` (currently `{ type: "refusal"; category; explanation }`). The Anthropic provider populates this from the `message_delta.stop_details` event so callers can distinguish refusal categories (Claude Opus 4.7+) from other error stops.
 
+### Fixed
+
+- Fixed a `400 invalid_request_error` ("`thinking` blocks in the latest assistant message cannot be modified") that permanently bricked Anthropic and Bedrock sessions with adaptive thinking models (Claude Opus 4.8+). These models can emit a trailing `thinking` block after their tool calls; replaying that block once the turn was no longer the most recent assistant message tripped the API's extended-thinking validation, and every subsequent request (including retries) hit the same error. The Anthropic and Bedrock message converters now strip thinking blocks from all but the most recent assistant turn, matching Anthropic's documented guidance and reducing input tokens.
+
 ## [0.77.0] - 2026-05-28
 
 ### Added
