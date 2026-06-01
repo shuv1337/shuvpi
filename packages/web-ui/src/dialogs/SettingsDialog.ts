@@ -158,7 +158,7 @@ export class SettingsDialog extends LitElement {
 
 	private renderMobileTabPicker(): TemplateResult {
 		return html`
-			<label class="flex flex-col gap-2 pb-4 md:hidden">
+			<label class="settings-dialog-picker flex flex-col gap-2 pb-4">
 				<span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">${i18n("Category")}</span>
 				<select
 					class="h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20"
@@ -194,7 +194,38 @@ export class SettingsDialog extends LitElement {
 				${DialogContent({
 					className: "h-full p-6",
 					children: html`
-						<div class="flex flex-col h-full overflow-hidden">
+						<style>
+							.settings-dialog-shell {
+								container-type: inline-size;
+							}
+
+							.settings-dialog-picker {
+								display: flex;
+							}
+
+							.settings-dialog-nav {
+								display: none;
+							}
+
+							.settings-dialog-content {
+								padding-left: 0;
+							}
+
+							@container (min-width: 720px) {
+								.settings-dialog-picker {
+									display: none;
+								}
+
+								.settings-dialog-nav {
+									display: block;
+								}
+
+								.settings-dialog-content {
+									padding-left: 1.5rem;
+								}
+							}
+						</style>
+						<div class="settings-dialog-shell flex flex-col h-full overflow-hidden">
 							<!-- Header -->
 							<div class="pb-4 flex-shrink-0">${DialogHeader({ title: i18n("Settings") })}</div>
 
@@ -203,13 +234,13 @@ export class SettingsDialog extends LitElement {
 
 							<!-- Layout -->
 							<div class="flex flex-1 overflow-hidden">
-								<!-- Sidebar (desktop only) -->
-								<div class="hidden md:block w-64 flex-shrink-0 space-y-1">
+								<!-- Sidebar (wide dialog only) -->
+								<div class="settings-dialog-nav w-64 flex-shrink-0 space-y-1">
 									${this.tabs.map((tab, index) => this.renderSidebarItem(tab, index))}
 								</div>
 
 								<!-- Content -->
-								<div class="flex-1 overflow-y-auto md:pl-6">
+								<div class="settings-dialog-content flex-1 overflow-y-auto">
 									${this.tabs.map(
 										(tab, index) =>
 											html`<div style="display: ${this.activeTabIndex === index ? "block" : "none"}">${tab}</div>`,
