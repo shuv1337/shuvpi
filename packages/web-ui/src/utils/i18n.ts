@@ -133,6 +133,7 @@ declare module "@mariozechner/mini-lit" {
 		"No logs for {filename}": string;
 		"API Keys Settings": string;
 		Settings: string;
+		Category: string;
 		"API Keys": string;
 		Proxy: string;
 		"Use CORS Proxy": string;
@@ -343,6 +344,7 @@ export const translations = {
 		"No logs for {filename}": "No logs for {filename}",
 		"API Keys Settings": "API Keys Settings",
 		Settings: "Settings",
+		Category: "Category",
 		"API Keys": "API Keys",
 		Proxy: "Proxy",
 		"Use CORS Proxy": "Use CORS Proxy",
@@ -562,6 +564,7 @@ export const translations = {
 		"No logs for {filename}": "Keine Logs für {filename}",
 		"API Keys Settings": "API-Schlüssel Einstellungen",
 		Settings: "Einstellungen",
+		Category: "Kategorie",
 		"API Keys": "API-Schlüssel",
 		Proxy: "Proxy",
 		"Use CORS Proxy": "CORS-Proxy verwenden",

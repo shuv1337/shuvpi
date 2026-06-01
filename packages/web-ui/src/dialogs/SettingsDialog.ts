@@ -136,6 +136,10 @@ export class SettingsDialog extends LitElement {
 		this.activeTabIndex = index;
 	}
 
+	private onTabSelect(event: Event) {
+		this.setActiveTab(Number((event.target as HTMLSelectElement).value));
+	}
+
 	private renderSidebarItem(tab: SettingsTab, index: number): TemplateResult {
 		const isActive = this.activeTabIndex === index;
 		return html`
@@ -152,17 +156,22 @@ export class SettingsDialog extends LitElement {
 		`;
 	}
 
-	private renderMobileTab(tab: SettingsTab, index: number): TemplateResult {
-		const isActive = this.activeTabIndex === index;
+	private renderMobileTabPicker(): TemplateResult {
 		return html`
-			<button
-				class="px-3 py-2 text-sm font-medium transition-colors ${
-					isActive ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
-				}"
-				@click=${() => this.setActiveTab(index)}
-			>
-				${tab.getTabName()}
-			</button>
+			<label class="flex flex-col gap-2 pb-4 md:hidden">
+				<span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">${i18n("Category")}</span>
+				<select
+					class="h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20"
+					.value=${String(this.activeTabIndex)}
+					@change=${this.onTabSelect}
+				>
+					${this.tabs.map(
+						(tab, index) => html`<option value=${String(index)} ?selected=${this.activeTabIndex === index}>
+							${tab.getTabName()}
+						</option>`,
+					)}
+				</select>
+			</label>
 		`;
 	}
 
@@ -189,10 +198,8 @@ export class SettingsDialog extends LitElement {
 							<!-- Header -->
 							<div class="pb-4 flex-shrink-0">${DialogHeader({ title: i18n("Settings") })}</div>
 
-							<!-- Mobile Tabs -->
-							<div class="md:hidden flex flex-shrink-0 pb-4">
-								${this.tabs.map((tab, index) => this.renderMobileTab(tab, index))}
-							</div>
+							<!-- Mobile category selector -->
+							${this.renderMobileTabPicker()}
 
 							<!-- Layout -->
 							<div class="flex flex-1 overflow-hidden">
