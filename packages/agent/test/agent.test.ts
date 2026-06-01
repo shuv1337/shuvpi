@@ -491,4 +491,35 @@ describe("Agent", () => {
 		await agent.prompt("hello again");
 		expect(receivedSessionId).toBe("session-def");
 	});
+
+	it("forwards shouldStopAfterTurn from AgentOptions", async () => {
+		let responseCount = 0;
+		let shouldStopCallCount = 0;
+		const agent = new Agent({
+			shouldStopAfterTurn: () => {
+				shouldStopCallCount++;
+				return true;
+			},
+			streamFn: () => {
+				responseCount++;
+				const stream = new MockAssistantStream();
+				queueMicrotask(() => {
+					stream.push({ type: "done", reason: "stop", message: createAssistantMessage("ok") });
+				});
+				return stream;
+			},
+		});
+
+		agent.followUp({
+			role: "user",
+			content: [{ type: "text", text: "queued follow-up" }],
+			timestamp: Date.now(),
+		});
+
+		await agent.prompt("hello");
+
+		expect(shouldStopCallCount).toBe(1);
+		expect(responseCount).toBe(1);
+		expect(agent.state.messages.map((message) => message.role)).toEqual(["user", "assistant"]);
+	});
 });
