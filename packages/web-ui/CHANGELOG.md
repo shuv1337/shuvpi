@@ -12,7 +12,7 @@
 
 ### Fixed
 
-- Settings dialog categories now collapse to a full-width selector in narrow layouts instead of overflowing as horizontal tabs.
+- Settings dialog categories now stay collapsed to a full-width selector in sidebar-width layouts instead of overflowing as horizontal tabs.
 - Model selector now merges discovered and stored custom-provider catalogs so saved `proxx` models remain visible even when discovery returns a partial list
 - AgentInterface now defers provider credential checks to the host app so custom providers with non-standard key storage do not trigger false API-key prompts before send
 - Model selector no longer lets auto-discovery overwrite stored custom-provider model definitions, preserving app-supplied API compatibility metadata for gateways like `proxx`

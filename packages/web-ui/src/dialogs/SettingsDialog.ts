@@ -211,7 +211,7 @@ export class SettingsDialog extends LitElement {
 								padding-left: 0;
 							}
 
-							@container (min-width: 720px) {
+							@container (min-width: 900px) {
 								.settings-dialog-picker {
 									display: none;
 								}
