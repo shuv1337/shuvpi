@@ -1504,6 +1504,54 @@ async function generateModels() {
 		});
 	}
 
+	// Add missing OpenRouter Gemini 2.0 Flash until OpenRouter lists it again.
+	if (!allModels.some((m) => m.provider === "openrouter" && m.id === "google/gemini-2.0-flash-001")) {
+		allModels.push({
+			id: "google/gemini-2.0-flash-001",
+			name: "Google: Gemini 2.0 Flash",
+			api: "openai-completions",
+			baseUrl: "https://openrouter.ai/api/v1",
+			provider: "openrouter",
+			reasoning: false,
+			input: ["text", "image"],
+			cost: {
+				input: 0.09999999999999999,
+				output: 0.39999999999999997,
+				cacheRead: 0.024999999999999998,
+				cacheWrite: 0.08333333333333334,
+			},
+			contextWindow: 1048576,
+			maxTokens: 8192,
+		});
+	}
+
+	// Add missing GitHub Copilot GPT-4o until models.dev includes it again.
+	if (!allModels.some((m) => m.provider === "github-copilot" && m.id === "gpt-4o")) {
+		allModels.push({
+			id: "gpt-4o",
+			name: "GPT-4o",
+			api: "openai-completions",
+			baseUrl: "https://api.individual.githubcopilot.com",
+			provider: "github-copilot",
+			headers: { ...COPILOT_STATIC_HEADERS },
+			compat: {
+				supportsStore: false,
+				supportsDeveloperRole: false,
+				supportsReasoningEffort: false,
+			},
+			reasoning: false,
+			input: ["text", "image"],
+			cost: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+			},
+			contextWindow: 128000,
+			maxTokens: 4096,
+		});
+	}
+
 	// Add missing GitHub Copilot GPT-5.3 models until models.dev includes them.
 	const copilotBaseModel = allModels.find(
 		(m) => m.provider === "github-copilot" && m.id === "gpt-5.2-codex",
