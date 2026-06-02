@@ -6,6 +6,8 @@
 
 - Added `shouldStopAfterTurn` to `AgentOptions` so `Agent` can forward graceful turn-stop hooks to the low-level agent loop.
 
+## [0.78.0] - 2026-05-29
+
 ## [0.77.0] - 2026-05-28
 
 ### Breaking Changes
