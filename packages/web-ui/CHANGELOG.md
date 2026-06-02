@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.78.0] - 2026-06-02
+
 ### Added
 
 - OpenAI-compatible custom provider discovery via `/v1/models`, including custom gateway flows like `proxx`
@@ -9,6 +11,7 @@
 ### Changed
 
 - OpenAI-compatible custom providers now support model discovery, refresh, and saved discovered model catalogs in the provider dialog
+- Bumped `@shuv1337/pi-ai` and `@shuv1337/pi-tui` dependencies to 0.78.0
 
 ### Fixed
 
