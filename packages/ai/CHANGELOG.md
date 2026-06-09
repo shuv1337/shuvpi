@@ -1,6 +1,19 @@
 # Changelog
 
-## [Unreleased]
+## [0.79.0] - 2026-06-08
+
+### Fixed
+
+- Fixed OpenAI Responses custom providers to honor `compat.supportsDeveloperRole: false` for reasoning models ([#5456](https://github.com/earendil-works/pi/issues/5456)).
+- Fixed OpenRouter routing preferences on OpenAI-compatible custom providers to send `compat.openRouterRouting` even when `baseUrl` does not point directly at OpenRouter ([#5347](https://github.com/earendil-works/pi/issues/5347)).
+
+## [0.78.1] - 2026-06-04
+
+### Added
+
+- Added Ant Ling as a built-in OpenAI-compatible provider with Ling 2.6 and Ring 2.6 models.
+- Added MiniMax-M3 model to the `minimax` and `minimax-cn` direct providers, and removed the hardcoded context-window override that was masking models.dev values ([#5313](https://github.com/earendil-works/pi/issues/5313)).
+- Added NVIDIA NIM as a built-in OpenAI-compatible provider, exposing public NIM models that support tool use.
 
 ### Added
 
@@ -13,7 +26,11 @@
 
 - Fixed a `400 invalid_request_error` ("`thinking` blocks in the latest assistant message cannot be modified") that permanently bricked Anthropic and Bedrock sessions with adaptive thinking models (Claude Opus 4.8+). These models can emit a trailing `thinking` block after their tool calls; replaying that block once the turn was no longer the most recent assistant message tripped the API's extended-thinking validation, and every subsequent request (including retries) hit the same error. The Anthropic and Bedrock message converters now strip thinking blocks from all but the most recent assistant turn, matching Anthropic's documented guidance and reducing input tokens.
 - Fixed Amazon Bedrock requests to replace blank required user/tool-result text with a placeholder and skip blank replay text blocks ([#4975](https://github.com/earendil-works/pi/issues/4975)).
+- Fixed Anthropic Claude Opus 4.7+ requests to suppress deprecated temperature parameters ([#5251](https://github.com/earendil-works/pi/pull/5251) by [@yzhg1983](https://github.com/yzhg1983)).
 - Fixed OpenAI GPT-5.5 generated metadata to omit unsupported minimal thinking ([#5243](https://github.com/earendil-works/pi/issues/5243)).
+- Fixed OpenRouter Kimi K2.6 thinking replay and preserved developer-role instructions for OpenRouter OpenAI and Anthropic models ([#5309](https://github.com/earendil-works/pi/issues/5309)).
+- Fixed OpenRouter reasoning instruction requests to preserve the system role when required ([#5221](https://github.com/earendil-works/pi/pull/5221) by [@PriNova](https://github.com/PriNova)).
+- Restored the NVIDIA Qwen 3.5 122B NIM model.
 
 ## [0.78.0] - 2026-05-29
 

@@ -109,7 +109,7 @@ pi -e ./my-extension.ts
 
 > **Security:** Extensions run with your full system permissions and can execute arbitrary code. Only install from sources you trust.
 
-Extensions are auto-discovered from:
+Extensions are auto-discovered from trusted locations. Project-local `.pi/extensions` entries load only after the project is trusted.
 
 | Location | Scope |
 |----------|-------|
@@ -270,6 +270,7 @@ Run `npm install` in the extension directory, then imports from `node_modules/` 
 ```
 pi starts
   │
+  ├─► project_trust (user/global and CLI extensions only, before project resources load)
   ├─► session_start { reason: "startup" }
   └─► resources_discover { reason: "startup" }
       │
@@ -333,6 +334,25 @@ thinking level changes (settings, keybinding, pi.setThinkingLevel())
 exit (Ctrl+C, Ctrl+D, SIGHUP, SIGTERM)
   └─► session_shutdown
 ```
+
+### Startup Events
+
+#### project_trust
+
+Fired before pi decides whether to trust a project with trust inputs (`.pi`, `AGENTS.md`/`CLAUDE.md`, or `.agents/skills`). It runs during startup and when session replacement (for example `/resume`) enters a cwd whose trust has not been resolved in the current process. Only user/global extensions and CLI `-e` extensions participate; project-local extensions are not loaded until after trust is resolved.
+
+```typescript
+pi.on("project_trust", async (event, ctx) => {
+  // event.cwd - current working directory
+  // ctx has a limited trust context: cwd, mode, hasUI, and select/confirm/input/notify UI helpers
+  if (await ctx.ui.confirm("Trust project?", event.cwd)) {
+    return { trusted: "yes", remember: true };
+  }
+  return { trusted: "undecided" };
+});
+```
+
+A `project_trust` handler must return `{ trusted: "yes" | "no" | "undecided" }`. A user/global or CLI extension that returns `"yes"` or `"no"` owns the decision; the first yes/no decision wins and suppresses the built-in trust prompt. Use `remember: true` to persist a yes/no decision; otherwise it applies only to the current process. Return `"undecided"` to let later handlers or the built-in trust flow decide. Check `ctx.hasUI` before prompting. If no handler returns yes/no, normal trust resolution continues, including the built-in trust prompt when UI is available.
 
 ### Resource Events
 
@@ -981,6 +1001,19 @@ pi.on("before_agent_start", (event, ctx) => {
 ## ExtensionCommandContext
 
 Command handlers receive `ExtensionCommandContext`, which extends `ExtensionContext` with session control methods. These are only available in commands because they can deadlock if called from event handlers.
+
+### ctx.getSystemPromptOptions()
+
+Returns the base inputs Pi currently uses to build the system prompt.
+
+```typescript
+const options = ctx.getSystemPromptOptions();
+const contextPaths = options.contextFiles?.map((file) => file.path) ?? [];
+```
+
+This has the same shape and mutability as `before_agent_start` `event.systemPromptOptions`: custom prompt, active tools, tool snippets, prompt guidelines, appended system prompt text, cwd, loaded context files, and loaded skills. It may include full context file contents, so treat it as sensitive extension-local data and avoid exposing it through command lists, logs, or autocomplete metadata.
+
+This reports the current base prompt inputs. It does not include per-turn `before_agent_start` chained system-prompt changes, later `context` event message mutations, or `before_provider_request` payload rewrites.
 
 ### ctx.waitForIdle()
 
@@ -2554,6 +2587,7 @@ All examples in [examples/extensions/](../examples/extensions/).
 | `shutdown-command.ts` | Graceful shutdown command | `registerCommand`, `shutdown()` |
 | **Events & Gates** |||
 | `permission-gate.ts` | Block dangerous commands | `on("tool_call")`, `ui.confirm` |
+| `project-trust.ts` | Decide or defer project trust from a user/global or CLI extension | `on("project_trust")`, trust UI, required trust result |
 | `protected-paths.ts` | Block writes to specific paths | `on("tool_call")` |
 | `confirm-destructive.ts` | Confirm session changes | `on("session_before_switch")`, `on("session_before_fork")` |
 | `dirty-repo-guard.ts` | Warn on dirty git repo | `on("session_before_*")`, `exec` |
@@ -2593,6 +2627,7 @@ All examples in [examples/extensions/](../examples/extensions/).
 | `ssh.ts` | SSH remote execution | `registerFlag`, `on("user_bash")`, `on("before_agent_start")`, tool operations |
 | `interactive-shell.ts` | Persistent shell session | `on("user_bash")` |
 | `sandbox/` | Sandboxed tool execution | Tool operations |
+| `gondolin/` | Route built-in tools and `!` commands into a Gondolin micro-VM | Tool operations, built-in tool overrides, `on("user_bash")` |
 | `subagent/` | Spawn sub-agents | `registerTool`, `exec` |
 | **Games** |||
 | `snake.ts` | Snake game | `registerCommand`, `ui.custom`, keyboard handling |

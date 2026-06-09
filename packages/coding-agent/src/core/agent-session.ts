@@ -2280,6 +2280,7 @@ export class AgentSession {
 					})();
 				},
 				getSystemPrompt: () => this.systemPrompt,
+				getSystemPromptOptions: () => this._baseSystemPromptOptions,
 			},
 			{
 				registerProvider: (name, config) => {
@@ -2802,6 +2803,7 @@ export class AgentSession {
 					customInstructions,
 					replaceInstructions,
 					reserveTokens: branchSummarySettings.reserveTokens,
+					streamFn: this.agent.streamFn,
 				});
 				if (result.aborted) {
 					return { cancelled: true, aborted: true };

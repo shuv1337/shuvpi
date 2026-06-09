@@ -12,6 +12,7 @@ import { applyFastModeToPayload } from "./fast-mode.ts";
 import { convertToLlm } from "./messages.ts";
 import { ModelRegistry } from "./model-registry.ts";
 import { findInitialModel } from "./model-resolver.ts";
+import { mergeProviderAttributionHeaders } from "./provider-attribution.ts";
 import type { ResourceLoader } from "./resource-loader.ts";
 import { DefaultResourceLoader } from "./resource-loader.ts";
 import { getDefaultSessionDir, SessionManager } from "./session-manager.ts";
@@ -303,10 +304,11 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 				throw new Error(auth.error);
 			}
 			const providerRetrySettings = settingsManager.getProviderRetrySettings();
-			const timeoutMs =
-				options?.timeoutMs ??
-				providerRetrySettings.timeoutMs ??
-				(model.api === "openai-codex-responses" ? settingsManager.getHttpIdleTimeoutMs() : undefined);
+			const httpIdleTimeoutMs = settingsManager.getHttpIdleTimeoutMs();
+			// SDKs treat timeout=0 as 0ms (immediate timeout), not "no timeout".
+			// Use max int32 to effectively disable the timeout.
+			const effectiveTimeoutMs = httpIdleTimeoutMs === 0 ? 2147483647 : httpIdleTimeoutMs;
+			const timeoutMs = options?.timeoutMs ?? providerRetrySettings.timeoutMs ?? effectiveTimeoutMs;
 			const websocketConnectTimeoutMs =
 				options?.websocketConnectTimeoutMs ?? settingsManager.getWebSocketConnectTimeoutMs();
 			return streamSimple(model, context, {
@@ -316,7 +318,13 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 				websocketConnectTimeoutMs,
 				maxRetries: options?.maxRetries ?? providerRetrySettings.maxRetries,
 				maxRetryDelayMs: options?.maxRetryDelayMs ?? providerRetrySettings.maxRetryDelayMs,
-				headers: auth.headers || options?.headers ? { ...auth.headers, ...options?.headers } : undefined,
+				headers: mergeProviderAttributionHeaders(
+					model,
+					settingsManager,
+					options?.sessionId,
+					auth.headers,
+					options?.headers,
+				),
 			});
 		},
 		onPayload: async (payload, model) => {
