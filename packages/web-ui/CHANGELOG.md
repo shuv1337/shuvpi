@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.79.0] - 2026-06-09
+
+### Changed
+
+- Version bump to stay in lockstep with the rest of the `@shuv1337/pi-*` packages. No functional changes since 0.78.0.
+
 ## [0.78.0] - 2026-06-02
 
 ### Added
