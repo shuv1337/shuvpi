@@ -372,6 +372,10 @@ function normalizeNvidiaModelId(modelId: string): string {
 	return modelId.toLowerCase().replaceAll("_", ".");
 }
 
+function roundCost(value: number): number {
+	return Number(value.toFixed(6));
+}
+
 async function fetchNvidiaNimModelIds(): Promise<Map<string, string>> {
 	try {
 		console.log("Fetching models from NVIDIA NIM API...");
@@ -417,10 +421,10 @@ async function fetchOpenRouterModels(): Promise<Model<any>[]> {
 			}
 
 			// Convert pricing from $/token to $/million tokens
-			const inputCost = parseFloat(model.pricing?.prompt || "0") * 1_000_000;
-			const outputCost = parseFloat(model.pricing?.completion || "0") * 1_000_000;
-			const cacheReadCost = parseFloat(model.pricing?.input_cache_read || "0") * 1_000_000;
-			const cacheWriteCost = parseFloat(model.pricing?.input_cache_write || "0") * 1_000_000;
+			const inputCost = roundCost(parseFloat(model.pricing?.prompt || "0") * 1_000_000);
+			const outputCost = roundCost(parseFloat(model.pricing?.completion || "0") * 1_000_000);
+			const cacheReadCost = roundCost(parseFloat(model.pricing?.input_cache_read || "0") * 1_000_000);
+			const cacheWriteCost = roundCost(parseFloat(model.pricing?.input_cache_write || "0") * 1_000_000);
 
 			const normalizedModel: Model<any> = {
 				id: modelKey,
@@ -476,10 +480,10 @@ async function fetchAiGatewayModels(): Promise<Model<any>[]> {
 				input.push("image");
 			}
 
-			const inputCost = toNumber(model.pricing?.input) * 1_000_000;
-			const outputCost = toNumber(model.pricing?.output) * 1_000_000;
-			const cacheReadCost = toNumber(model.pricing?.input_cache_read) * 1_000_000;
-			const cacheWriteCost = toNumber(model.pricing?.input_cache_write) * 1_000_000;
+			const inputCost = roundCost(toNumber(model.pricing?.input) * 1_000_000);
+			const outputCost = roundCost(toNumber(model.pricing?.output) * 1_000_000);
+			const cacheReadCost = roundCost(toNumber(model.pricing?.input_cache_read) * 1_000_000);
+			const cacheWriteCost = roundCost(toNumber(model.pricing?.input_cache_write) * 1_000_000);
 
 			models.push({
 				id: model.id,
@@ -1377,7 +1381,7 @@ async function generateModels() {
 			candidate.maxTokens = 128000;
 		}
 		if (candidate.provider === "openai" && (candidate.id === "gpt-5.4" || candidate.id === "gpt-5.5")) {
-			candidate.contextWindow = 272000;
+			candidate.contextWindow = 1050000;
 			candidate.maxTokens = 128000;
 		}
 		// models.dev reports gpt-5-pro output as 272000 (a duplicate of the input sub-limit);
@@ -1717,7 +1721,7 @@ async function generateModels() {
 				cacheRead: 0.25,
 				cacheWrite: 0,
 			},
-			contextWindow: 272000,
+			contextWindow: 1050000,
 			maxTokens: 128000,
 		});
 	}
@@ -1844,9 +1848,9 @@ async function generateModels() {
 
 	// OpenAI Codex (ChatGPT OAuth) models
 	// NOTE: These are not fetched from models.dev; we keep a small, explicit list to avoid aliases.
-	// Context window is based on observed server limits (400s above ~272k), not marketing numbers.
 	const CODEX_BASE_URL = "https://chatgpt.com/backend-api";
-	const CODEX_CONTEXT = 272000;
+	const CODEX_GPT_54_CONTEXT = 1000000;
+	const CODEX_STANDARD_CONTEXT = 400000;
 	const CODEX_SPARK_CONTEXT = 128000;
 	const CODEX_MAX_TOKENS = 128000;
 	const codexModels: Model<"openai-codex-responses">[] = [
@@ -1871,7 +1875,7 @@ async function generateModels() {
 			reasoning: true,
 			input: ["text", "image"],
 			cost: { input: 2.5, output: 15, cacheRead: 0.25, cacheWrite: 0 },
-			contextWindow: CODEX_CONTEXT,
+			contextWindow: CODEX_GPT_54_CONTEXT,
 			maxTokens: CODEX_MAX_TOKENS,
 		},
 		{
@@ -1883,7 +1887,7 @@ async function generateModels() {
 			reasoning: true,
 			input: ["text", "image"],
 			cost: { input: 0.75, output: 4.5, cacheRead: 0.075, cacheWrite: 0 },
-			contextWindow: CODEX_CONTEXT,
+			contextWindow: CODEX_STANDARD_CONTEXT,
 			maxTokens: CODEX_MAX_TOKENS,
 		},
 		{
@@ -1895,7 +1899,7 @@ async function generateModels() {
 			reasoning: true,
 			input: ["text", "image"],
 			cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 },
-			contextWindow: 400000,
+			contextWindow: CODEX_STANDARD_CONTEXT,
 			maxTokens: CODEX_MAX_TOKENS,
 		},
 	];
