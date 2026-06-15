@@ -5,6 +5,7 @@ import type { Api, Model } from "../src/types.ts";
 const EXPECTED_CURRENT_ADAPTIVE_THINKING_MODELS = [
 	"anthropic/claude-fable-5",
 	"anthropic/claude-opus-4-8",
+	"cloudflare-ai-gateway/claude-fable-5",
 	"opencode/claude-opus-4-8",
 	"vercel-ai-gateway/anthropic/claude-opus-4.8",
 ];
