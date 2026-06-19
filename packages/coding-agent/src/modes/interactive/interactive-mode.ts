@@ -2594,14 +2594,16 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
-			if (text === "/login") {
-				this.showOAuthSelector("login");
+			if (text === "/login" || text.startsWith("/login ")) {
+				const providerArg = text.startsWith("/login ") ? text.slice(7).trim() : undefined;
 				this.editor.setText("");
+				await this.handleLoginCommand(providerArg);
 				return;
 			}
-			if (text === "/logout") {
-				this.showOAuthSelector("logout");
+			if (text === "/logout" || text.startsWith("/logout ")) {
+				const providerArg = text.startsWith("/logout ") ? text.slice(8).trim() : undefined;
 				this.editor.setText("");
+				await this.handleLogoutCommand(providerArg);
 				return;
 			}
 			if (text === "/new") {
@@ -4765,6 +4767,55 @@ export class InteractiveMode {
 			);
 			return { component: selector, focus: selector };
 		});
+	}
+
+	private async handleLoginCommand(providerId?: string): Promise<void> {
+		if (!providerId) {
+			await this.showOAuthSelector("login");
+			return;
+		}
+
+		const providerOptions = this.getLoginProviderOptions();
+		const providerOption = providerOptions.find((provider) => provider.id === providerId);
+		if (!providerOption) {
+			this.showError(`Unknown provider '${providerId}'. Use /login to browse providers.`);
+			return;
+		}
+
+		if (providerOption.authType === "oauth") {
+			await this.showLoginDialog(providerOption.id, providerOption.name);
+		} else if (providerOption.id === BEDROCK_PROVIDER_ID) {
+			this.showBedrockSetupDialog(providerOption.id, providerOption.name);
+		} else {
+			await this.showApiKeyLoginDialog(providerOption.id, providerOption.name);
+		}
+	}
+
+	private async handleLogoutCommand(providerId?: string): Promise<void> {
+		if (!providerId) {
+			await this.showOAuthSelector("logout");
+			return;
+		}
+
+		const providerOptions = this.getLogoutProviderOptions();
+		const providerOption = providerOptions.find((provider) => provider.id === providerId);
+		if (!providerOption) {
+			this.showError(`No stored credentials for '${providerId}'. Use /logout to browse.`);
+			return;
+		}
+
+		try {
+			this.session.modelRegistry.authStorage.logout(providerOption.id);
+			this.session.modelRegistry.refresh();
+			await this.updateAvailableProviderCount();
+			const message =
+				providerOption.authType === "oauth"
+					? `Logged out of ${providerOption.name}`
+					: `Removed stored API key for ${providerOption.name}. Environment variables and models.json config are unchanged.`;
+			this.showStatus(message);
+		} catch (error: unknown) {
+			this.showError(`Logout failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	private async showOAuthSelector(mode: "login" | "logout"): Promise<void> {
