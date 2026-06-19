@@ -1921,6 +1921,26 @@ async function generateModels() {
 	];
 	allModels.push(...codexModels);
 
+	const xaiOAuthModels: Model<"openai-codex-responses">[] = [
+		{
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		},
+	];
+	for (const model of xaiOAuthModels) {
+		if (!allModels.some((m) => m.provider === model.provider && m.id === model.id)) {
+			allModels.push(model);
+		}
+	}
+
 	// Add missing Grok models
 	const missingGrokModels: Model<"openai-completions">[] = [
 		{
