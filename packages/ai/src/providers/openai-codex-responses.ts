@@ -67,6 +67,18 @@ export function isXaiResponsesTarget(model: Pick<Model<"openai-codex-responses">
 	return base.includes("api.x.ai");
 }
 
+/** Models that accept `reasoning.effort` on xAI /v1/responses (Hermes model_metadata parity). */
+const GROK_EFFORT_CAPABLE_PREFIXES = ["grok-3-mini", "grok-4.20-multi-agent", "grok-4.3"] as const;
+
+export function grokSupportsReasoningEffort(modelId: string): boolean {
+	let name = (modelId || "").trim().toLowerCase();
+	if (!name) return false;
+	if (name.includes("/")) {
+		name = name.split("/").pop() ?? name;
+	}
+	return GROK_EFFORT_CAPABLE_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
+
 const CODEX_RESPONSE_STATUSES = new Set<CodexResponseStatus>([
 	"completed",
 	"incomplete",
@@ -483,15 +495,20 @@ function buildRequestBody(
 	}
 
 	if (options?.reasoningEffort !== undefined) {
-		const effort =
-			options.reasoningEffort === "none"
-				? (model.thinkingLevelMap?.off ?? "none")
-				: (model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort);
-		if (effort !== null) {
-			body.reasoning = {
-				effort,
-				summary: options.reasoningSummary ?? "auto",
-			};
+		const isXai = isXaiResponsesTarget(model);
+		if (isXai && !grokSupportsReasoningEffort(model.id)) {
+			// grok-composer-2.5-fast et al. reason natively but 400 on reasoning.effort
+		} else {
+			const effort =
+				options.reasoningEffort === "none"
+					? (model.thinkingLevelMap?.off ?? "none")
+					: (model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort);
+			if (effort !== null) {
+				body.reasoning = {
+					effort,
+					summary: options.reasoningSummary ?? "auto",
+				};
+			}
 		}
 	}
 

@@ -1929,6 +1929,13 @@ async function generateModels() {
 			provider: "xai-oauth",
 			baseUrl: "https://api.x.ai/v1",
 			reasoning: true,
+			thinkingLevelMap: {
+				minimal: null,
+				low: null,
+				medium: null,
+				high: null,
+				xhigh: null,
+			},
 			input: ["text", "image"],
 			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
 			contextWindow: 200000,

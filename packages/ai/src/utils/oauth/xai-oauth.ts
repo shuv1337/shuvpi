@@ -314,25 +314,65 @@ export async function loginXaiOAuth(callbacks: OAuthLoginCallbacks): Promise<OAu
 
 	const { server, waitForCode, cancelWait } = await startCallbackServer(state);
 	let code: string | undefined;
-	let callbackState = state;
 
 	try {
-		const waitMs = 270_000;
-		const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), waitMs));
-		const result = await Promise.race([waitForCode(), timeout]);
+		if (callbacks.onManualCodeInput) {
+			let manualCode: string | undefined;
+			let manualError: Error | undefined;
+			const manualPromise = callbacks
+				.onManualCodeInput()
+				.then((input) => {
+					manualCode = input;
+					cancelWait();
+				})
+				.catch((err) => {
+					manualError = err instanceof Error ? err : new Error(String(err));
+					cancelWait();
+				});
 
-		if (result?.code) {
-			code = result.code;
-			callbackState = result.state;
-		} else if (callbacks.onManualCodeInput) {
-			cancelWait();
-			const pasted = await callbacks.onManualCodeInput();
-			const parsed = parseAuthorizationInput(pasted);
-			code = parsed.code;
-			if (parsed.state) callbackState = parsed.state;
-			else if (parsed.manualPaste) callbackState = state;
+			callbacks.signal?.throwIfAborted();
+			const result = await waitForCode();
+
+			if (manualError) {
+				throw manualError;
+			}
+
+			if (result?.code) {
+				code = result.code;
+			} else if (manualCode) {
+				const parsed = parseAuthorizationInput(manualCode);
+				if (parsed.state && parsed.state !== state) {
+					throw new Error(
+						"xAI authorization failed: state mismatch. Paste the callback URL from this login attempt only (or paste the bare code from the xAI page).",
+					);
+				}
+				code = parsed.code;
+			}
+
+			if (!code) {
+				await manualPromise;
+				if (manualError) {
+					throw manualError;
+				}
+				if (manualCode) {
+					const parsed = parseAuthorizationInput(manualCode);
+					if (parsed.state && parsed.state !== state) {
+						throw new Error(
+							"xAI authorization failed: state mismatch. Paste the callback URL from this login attempt only (or paste the bare code from the xAI page).",
+						);
+					}
+					code = parsed.code;
+				}
+			}
 		} else {
-			throw new Error("xAI authorization timed out. Use manual code input on remote sessions.");
+			const waitMs = 270_000;
+			const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), waitMs));
+			const result = await Promise.race([waitForCode(), timeout]);
+			if (result?.code) {
+				code = result.code;
+			} else {
+				throw new Error("xAI authorization timed out. Use manual code input on remote sessions.");
+			}
 		}
 	} finally {
 		server.close();
@@ -340,9 +380,6 @@ export async function loginXaiOAuth(callbacks: OAuthLoginCallbacks): Promise<OAu
 
 	if (!code) {
 		throw new Error("xAI authorization failed: missing authorization code");
-	}
-	if (callbackState !== state) {
-		throw new Error("xAI authorization failed: state mismatch");
 	}
 
 	const payload = await exchangeXaiAuthorizationCode({

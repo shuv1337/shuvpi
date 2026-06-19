@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isXaiResponsesTarget, resolveCodexUrl } from "../src/providers/openai-codex-responses.ts";
+import {
+	grokSupportsReasoningEffort,
+	isXaiResponsesTarget,
+	resolveCodexUrl,
+} from "../src/providers/openai-codex-responses.ts";
 import { exchangeXaiAuthorizationCode, XAI_OAUTH_CLIENT_ID } from "../src/utils/oauth/xai-oauth.ts";
 
 describe("resolveCodexUrl (xAI)", () => {
@@ -17,6 +21,15 @@ describe("resolveCodexUrl (xAI)", () => {
 describe("isXaiResponsesTarget", () => {
 	it("detects xai-oauth provider", () => {
 		expect(isXaiResponsesTarget({ provider: "xai-oauth", baseUrl: "https://api.x.ai/v1" })).toBe(true);
+	});
+});
+
+describe("grokSupportsReasoningEffort", () => {
+	it("rejects grok-composer-2.5-fast", () => {
+		expect(grokSupportsReasoningEffort("grok-composer-2.5-fast")).toBe(false);
+	});
+	it("accepts grok-3-mini", () => {
+		expect(grokSupportsReasoningEffort("grok-3-mini")).toBe(true);
 	});
 });
 
