@@ -5,6 +5,7 @@
  * for OAuth-based providers:
  * - Anthropic (Claude Pro/Max)
  * - GitHub Copilot
+ * - xAI SuperGrok (Grok Composer OAuth)
  */
 
 // Anthropic
@@ -27,8 +28,19 @@ export {
 	openaiCodexOAuthProvider,
 	refreshOpenAICodexToken,
 } from "./openai-codex.ts";
-
 export * from "./types.ts";
+// xAI OAuth
+export {
+	DEFAULT_XAI_OAUTH_BASE_URL,
+	exchangeXaiAuthorizationCode,
+	fetchXaiOAuthDiscovery,
+	loginXaiOAuth,
+	refreshXaiOAuthToken,
+	XAI_OAUTH_CLIENT_ID,
+	XAI_OAUTH_DISCOVERY_URL,
+	XAI_OAUTH_SCOPE,
+	xaiOAuthProvider,
+} from "./xai-oauth.ts";
 
 // ============================================================================
 // Provider Registry
@@ -38,11 +50,13 @@ import { anthropicOAuthProvider } from "./anthropic.ts";
 import { githubCopilotOAuthProvider } from "./github-copilot.ts";
 import { openaiCodexOAuthProvider } from "./openai-codex.ts";
 import type { OAuthCredentials, OAuthProviderId, OAuthProviderInfo, OAuthProviderInterface } from "./types.ts";
+import { xaiOAuthProvider } from "./xai-oauth.ts";
 
 const BUILT_IN_OAUTH_PROVIDERS: OAuthProviderInterface[] = [
 	anthropicOAuthProvider,
 	githubCopilotOAuthProvider,
 	openaiCodexOAuthProvider,
+	xaiOAuthProvider,
 ];
 
 const oauthProviderRegistry = new Map<string, OAuthProviderInterface>(

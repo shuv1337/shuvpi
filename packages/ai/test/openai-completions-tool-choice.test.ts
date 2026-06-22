@@ -111,6 +111,40 @@ describe("openai-completions tool_choice", () => {
 		expect(params.tools?.length ?? 0).toBeGreaterThan(0);
 	});
 
+	it("omits tool_choice when no tools are present (xAI/grok reject tool_choice without tools)", async () => {
+		// Regression: a tool-less structured-output extraction turn passes toolChoice but no tools.
+		// Sending tool_choice with an empty/absent tools array makes xAI reject the request with
+		// "A tool_choice was set on the request but no tools were specified."
+		const { compat: _compat, ...baseModel } = getModel("openai", "gpt-4o-mini")!;
+		const model = { ...baseModel, api: "openai-completions" } as const;
+		let payload: unknown;
+
+		await streamSimple(
+			model,
+			{
+				messages: [
+					{
+						role: "user",
+						content: "Return only JSON.",
+						timestamp: Date.now(),
+					},
+				],
+				// no tools — mirrors pi's `--no-tools --mode json` extraction turn
+			},
+			{
+				apiKey: "test",
+				toolChoice: "required",
+				onPayload: (params: unknown) => {
+					payload = params;
+				},
+			} as unknown as Parameters<typeof streamSimple>[2],
+		).result();
+
+		const params = (payload ?? mockState.lastParams) as { tool_choice?: unknown; tools?: unknown[] };
+		expect(params.tool_choice).toBeUndefined();
+		expect((params.tools ?? []).length).toBe(0);
+	});
+
 	it("omits strict when compat disables strict mode", async () => {
 		const { compat: _compat, ...baseModel } = getModel("openai", "gpt-4o-mini")!;
 		const model = {

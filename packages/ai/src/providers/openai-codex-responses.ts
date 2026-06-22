@@ -50,15 +50,41 @@ import { buildBaseOptions } from "./simple-options.ts";
 
 const DEFAULT_CODEX_BASE_URL = "https://chatgpt.com/backend-api";
 const JWT_CLAIM_PATH = "https://api.openai.com/auth" as const;
-const DEFAULT_MAX_RETRIES = 0;
+// Retry transient transport failures (SSE header timeouts, network blips). Zero retries made a
+// single slow first-byte fatal — painful for long multi-agent workflows and for providers like
+// xAI/grok whose Responses-API first-byte latency is highly variable.
+const DEFAULT_MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1000;
 const DEFAULT_MAX_RETRY_DELAY_MS = 60_000;
 // Keep a bounded pre-header timeout so zero-event Codex SSE stalls fail instead of
-// leaving callers stuck on "Working..." indefinitely. See #4945.
+// leaving callers stuck on "Working..." indefinitely (see #4945). ChatGPT/OpenAI-Codex first-byte
+// is fast, so keep the original tight 20s bound there.
 const DEFAULT_SSE_HEADER_TIMEOUT_MS = 20_000;
+// xAI/grok-composer Responses-API first-byte latency is highly variable (measured 5–15s+ for
+// trivial calls; larger extraction contexts run slower), so give it more headroom before failing.
+const XAI_SSE_HEADER_TIMEOUT_MS = 60_000;
 const DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_MS = 15_000;
 const CODEX_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode"]);
 const WEBSOCKET_MESSAGE_TOO_BIG_CLOSE_CODE = 1009;
+
+/** xAI Grok Composer OAuth uses api.x.ai/v1/responses (not ChatGPT /codex/responses). */
+export function isXaiResponsesTarget(model: Pick<Model<"openai-codex-responses">, "provider" | "baseUrl">): boolean {
+	if (model.provider === "xai-oauth") return true;
+	const base = (model.baseUrl || "").trim().toLowerCase();
+	return base.includes("api.x.ai");
+}
+
+/** Models that accept `reasoning.effort` on xAI /v1/responses (Hermes model_metadata parity). */
+const GROK_EFFORT_CAPABLE_PREFIXES = ["grok-3-mini", "grok-4.20-multi-agent", "grok-4.3"] as const;
+
+export function grokSupportsReasoningEffort(modelId: string): boolean {
+	let name = (modelId || "").trim().toLowerCase();
+	if (!name) return false;
+	if (name.includes("/")) {
+		name = name.split("/").pop() ?? name;
+	}
+	return GROK_EFFORT_CAPABLE_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
 
 const CODEX_RESPONSE_STATUSES = new Set<CodexResponseStatus>([
 	"completed",
@@ -175,13 +201,17 @@ function normalizeTimeoutMs(value: number | undefined): number | undefined {
 	return Math.floor(value);
 }
 
-function createSSEHeaderTimeout(): { signal: AbortSignal; clear: () => void; error: () => Error | undefined } {
+function createSSEHeaderTimeout(timeoutMs: number): {
+	signal: AbortSignal;
+	clear: () => void;
+	error: () => Error | undefined;
+} {
 	const controller = new AbortController();
 	let error: Error | undefined;
 	const timeout = setTimeout(() => {
-		error = new Error(`Codex SSE response headers timed out after ${DEFAULT_SSE_HEADER_TIMEOUT_MS}ms`);
+		error = new Error(`Codex SSE response headers timed out after ${timeoutMs}ms`);
 		controller.abort(error);
-	}, DEFAULT_SSE_HEADER_TIMEOUT_MS);
+	}, timeoutMs);
 	return {
 		signal: controller.signal,
 		clear: () => clearTimeout(timeout),
@@ -225,25 +255,36 @@ export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses"
 				throw new Error(`No API key for provider: ${model.provider}`);
 			}
 
-			const accountId = extractAccountId(apiKey);
+			const isXai = isXaiResponsesTarget(model);
+			const accountId = isXai ? tryExtractChatGptAccountId(apiKey) : extractAccountId(apiKey);
 			let body = buildRequestBody(model, context, options);
 			const nextBody = await options?.onPayload?.(body, model);
 			if (nextBody !== undefined) {
 				body = nextBody as RequestBody;
 			}
+			if (isXai) {
+				delete body.service_tier;
+			}
 			const websocketRequestId = options?.sessionId || createCodexRequestId();
-			const sseHeaders = buildSSEHeaders(model.headers, options?.headers, accountId, apiKey, options?.sessionId);
-			const websocketHeaders = buildWebSocketHeaders(
+			const sseHeaders = buildSSEHeaders(
 				model.headers,
 				options?.headers,
 				accountId,
+				apiKey,
+				options?.sessionId,
+				isXai,
+			);
+			const websocketHeaders = buildWebSocketHeaders(
+				model.headers,
+				options?.headers,
+				accountId ?? "",
 				apiKey,
 				websocketRequestId,
 			);
 			const bodyJson = JSON.stringify(body);
 			const idleTimeoutMs = normalizeTimeoutMs(options?.timeoutMs);
 			const websocketConnectTimeoutMs = normalizeTimeoutMs(options?.websocketConnectTimeoutMs);
-			const transport = options?.transport || "auto";
+			const transport = isXai ? "sse" : options?.transport || "auto";
 			const websocketDisabledForSession = transport !== "sse" && isWebSocketSseFallbackActive(options?.sessionId);
 			if (websocketDisabledForSession) {
 				recordWebSocketSseFallback(options?.sessionId);
@@ -311,7 +352,13 @@ export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses"
 				}
 
 				try {
-					const headerTimeout = createSSEHeaderTimeout();
+					// Note: a retry here re-POSTs the full request body. The provider may already have
+					// begun generating before a header timeout fired, so a retried attempt can duplicate
+					// work/cost. This is acceptable because retries only happen before any SSE event is
+					// emitted (no partial output to reconcile); once the stream starts, errors are not retried.
+					const headerTimeout = createSSEHeaderTimeout(
+						isXai ? XAI_SSE_HEADER_TIMEOUT_MS : DEFAULT_SSE_HEADER_TIMEOUT_MS,
+					);
 					const combinedSignal = combineAbortSignals([options?.signal, headerTimeout.signal]);
 					try {
 						response = await fetch(resolveCodexUrl(model.baseUrl), {
@@ -356,12 +403,15 @@ export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses"
 						statusText: response.statusText,
 					});
 					const info = await parseErrorResponse(fakeResponse);
-					throw new Error(info.friendlyMessage || info.message);
+					throw new CodexHttpError(info.friendlyMessage || info.message);
 				} catch (error) {
 					if (error instanceof Error) {
 						if (error.name === "AbortError" || error.message === "Request was aborted") {
 							throw new Error("Request was aborted");
 						}
+					}
+					if (error instanceof CodexHttpError) {
+						throw error;
 					}
 					lastError = error instanceof Error ? error : new Error(String(error));
 					// Network errors are retryable
@@ -448,32 +498,41 @@ function buildRequestBody(
 		text: { verbosity: options?.textVerbosity || "low" },
 		include: ["reasoning.encrypted_content"],
 		prompt_cache_key: clampOpenAIPromptCacheKey(options?.sessionId),
-		tool_choice: "auto",
-		parallel_tool_calls: true,
 	};
 
 	if (options?.temperature !== undefined) {
 		body.temperature = options.temperature;
 	}
 
-	if (options?.serviceTier !== undefined) {
+	if (options?.serviceTier !== undefined && !isXaiResponsesTarget(model)) {
 		body.service_tier = options.serviceTier;
 	}
 
+	// tool_choice / parallel_tool_calls are only valid alongside a non-empty tools array.
+	// xAI (grok via xai-oauth, Responses API) rejects a tool_choice with no tools
+	// ("A tool_choice was set on the request but no tools were specified"), which broke the
+	// tool-less structured-output extraction turn. Only set them when tools are present.
 	if (context.tools && context.tools.length > 0) {
 		body.tools = convertResponsesTools(context.tools, { strict: null });
+		body.tool_choice = "auto";
+		body.parallel_tool_calls = true;
 	}
 
 	if (options?.reasoningEffort !== undefined) {
-		const effort =
-			options.reasoningEffort === "none"
-				? (model.thinkingLevelMap?.off ?? "none")
-				: (model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort);
-		if (effort !== null) {
-			body.reasoning = {
-				effort,
-				summary: options.reasoningSummary ?? "auto",
-			};
+		const isXai = isXaiResponsesTarget(model);
+		if (isXai && !grokSupportsReasoningEffort(model.id)) {
+			// grok-composer-2.5-fast et al. reason natively but 400 on reasoning.effort
+		} else {
+			const effort =
+				options.reasoningEffort === "none"
+					? (model.thinkingLevelMap?.off ?? "none")
+					: (model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort);
+			if (effort !== null) {
+				body.reasoning = {
+					effort,
+					summary: options.reasoningSummary ?? "auto",
+				};
+			}
 		}
 	}
 
@@ -519,9 +578,13 @@ function resolveCodexServiceTier(
 	return responseServiceTier ?? requestServiceTier;
 }
 
-function resolveCodexUrl(baseUrl?: string): string {
+export function resolveCodexUrl(baseUrl?: string): string {
 	const raw = baseUrl && baseUrl.trim().length > 0 ? baseUrl : DEFAULT_CODEX_BASE_URL;
 	const normalized = raw.replace(/\/+$/, "");
+	if (normalized.includes("api.x.ai")) {
+		if (normalized.endsWith("/responses")) return normalized;
+		return `${normalized}/responses`;
+	}
 	if (normalized.endsWith("/codex/responses")) return normalized;
 	if (normalized.endsWith("/codex")) return `${normalized}/responses`;
 	return `${normalized}/codex/responses`;
@@ -573,6 +636,13 @@ class CodexProtocolError extends Error {
 		this.name = "CodexProtocolError";
 		this.payload = options?.payload;
 		this.cause = options?.cause;
+	}
+}
+
+class CodexHttpError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "CodexHttpError";
 	}
 }
 
@@ -1413,17 +1483,22 @@ async function parseErrorResponse(response: Response): Promise<{ message: string
 // Auth & Headers
 // ============================================================================
 
-function extractAccountId(token: string): string {
+function tryExtractChatGptAccountId(token: string): string | undefined {
 	try {
 		const parts = token.split(".");
-		if (parts.length !== 3) throw new Error("Invalid token");
-		const payload = JSON.parse(atob(parts[1]));
-		const accountId = payload?.[JWT_CLAIM_PATH]?.chatgpt_account_id;
-		if (!accountId) throw new Error("No account ID in token");
-		return accountId;
+		if (parts.length !== 3) return undefined;
+		const payload = JSON.parse(atob(parts[1])) as Record<string, unknown>;
+		const accountId = (payload?.[JWT_CLAIM_PATH] as { chatgpt_account_id?: string } | undefined)?.chatgpt_account_id;
+		return accountId ? String(accountId) : undefined;
 	} catch {
-		throw new Error("Failed to extract accountId from token");
+		return undefined;
 	}
+}
+
+function extractAccountId(token: string): string {
+	const accountId = tryExtractChatGptAccountId(token);
+	if (!accountId) throw new Error("Failed to extract accountId from token");
+	return accountId;
 }
 
 function createCodexRequestId(): string {
@@ -1436,7 +1511,7 @@ function createCodexRequestId(): string {
 function buildBaseCodexHeaders(
 	initHeaders: Record<string, string> | undefined,
 	additionalHeaders: Record<string, string> | undefined,
-	accountId: string,
+	accountId: string | undefined,
 	token: string,
 ): Headers {
 	const headers = new Headers(initHeaders);
@@ -1444,7 +1519,9 @@ function buildBaseCodexHeaders(
 		headers.set(key, value);
 	}
 	headers.set("Authorization", `Bearer ${token}`);
-	headers.set("chatgpt-account-id", accountId);
+	if (accountId) {
+		headers.set("chatgpt-account-id", accountId);
+	}
 	headers.set("originator", "pi");
 	const userAgent = _os ? `pi (${_os.platform()} ${_os.release()}; ${_os.arch()})` : "pi (browser)";
 	headers.set("User-Agent", userAgent);
@@ -1454,18 +1531,25 @@ function buildBaseCodexHeaders(
 function buildSSEHeaders(
 	initHeaders: Record<string, string> | undefined,
 	additionalHeaders: Record<string, string> | undefined,
-	accountId: string,
+	accountId: string | undefined,
 	token: string,
 	sessionId?: string,
+	isXai?: boolean,
 ): Headers {
 	const headers = buildBaseCodexHeaders(initHeaders, additionalHeaders, accountId, token);
-	headers.set("OpenAI-Beta", "responses=experimental");
+	if (!isXai) {
+		headers.set("OpenAI-Beta", "responses=experimental");
+	}
 	headers.set("accept", "text/event-stream");
 	headers.set("content-type", "application/json");
 
 	if (sessionId) {
-		headers.set("session-id", sessionId);
-		headers.set("x-client-request-id", sessionId);
+		if (isXai) {
+			headers.set("x-grok-conv-id", sessionId);
+		} else {
+			headers.set("session-id", sessionId);
+			headers.set("x-client-request-id", sessionId);
+		}
 	}
 
 	return headers;

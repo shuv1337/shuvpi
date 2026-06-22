@@ -1,6 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	getOpenAICodexWebSocketDebugStats,
@@ -8,7 +9,7 @@ import {
 	streamOpenAICodexResponses,
 	streamSimpleOpenAICodexResponses,
 } from "../src/providers/openai-codex-responses.ts";
-import type { Context, Model } from "../src/types.ts";
+import type { Context, Model, Tool } from "../src/types.ts";
 
 const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
 
@@ -360,6 +361,8 @@ describe("openai-codex streaming", () => {
 		const resultPromise = streamOpenAICodexResponses(model, context, {
 			apiKey: token,
 			transport: "sse",
+			// Isolate the single-attempt header-timeout behavior; retries are covered separately.
+			maxRetries: 0,
 		}).result();
 		let settled = false;
 		const observedResultPromise = resultPromise.then((result) => {
@@ -369,6 +372,7 @@ describe("openai-codex streaming", () => {
 		await vi.advanceTimersByTimeAsync(0);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 
+		// ChatGPT/OpenAI-Codex SSE header timeout is 20s — must NOT fire before then.
 		await vi.advanceTimersByTimeAsync(10_000);
 		expect(settled).toBe(false);
 
@@ -376,6 +380,69 @@ describe("openai-codex streaming", () => {
 		const result = await observedResultPromise;
 		expect(result.stopReason).toBe("error");
 		expect(result.errorMessage).toBe("Codex SSE response headers timed out after 20000ms");
+	});
+
+	it("uses a longer 60s SSE header timeout for xAI/grok (slow first byte)", async () => {
+		vi.useFakeTimers();
+		const token = mockToken();
+
+		const fetchMock = vi.fn((_input: string | URL, init?: RequestInit) => {
+			const signal = init?.signal;
+			if (!signal) {
+				throw new Error("Expected SSE fetch to receive an abort signal");
+			}
+			return new Promise<Response>((_, reject) => {
+				const onAbort = () => {
+					const reason = signal.reason;
+					reject(reason instanceof Error ? reason : new Error("SSE fetch aborted"));
+				};
+				if (signal.aborted) {
+					onAbort();
+					return;
+				}
+				signal.addEventListener("abort", onAbort, { once: true });
+			});
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "Say hello", timestamp: Date.now() }],
+		};
+
+		const resultPromise = streamOpenAICodexResponses(model, context, {
+			apiKey: token,
+			transport: "sse",
+			maxRetries: 0,
+		}).result();
+		let settled = false;
+		const observedResultPromise = resultPromise.then((result) => {
+			settled = true;
+			return result;
+		});
+		await vi.advanceTimersByTimeAsync(0);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		// Past the 20s ChatGPT bound — xAI must NOT have timed out yet.
+		await vi.advanceTimersByTimeAsync(20_000);
+		expect(settled).toBe(false);
+
+		await vi.advanceTimersByTimeAsync(40_000);
+		const result = await observedResultPromise;
+		expect(result.stopReason).toBe("error");
+		expect(result.errorMessage).toBe("Codex SSE response headers timed out after 60000ms");
 	});
 
 	it("aborts SSE body reads after response headers arrive", async () => {
@@ -635,6 +702,196 @@ describe("openai-codex streaming", () => {
 		}).result();
 
 		expect(capturedPayload?.prompt_cache_key).toBe("x".repeat(64));
+	});
+
+	it("omits tool_choice when the request carries no tools (xAI/grok rejects it)", async () => {
+		// Regression: the Responses API request set tool_choice:"auto" unconditionally. On the
+		// tool-less structured-output extraction turn, xAI rejected the request with
+		// "A tool_choice was set on the request but no tools were specified."
+		const token = mockToken();
+		const encoder = new TextEncoder();
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						new ReadableStream<Uint8Array>({
+							start(controller) {
+								controller.enqueue(encoder.encode(buildSSEPayload({ status: "completed" })));
+								controller.close();
+							},
+						}),
+						{ status: 200, headers: { "content-type": "text/event-stream" } },
+					),
+			),
+		);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "Return only JSON.", timestamp: Date.now() }],
+			// no tools — mirrors pi's `--no-tools --mode json` extraction turn
+		};
+
+		let captured: { tool_choice?: unknown; parallel_tool_calls?: unknown; tools?: unknown[] } | undefined;
+		await streamOpenAICodexResponses(model, context, {
+			apiKey: token,
+			transport: "sse",
+			onPayload: (payload) => {
+				captured = payload as typeof captured;
+			},
+		}).result();
+
+		expect(captured?.tool_choice).toBeUndefined();
+		expect(captured?.parallel_tool_calls).toBeUndefined();
+		expect(captured?.tools).toBeUndefined();
+	});
+
+	it("sets tool_choice and parallel_tool_calls when tools are present", async () => {
+		const token = mockToken();
+		const encoder = new TextEncoder();
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						new ReadableStream<Uint8Array>({
+							start(controller) {
+								controller.enqueue(encoder.encode(buildSSEPayload({ status: "completed" })));
+								controller.close();
+							},
+						}),
+						{ status: 200, headers: { "content-type": "text/event-stream" } },
+					),
+			),
+		);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const tools: Tool[] = [
+			{ name: "ping", description: "Ping tool", parameters: Type.Object({ ok: Type.Boolean() }) },
+		];
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "Call ping with ok=true", timestamp: Date.now() }],
+			tools,
+		};
+
+		let captured: { tool_choice?: unknown; parallel_tool_calls?: unknown; tools?: unknown[] } | undefined;
+		await streamOpenAICodexResponses(model, context, {
+			apiKey: token,
+			transport: "sse",
+			onPayload: (payload) => {
+				captured = payload as typeof captured;
+			},
+		}).result();
+
+		expect(captured?.tool_choice).toBe("auto");
+		expect(captured?.parallel_tool_calls).toBe(true);
+		expect(Array.isArray(captured?.tools)).toBe(true);
+		expect((captured?.tools ?? []).length).toBeGreaterThan(0);
+	});
+
+	it("retries a transient transport failure instead of failing immediately", async () => {
+		// Regression: DEFAULT_MAX_RETRIES was 0, so a single SSE-header timeout / network blip was
+		// fatal — fragile for long multi-agent runs and slow-first-byte providers (xAI/grok).
+		const token = mockToken();
+		const encoder = new TextEncoder();
+		let calls = 0;
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				calls++;
+				if (calls === 1) {
+					throw new Error("transient network glitch");
+				}
+				return new Response(
+					new ReadableStream<Uint8Array>({
+						start(controller) {
+							controller.enqueue(encoder.encode(buildSSEPayload({ status: "completed" })));
+							controller.close();
+						},
+					}),
+					{ status: 200, headers: { "content-type": "text/event-stream" } },
+				);
+			}),
+		);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "hi", timestamp: Date.now() }],
+		};
+
+		await streamOpenAICodexResponses(model, context, { apiKey: token, transport: "sse" }).result();
+		expect(calls).toBe(2); // failed once, retried, succeeded
+	});
+
+	it("does not retry non-retryable HTTP errors", async () => {
+		const token = mockToken();
+		const fetchMock = vi.fn(
+			async () =>
+				new Response(JSON.stringify({ error: { message: "bad request from provider" } }), {
+					status: 400,
+					headers: { "content-type": "application/json" },
+				}),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "hi", timestamp: Date.now() }],
+		};
+
+		const result = await streamOpenAICodexResponses(model, context, { apiKey: token, transport: "sse" }).result();
+
+		expect(result.stopReason).toBe("error");
+		expect(result.errorMessage).toBe("bad request from provider");
+		expect(fetchMock).toHaveBeenCalledOnce();
 	});
 
 	it("preserves gpt-5.5 xhigh reasoning effort from simple options", async () => {

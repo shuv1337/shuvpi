@@ -568,7 +568,11 @@ function buildParams(
 		applyAnthropicCacheControl(messages, params.tools, cacheControl);
 	}
 
-	if (options?.toolChoice) {
+	// Only send tool_choice when the request actually carries tools. The OpenAI-compatible
+	// schema (and providers like xAI/grok) reject a tool_choice with an empty/absent tools array
+	// ("A tool_choice was set on the request but no tools were specified") — this happens on
+	// tool-less structured-output extraction turns. Mirrors the guard in the Google providers.
+	if (options?.toolChoice && params.tools && params.tools.length > 0) {
 		params.tool_choice = options.toolChoice;
 	}
 
