@@ -1,6 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	getOpenAICodexWebSocketDebugStats,
@@ -8,7 +9,7 @@ import {
 	streamOpenAICodexResponses,
 	streamSimpleOpenAICodexResponses,
 } from "../src/providers/openai-codex-responses.ts";
-import type { Context, Model } from "../src/types.ts";
+import type { Context, Model, Tool } from "../src/types.ts";
 
 const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
 
@@ -635,6 +636,161 @@ describe("openai-codex streaming", () => {
 		}).result();
 
 		expect(capturedPayload?.prompt_cache_key).toBe("x".repeat(64));
+	});
+
+	it("omits tool_choice when the request carries no tools (xAI/grok rejects it)", async () => {
+		// Regression: the Responses API request set tool_choice:"auto" unconditionally. On the
+		// tool-less structured-output extraction turn, xAI rejected the request with
+		// "A tool_choice was set on the request but no tools were specified."
+		const token = mockToken();
+		const encoder = new TextEncoder();
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						new ReadableStream<Uint8Array>({
+							start(controller) {
+								controller.enqueue(encoder.encode(buildSSEPayload({ status: "completed" })));
+								controller.close();
+							},
+						}),
+						{ status: 200, headers: { "content-type": "text/event-stream" } },
+					),
+			),
+		);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "Return only JSON.", timestamp: Date.now() }],
+			// no tools — mirrors pi's `--no-tools --mode json` extraction turn
+		};
+
+		let captured: { tool_choice?: unknown; parallel_tool_calls?: unknown; tools?: unknown[] } | undefined;
+		await streamOpenAICodexResponses(model, context, {
+			apiKey: token,
+			transport: "sse",
+			onPayload: (payload) => {
+				captured = payload as typeof captured;
+			},
+		}).result();
+
+		expect(captured?.tool_choice).toBeUndefined();
+		expect(captured?.parallel_tool_calls).toBeUndefined();
+		expect(captured?.tools).toBeUndefined();
+	});
+
+	it("sets tool_choice and parallel_tool_calls when tools are present", async () => {
+		const token = mockToken();
+		const encoder = new TextEncoder();
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						new ReadableStream<Uint8Array>({
+							start(controller) {
+								controller.enqueue(encoder.encode(buildSSEPayload({ status: "completed" })));
+								controller.close();
+							},
+						}),
+						{ status: 200, headers: { "content-type": "text/event-stream" } },
+					),
+			),
+		);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const tools: Tool[] = [
+			{ name: "ping", description: "Ping tool", parameters: Type.Object({ ok: Type.Boolean() }) },
+		];
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "Call ping with ok=true", timestamp: Date.now() }],
+			tools,
+		};
+
+		let captured: { tool_choice?: unknown; parallel_tool_calls?: unknown; tools?: unknown[] } | undefined;
+		await streamOpenAICodexResponses(model, context, {
+			apiKey: token,
+			transport: "sse",
+			onPayload: (payload) => {
+				captured = payload as typeof captured;
+			},
+		}).result();
+
+		expect(captured?.tool_choice).toBe("auto");
+		expect(captured?.parallel_tool_calls).toBe(true);
+		expect(Array.isArray(captured?.tools)).toBe(true);
+		expect((captured?.tools ?? []).length).toBeGreaterThan(0);
+	});
+
+	it("retries a transient transport failure instead of failing immediately", async () => {
+		// Regression: DEFAULT_MAX_RETRIES was 0, so a single SSE-header timeout / network blip was
+		// fatal — fragile for long multi-agent runs and slow-first-byte providers (xAI/grok).
+		const token = mockToken();
+		const encoder = new TextEncoder();
+		let calls = 0;
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				calls++;
+				if (calls === 1) {
+					throw new Error("transient network glitch");
+				}
+				return new Response(
+					new ReadableStream<Uint8Array>({
+						start(controller) {
+							controller.enqueue(encoder.encode(buildSSEPayload({ status: "completed" })));
+							controller.close();
+						},
+					}),
+					{ status: 200, headers: { "content-type": "text/event-stream" } },
+				);
+			}),
+		);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "hi", timestamp: Date.now() }],
+		};
+
+		await streamOpenAICodexResponses(model, context, { apiKey: token, transport: "sse" }).result();
+		expect(calls).toBe(2); // failed once, retried, succeeded
 	});
 
 	it("preserves gpt-5.5 xhigh reasoning effort from simple options", async () => {

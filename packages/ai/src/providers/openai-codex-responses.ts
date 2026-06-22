@@ -50,12 +50,17 @@ import { buildBaseOptions } from "./simple-options.ts";
 
 const DEFAULT_CODEX_BASE_URL = "https://chatgpt.com/backend-api";
 const JWT_CLAIM_PATH = "https://api.openai.com/auth" as const;
-const DEFAULT_MAX_RETRIES = 0;
+// Retry transient transport failures (SSE header timeouts, network blips). Zero retries made a
+// single slow first-byte fatal — painful for long multi-agent workflows and for providers like
+// xAI/grok whose Responses-API first-byte latency is highly variable.
+const DEFAULT_MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1000;
 const DEFAULT_MAX_RETRY_DELAY_MS = 60_000;
 // Keep a bounded pre-header timeout so zero-event Codex SSE stalls fail instead of
-// leaving callers stuck on "Working..." indefinitely. See #4945.
-const DEFAULT_SSE_HEADER_TIMEOUT_MS = 20_000;
+// leaving callers stuck on "Working..." indefinitely (see #4945) — but give it enough headroom
+// for slow-first-byte providers (xAI/grok-composer measured 5–15s+ for trivial calls; larger
+// extraction contexts run slower).
+const DEFAULT_SSE_HEADER_TIMEOUT_MS = 60_000;
 const DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_MS = 15_000;
 const CODEX_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode"]);
 const WEBSOCKET_MESSAGE_TOO_BIG_CLOSE_CODE = 1009;
@@ -478,8 +483,6 @@ function buildRequestBody(
 		text: { verbosity: options?.textVerbosity || "low" },
 		include: ["reasoning.encrypted_content"],
 		prompt_cache_key: clampOpenAIPromptCacheKey(options?.sessionId),
-		tool_choice: "auto",
-		parallel_tool_calls: true,
 	};
 
 	if (options?.temperature !== undefined) {
@@ -490,8 +493,14 @@ function buildRequestBody(
 		body.service_tier = options.serviceTier;
 	}
 
+	// tool_choice / parallel_tool_calls are only valid alongside a non-empty tools array.
+	// xAI (grok via xai-oauth, Responses API) rejects a tool_choice with no tools
+	// ("A tool_choice was set on the request but no tools were specified"), which broke the
+	// tool-less structured-output extraction turn. Only set them when tools are present.
 	if (context.tools && context.tools.length > 0) {
 		body.tools = convertResponsesTools(context.tools, { strict: null });
+		body.tool_choice = "auto";
+		body.parallel_tool_calls = true;
 	}
 
 	if (options?.reasoningEffort !== undefined) {
