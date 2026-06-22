@@ -57,10 +57,12 @@ const DEFAULT_MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1000;
 const DEFAULT_MAX_RETRY_DELAY_MS = 60_000;
 // Keep a bounded pre-header timeout so zero-event Codex SSE stalls fail instead of
-// leaving callers stuck on "Working..." indefinitely (see #4945) — but give it enough headroom
-// for slow-first-byte providers (xAI/grok-composer measured 5–15s+ for trivial calls; larger
-// extraction contexts run slower).
-const DEFAULT_SSE_HEADER_TIMEOUT_MS = 60_000;
+// leaving callers stuck on "Working..." indefinitely (see #4945). ChatGPT/OpenAI-Codex first-byte
+// is fast, so keep the original tight 20s bound there.
+const DEFAULT_SSE_HEADER_TIMEOUT_MS = 20_000;
+// xAI/grok-composer Responses-API first-byte latency is highly variable (measured 5–15s+ for
+// trivial calls; larger extraction contexts run slower), so give it more headroom before failing.
+const XAI_SSE_HEADER_TIMEOUT_MS = 60_000;
 const DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_MS = 15_000;
 const CODEX_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode"]);
 const WEBSOCKET_MESSAGE_TOO_BIG_CLOSE_CODE = 1009;
@@ -199,13 +201,17 @@ function normalizeTimeoutMs(value: number | undefined): number | undefined {
 	return Math.floor(value);
 }
 
-function createSSEHeaderTimeout(): { signal: AbortSignal; clear: () => void; error: () => Error | undefined } {
+function createSSEHeaderTimeout(timeoutMs: number): {
+	signal: AbortSignal;
+	clear: () => void;
+	error: () => Error | undefined;
+} {
 	const controller = new AbortController();
 	let error: Error | undefined;
 	const timeout = setTimeout(() => {
-		error = new Error(`Codex SSE response headers timed out after ${DEFAULT_SSE_HEADER_TIMEOUT_MS}ms`);
+		error = new Error(`Codex SSE response headers timed out after ${timeoutMs}ms`);
 		controller.abort(error);
-	}, DEFAULT_SSE_HEADER_TIMEOUT_MS);
+	}, timeoutMs);
 	return {
 		signal: controller.signal,
 		clear: () => clearTimeout(timeout),
@@ -346,7 +352,13 @@ export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses"
 				}
 
 				try {
-					const headerTimeout = createSSEHeaderTimeout();
+					// Note: a retry here re-POSTs the full request body. The provider may already have
+					// begun generating before a header timeout fired, so a retried attempt can duplicate
+					// work/cost. This is acceptable because retries only happen before any SSE event is
+					// emitted (no partial output to reconcile); once the stream starts, errors are not retried.
+					const headerTimeout = createSSEHeaderTimeout(
+						isXai ? XAI_SSE_HEADER_TIMEOUT_MS : DEFAULT_SSE_HEADER_TIMEOUT_MS,
+					);
 					const combinedSignal = combineAbortSignals([options?.signal, headerTimeout.signal]);
 					try {
 						response = await fetch(resolveCodexUrl(model.baseUrl), {

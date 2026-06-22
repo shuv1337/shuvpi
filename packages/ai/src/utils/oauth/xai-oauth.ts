@@ -5,7 +5,6 @@
  */
 
 import type { Server } from "node:http";
-import { createServer } from "node:http";
 import { oauthErrorHtml, oauthSuccessHtml } from "./oauth-page.ts";
 import { generatePKCE } from "./pkce.ts";
 import type { OAuthCredentials, OAuthLoginCallbacks, OAuthProviderInterface } from "./types.ts";
@@ -19,6 +18,30 @@ const CALLBACK_HOST = process.env.PI_XAI_OAUTH_CALLBACK_HOST || process.env.XAI_
 const CALLBACK_PORT = Number(process.env.PI_XAI_OAUTH_CALLBACK_PORT || process.env.XAI_OAUTH_REDIRECT_PORT || "56121");
 const CALLBACK_PATH = process.env.XAI_OAUTH_REDIRECT_PATH || "/callback";
 const REDIRECT_URI = `http://${CALLBACK_HOST}:${CALLBACK_PORT}${CALLBACK_PATH}`;
+
+// Defer the node:http dependency to call time so importing this module (and the public
+// `@shuv1337/pi-ai/oauth` barrel that re-exports it) stays load-safe in browser/edge/Workers
+// runtimes. Mirrors the lazy + environment-guard pattern in anthropic.ts and the other providers.
+type NodeApis = {
+	createServer: typeof import("node:http").createServer;
+};
+
+let nodeApis: NodeApis | null = null;
+let nodeApisPromise: Promise<NodeApis> | null = null;
+
+async function getNodeApis(): Promise<NodeApis> {
+	if (nodeApis) return nodeApis;
+	if (!nodeApisPromise) {
+		if (typeof process === "undefined" || (!process.versions?.node && !process.versions?.bun)) {
+			throw new Error("xAI OAuth is only available in Node.js environments");
+		}
+		nodeApisPromise = import("node:http").then((httpModule) => ({
+			createServer: httpModule.createServer,
+		}));
+	}
+	nodeApis = await nodeApisPromise;
+	return nodeApis;
+}
 
 type Discovery = {
 	authorization_endpoint: string;
@@ -100,6 +123,12 @@ function buildAuthorizeUrl(params: {
 	return url.toString();
 }
 
+function truncateErrorBody(text: string, max = 500): string {
+	const trimmed = (text || "").trim();
+	if (trimmed.length <= max) return trimmed;
+	return `${trimmed.slice(0, max)}… (truncated)`;
+}
+
 async function postFormToken(tokenEndpoint: string, data: Record<string, string>): Promise<Record<string, unknown>> {
 	const body = new URLSearchParams(data);
 	const response = await fetch(tokenEndpoint, {
@@ -113,17 +142,21 @@ async function postFormToken(tokenEndpoint: string, data: Record<string, string>
 	});
 	const text = await response.text();
 	if (!response.ok) {
+		// Bound the echoed response body. It is the server's error payload (not our submitted
+		// secrets), but the token endpoint is not under our control — cap it so a large or
+		// credential-reflecting body can't bloat or leak through logs.
+		const detail = truncateErrorBody(text);
 		if (response.status === 403) {
 			throw new Error(
-				`xAI token request failed (HTTP 403).${text ? ` ${text}` : ""} This OAuth account may not be authorized for API access — try XAI_API_KEY with provider xai, or upgrade at https://x.ai/grok.`,
+				`xAI token request failed (HTTP 403).${detail ? ` ${detail}` : ""} This OAuth account may not be authorized for API access — try XAI_API_KEY with provider xai, or upgrade at https://x.ai/grok.`,
 			);
 		}
-		throw new Error(`xAI token request failed (HTTP ${response.status}).${text ? ` ${text}` : ""}`);
+		throw new Error(`xAI token request failed (HTTP ${response.status}).${detail ? ` ${detail}` : ""}`);
 	}
 	try {
 		return JSON.parse(text) as Record<string, unknown>;
 	} catch {
-		throw new Error(`xAI token response was not valid JSON: ${text}`);
+		throw new Error(`xAI token response was not valid JSON: ${truncateErrorBody(text)}`);
 	}
 }
 
@@ -181,6 +214,7 @@ type CallbackServerInfo = {
 };
 
 async function startCallbackServer(expectedState: string): Promise<CallbackServerInfo> {
+	const { createServer } = await getNodeApis();
 	return new Promise((resolve, reject) => {
 		let settleWait: ((value: { code: string; state: string } | null) => void) | undefined;
 		const waitForCodePromise = new Promise<{ code: string; state: string } | null>((resolveWait) => {
@@ -232,7 +266,18 @@ async function startCallbackServer(expectedState: string): Promise<CallbackServe
 			}
 		});
 
-		server.on("error", (err) => reject(err));
+		server.on("error", (err) => {
+			if ((err as NodeJS.ErrnoException)?.code === "EADDRINUSE") {
+				reject(
+					new Error(
+						`xAI OAuth callback port ${CALLBACK_PORT} on ${CALLBACK_HOST} is already in use. ` +
+							`Close the process using it, or set PI_XAI_OAUTH_CALLBACK_PORT to a free port and retry.`,
+					),
+				);
+				return;
+			}
+			reject(err);
+		});
 
 		server.listen(CALLBACK_PORT, CALLBACK_HOST, () => {
 			resolve({

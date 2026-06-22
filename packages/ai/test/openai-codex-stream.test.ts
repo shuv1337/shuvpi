@@ -372,11 +372,74 @@ describe("openai-codex streaming", () => {
 		await vi.advanceTimersByTimeAsync(0);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 
-		// Default SSE header timeout is 60s — must NOT fire before then.
-		await vi.advanceTimersByTimeAsync(30_000);
+		// ChatGPT/OpenAI-Codex SSE header timeout is 20s — must NOT fire before then.
+		await vi.advanceTimersByTimeAsync(10_000);
 		expect(settled).toBe(false);
 
-		await vi.advanceTimersByTimeAsync(30_000);
+		await vi.advanceTimersByTimeAsync(10_000);
+		const result = await observedResultPromise;
+		expect(result.stopReason).toBe("error");
+		expect(result.errorMessage).toBe("Codex SSE response headers timed out after 20000ms");
+	});
+
+	it("uses a longer 60s SSE header timeout for xAI/grok (slow first byte)", async () => {
+		vi.useFakeTimers();
+		const token = mockToken();
+
+		const fetchMock = vi.fn((_input: string | URL, init?: RequestInit) => {
+			const signal = init?.signal;
+			if (!signal) {
+				throw new Error("Expected SSE fetch to receive an abort signal");
+			}
+			return new Promise<Response>((_, reject) => {
+				const onAbort = () => {
+					const reason = signal.reason;
+					reject(reason instanceof Error ? reason : new Error("SSE fetch aborted"));
+				};
+				if (signal.aborted) {
+					onAbort();
+					return;
+				}
+				signal.addEventListener("abort", onAbort, { once: true });
+			});
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "Say hello", timestamp: Date.now() }],
+		};
+
+		const resultPromise = streamOpenAICodexResponses(model, context, {
+			apiKey: token,
+			transport: "sse",
+			maxRetries: 0,
+		}).result();
+		let settled = false;
+		const observedResultPromise = resultPromise.then((result) => {
+			settled = true;
+			return result;
+		});
+		await vi.advanceTimersByTimeAsync(0);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		// Past the 20s ChatGPT bound — xAI must NOT have timed out yet.
+		await vi.advanceTimersByTimeAsync(20_000);
+		expect(settled).toBe(false);
+
+		await vi.advanceTimersByTimeAsync(40_000);
 		const result = await observedResultPromise;
 		expect(result.stopReason).toBe("error");
 		expect(result.errorMessage).toBe("Codex SSE response headers timed out after 60000ms");
