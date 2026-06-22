@@ -5,6 +5,7 @@
  */
 
 import type { Server } from "node:http";
+import { createServer } from "node:http";
 import { oauthErrorHtml, oauthSuccessHtml } from "./oauth-page.ts";
 import { generatePKCE } from "./pkce.ts";
 import type { OAuthCredentials, OAuthLoginCallbacks, OAuthProviderInterface } from "./types.ts";
@@ -23,27 +24,6 @@ type Discovery = {
 	authorization_endpoint: string;
 	token_endpoint: string;
 };
-
-type NodeApis = {
-	createServer: typeof import("node:http").createServer;
-};
-
-let nodeApis: NodeApis | null = null;
-let nodeApisPromise: Promise<NodeApis> | null = null;
-
-async function getNodeApis(): Promise<NodeApis> {
-	if (nodeApis) return nodeApis;
-	if (!nodeApisPromise) {
-		if (typeof process === "undefined" || (!process.versions?.node && !process.versions?.bun)) {
-			throw new Error("xAI OAuth is only available in Node.js environments");
-		}
-		nodeApisPromise = import("node:http").then((httpModule) => ({
-			createServer: httpModule.createServer,
-		}));
-	}
-	nodeApis = await nodeApisPromise;
-	return nodeApis;
-}
 
 function randomHex(bytes = 16): string {
 	const arr = new Uint8Array(bytes);
@@ -175,9 +155,10 @@ function credentialsFromTokenPayload(
 	payload: Record<string, unknown>,
 	discovery: Discovery,
 	redirectUri: string,
+	refreshFallback?: string,
 ): OAuthCredentials {
 	const access = String(payload.access_token || "").trim();
-	const refresh = String(payload.refresh_token || "").trim();
+	const refresh = String(payload.refresh_token || refreshFallback || "").trim();
 	if (!access) throw new Error("xAI token exchange did not return access_token");
 	if (!refresh) throw new Error("xAI token exchange did not return refresh_token");
 	const expiresIn = Number(payload.expires_in ?? 3600);
@@ -200,8 +181,6 @@ type CallbackServerInfo = {
 };
 
 async function startCallbackServer(expectedState: string): Promise<CallbackServerInfo> {
-	const { createServer } = await getNodeApis();
-
 	return new Promise((resolve, reject) => {
 		let settleWait: ((value: { code: string; state: string } | null) => void) | undefined;
 		const waitForCodePromise = new Promise<{ code: string; state: string } | null>((resolveWait) => {
@@ -285,11 +264,7 @@ export async function refreshXaiOAuthToken(credentials: OAuthCredentials): Promi
 		token_endpoint: tokenEndpoint,
 	};
 	const redirectUri = String(credentials.redirect_uri || REDIRECT_URI);
-	const next = credentialsFromTokenPayload(payload, discovery, redirectUri);
-	return {
-		...next,
-		refresh: String(payload.refresh_token || refresh).trim(),
-	};
+	return credentialsFromTokenPayload(payload, discovery, redirectUri, refresh);
 }
 
 export async function loginXaiOAuth(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials> {

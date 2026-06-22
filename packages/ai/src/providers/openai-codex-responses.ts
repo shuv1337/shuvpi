@@ -391,12 +391,15 @@ export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses"
 						statusText: response.statusText,
 					});
 					const info = await parseErrorResponse(fakeResponse);
-					throw new Error(info.friendlyMessage || info.message);
+					throw new CodexHttpError(info.friendlyMessage || info.message);
 				} catch (error) {
 					if (error instanceof Error) {
 						if (error.name === "AbortError" || error.message === "Request was aborted") {
 							throw new Error("Request was aborted");
 						}
+					}
+					if (error instanceof CodexHttpError) {
+						throw error;
 					}
 					lastError = error instanceof Error ? error : new Error(String(error));
 					// Network errors are retryable
@@ -621,6 +624,13 @@ class CodexProtocolError extends Error {
 		this.name = "CodexProtocolError";
 		this.payload = options?.payload;
 		this.cause = options?.cause;
+	}
+}
+
+class CodexHttpError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "CodexHttpError";
 	}
 }
 

@@ -796,6 +796,41 @@ describe("openai-codex streaming", () => {
 		expect(calls).toBe(2); // failed once, retried, succeeded
 	});
 
+	it("does not retry non-retryable HTTP errors", async () => {
+		const token = mockToken();
+		const fetchMock = vi.fn(
+			async () =>
+				new Response(JSON.stringify({ error: { message: "bad request from provider" } }), {
+					status: 400,
+					headers: { "content-type": "application/json" },
+				}),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			systemPrompt: "You are a helpful assistant.",
+			messages: [{ role: "user", content: "hi", timestamp: Date.now() }],
+		};
+
+		const result = await streamOpenAICodexResponses(model, context, { apiKey: token, transport: "sse" }).result();
+
+		expect(result.stopReason).toBe("error");
+		expect(result.errorMessage).toBe("bad request from provider");
+		expect(fetchMock).toHaveBeenCalledOnce();
+	});
+
 	it("preserves gpt-5.5 xhigh reasoning effort from simple options", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.PI_CODING_AGENT_DIR = tempDir;

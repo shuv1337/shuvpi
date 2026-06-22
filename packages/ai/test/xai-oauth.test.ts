@@ -4,7 +4,11 @@ import {
 	isXaiResponsesTarget,
 	resolveCodexUrl,
 } from "../src/providers/openai-codex-responses.ts";
-import { exchangeXaiAuthorizationCode, XAI_OAUTH_CLIENT_ID } from "../src/utils/oauth/xai-oauth.ts";
+import {
+	exchangeXaiAuthorizationCode,
+	refreshXaiOAuthToken,
+	XAI_OAUTH_CLIENT_ID,
+} from "../src/utils/oauth/xai-oauth.ts";
 
 describe("resolveCodexUrl (xAI)", () => {
 	it("maps api.x.ai/v1 to /v1/responses", () => {
@@ -74,5 +78,37 @@ describe("exchangeXaiAuthorizationCode", () => {
 				codeChallenge: "ch",
 			}),
 		).rejects.toThrow(/code_verifier is empty/);
+	});
+});
+
+describe("refreshXaiOAuthToken", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("reuses the existing refresh token when refresh response does not rotate it", async () => {
+		const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+			const body = init?.body?.toString() ?? "";
+			expect(body).toContain("grant_type=refresh_token");
+			expect(body).toContain("refresh_token=old-refresh-token");
+			return new Response(JSON.stringify({ access_token: "new-access-token", expires_in: 3600 }), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const credentials = await refreshXaiOAuthToken({
+			access: "old-access-token",
+			refresh: "old-refresh-token",
+			expires: Date.now() - 1000,
+			token_endpoint: "https://auth.x.ai/oauth2/token",
+			authorization_endpoint: "https://auth.x.ai/oauth2/authorize",
+			redirect_uri: "http://127.0.0.1:56121/callback",
+		});
+
+		expect(credentials.access).toBe("new-access-token");
+		expect(credentials.refresh).toBe("old-refresh-token");
+		expect(fetchMock).toHaveBeenCalledOnce();
 	});
 });
