@@ -361,6 +361,8 @@ describe("openai-codex streaming", () => {
 		const resultPromise = streamOpenAICodexResponses(model, context, {
 			apiKey: token,
 			transport: "sse",
+			// Isolate the single-attempt header-timeout behavior; retries are covered separately.
+			maxRetries: 0,
 		}).result();
 		let settled = false;
 		const observedResultPromise = resultPromise.then((result) => {
@@ -370,13 +372,14 @@ describe("openai-codex streaming", () => {
 		await vi.advanceTimersByTimeAsync(0);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 
-		await vi.advanceTimersByTimeAsync(10_000);
+		// Default SSE header timeout is 60s — must NOT fire before then.
+		await vi.advanceTimersByTimeAsync(30_000);
 		expect(settled).toBe(false);
 
-		await vi.advanceTimersByTimeAsync(10_000);
+		await vi.advanceTimersByTimeAsync(30_000);
 		const result = await observedResultPromise;
 		expect(result.stopReason).toBe("error");
-		expect(result.errorMessage).toBe("Codex SSE response headers timed out after 20000ms");
+		expect(result.errorMessage).toBe("Codex SSE response headers timed out after 60000ms");
 	});
 
 	it("aborts SSE body reads after response headers arrive", async () => {
