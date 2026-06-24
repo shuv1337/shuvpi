@@ -96,47 +96,79 @@ const ThinkingLevelMapSchema = Type.Object({
 	xhigh: Type.Optional(ThinkingLevelMapValueSchema),
 });
 
-const OpenAICompletionsCompatSchema = Type.Object({
-	supportsStore: Type.Optional(Type.Boolean()),
-	supportsDeveloperRole: Type.Optional(Type.Boolean()),
-	supportsReasoningEffort: Type.Optional(Type.Boolean()),
-	supportsUsageInStreaming: Type.Optional(Type.Boolean()),
-	maxTokensField: Type.Optional(Type.Union([Type.Literal("max_completion_tokens"), Type.Literal("max_tokens")])),
-	requiresToolResultName: Type.Optional(Type.Boolean()),
-	requiresAssistantAfterToolResult: Type.Optional(Type.Boolean()),
-	requiresThinkingAsText: Type.Optional(Type.Boolean()),
-	requiresReasoningContentOnAssistantMessages: Type.Optional(Type.Boolean()),
-	thinkingFormat: Type.Optional(
-		Type.Union([
-			Type.Literal("openai"),
-			Type.Literal("openrouter"),
-			Type.Literal("together"),
-			Type.Literal("deepseek"),
-			Type.Literal("zai"),
-			Type.Literal("qwen"),
-			Type.Literal("qwen-chat-template"),
-		]),
+const ChatTemplateValueSchema = Type.Union([
+	Type.String(),
+	Type.Number(),
+	Type.Boolean(),
+	Type.Null(),
+	Type.Object(
+		{
+			$var: Type.Union([Type.Literal("thinking.enabled"), Type.Literal("thinking.effort")]),
+			omitWhenOff: Type.Optional(Type.Boolean()),
+		},
+		{ additionalProperties: false },
 	),
-	cacheControlFormat: Type.Optional(Type.Literal("anthropic")),
-	openRouterRouting: Type.Optional(OpenRouterRoutingSchema),
-	vercelGatewayRouting: Type.Optional(VercelGatewayRoutingSchema),
-	supportsStrictMode: Type.Optional(Type.Boolean()),
-	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
-});
+]);
 
-const OpenAIResponsesCompatSchema = Type.Object({
-	supportsDeveloperRole: Type.Optional(Type.Boolean()),
-	sendSessionIdHeader: Type.Optional(Type.Boolean()),
-	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
-});
+const OpenAICompletionsCompatSchema = Type.Object(
+	{
+		supportsStore: Type.Optional(Type.Boolean()),
+		supportsDeveloperRole: Type.Optional(Type.Boolean()),
+		supportsReasoningEffort: Type.Optional(Type.Boolean()),
+		supportsUsageInStreaming: Type.Optional(Type.Boolean()),
+		maxTokensField: Type.Optional(Type.Union([Type.Literal("max_completion_tokens"), Type.Literal("max_tokens")])),
+		requiresToolResultName: Type.Optional(Type.Boolean()),
+		requiresAssistantAfterToolResult: Type.Optional(Type.Boolean()),
+		requiresThinkingAsText: Type.Optional(Type.Boolean()),
+		requiresReasoningContentOnAssistantMessages: Type.Optional(Type.Boolean()),
+		thinkingFormat: Type.Optional(
+			Type.Union([
+				Type.Literal("openai"),
+				Type.Literal("openrouter"),
+				Type.Literal("together"),
+				Type.Literal("deepseek"),
+				Type.Literal("zai"),
+				Type.Literal("qwen"),
+				Type.Literal("qwen-chat-template"),
+				Type.Literal("chat-template"),
+				Type.Literal("string-thinking"),
+				Type.Literal("ant-ling"),
+			]),
+		),
+		chatTemplateKwargs: Type.Optional(Type.Record(Type.String(), ChatTemplateValueSchema)),
+		chatTemplateArgs: Type.Optional(Type.Record(Type.String(), ChatTemplateValueSchema)),
+		cacheControlFormat: Type.Optional(Type.Literal("anthropic")),
+		openRouterRouting: Type.Optional(OpenRouterRoutingSchema),
+		vercelGatewayRouting: Type.Optional(VercelGatewayRoutingSchema),
+		supportsStrictMode: Type.Optional(Type.Boolean()),
+		supportsLongCacheRetention: Type.Optional(Type.Boolean()),
+		zaiToolStream: Type.Optional(Type.Boolean()),
+		sendSessionAffinityHeaders: Type.Optional(Type.Boolean()),
+	},
+	{ additionalProperties: false },
+);
 
-const AnthropicMessagesCompatSchema = Type.Object({
-	supportsEagerToolInputStreaming: Type.Optional(Type.Boolean()),
-	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
-	sendSessionAffinityHeaders: Type.Optional(Type.Boolean()),
-	supportsCacheControlOnTools: Type.Optional(Type.Boolean()),
-	forceAdaptiveThinking: Type.Optional(Type.Boolean()),
-});
+const OpenAIResponsesCompatSchema = Type.Object(
+	{
+		supportsDeveloperRole: Type.Optional(Type.Boolean()),
+		sendSessionIdHeader: Type.Optional(Type.Boolean()),
+		supportsLongCacheRetention: Type.Optional(Type.Boolean()),
+	},
+	{ additionalProperties: false },
+);
+
+const AnthropicMessagesCompatSchema = Type.Object(
+	{
+		supportsEagerToolInputStreaming: Type.Optional(Type.Boolean()),
+		supportsLongCacheRetention: Type.Optional(Type.Boolean()),
+		sendSessionAffinityHeaders: Type.Optional(Type.Boolean()),
+		supportsCacheControlOnTools: Type.Optional(Type.Boolean()),
+		forceAdaptiveThinking: Type.Optional(Type.Boolean()),
+		supportsTemperature: Type.Optional(Type.Boolean()),
+		allowEmptySignature: Type.Optional(Type.Boolean()),
+	},
+	{ additionalProperties: false },
+);
 
 const ProviderCompatSchema = Type.Union([
 	OpenAICompletionsCompatSchema,
@@ -285,6 +317,20 @@ function mergeCompat(
 		mergedCompletions.vercelGatewayRouting = {
 			...baseCompletions?.vercelGatewayRouting,
 			...overrideCompletions.vercelGatewayRouting,
+		};
+	}
+
+	if (baseCompletions?.chatTemplateKwargs || overrideCompletions.chatTemplateKwargs) {
+		mergedCompletions.chatTemplateKwargs = {
+			...baseCompletions?.chatTemplateKwargs,
+			...overrideCompletions.chatTemplateKwargs,
+		};
+	}
+
+	if (baseCompletions?.chatTemplateArgs || overrideCompletions.chatTemplateArgs) {
+		mergedCompletions.chatTemplateArgs = {
+			...baseCompletions?.chatTemplateArgs,
+			...overrideCompletions.chatTemplateArgs,
 		};
 	}
 
@@ -509,6 +555,22 @@ export class ModelRegistry {
 		}
 	}
 
+	private validateChatTemplateCompat(path: string, compat: ModelOverride["compat"]): void {
+		if (!compat || !("thinkingFormat" in compat) || compat.thinkingFormat !== "chat-template") {
+			return;
+		}
+
+		const completionsCompat = compat as OpenAICompletionsCompat;
+		const hasChatTemplateKwargs =
+			completionsCompat.chatTemplateKwargs !== undefined &&
+			Object.keys(completionsCompat.chatTemplateKwargs).length > 0;
+		const hasChatTemplateArgs =
+			completionsCompat.chatTemplateArgs !== undefined && Object.keys(completionsCompat.chatTemplateArgs).length > 0;
+		if (!hasChatTemplateKwargs && !hasChatTemplateArgs) {
+			throw new Error(`${path}: thinkingFormat "chat-template" requires chatTemplateKwargs and/or chatTemplateArgs`);
+		}
+	}
+
 	private validateConfig(config: ModelsConfig): void {
 		const builtInProviders = new Set<string>(getProviders());
 
@@ -538,6 +600,17 @@ export class ModelRegistry {
 			// Built-in providers with custom models: baseUrl/apiKey/api are optional,
 			// inherited from built-in models. Auth comes from env vars / auth storage.
 
+			this.validateChatTemplateCompat(`Provider ${providerName}`, providerConfig.compat);
+
+			if (providerConfig.modelOverrides) {
+				for (const [modelId, modelOverride] of Object.entries(providerConfig.modelOverrides)) {
+					this.validateChatTemplateCompat(
+						`Provider ${providerName}, model override ${modelId}`,
+						modelOverride.compat,
+					);
+				}
+			}
+
 			for (const modelDef of models) {
 				const hasModelApi = !!modelDef.api;
 
@@ -549,6 +622,7 @@ export class ModelRegistry {
 				// For built-in providers, api is optional — inherited from built-in models.
 
 				if (!modelDef.id) throw new Error(`Provider ${providerName}: model missing "id"`);
+				this.validateChatTemplateCompat(`Provider ${providerName}, model ${modelDef.id}`, modelDef.compat);
 				// Validate contextWindow/maxTokens only if provided (they have defaults)
 				if (modelDef.contextWindow !== undefined && modelDef.contextWindow <= 0)
 					throw new Error(`Provider ${providerName}, model ${modelDef.id}: invalid contextWindow`);

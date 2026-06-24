@@ -5,6 +5,11 @@
 ### Added
 
 - Added first-run interactive theme detection from the terminal background.
+- Added Baseten built-in provider discovery, display name, default model selection, and `chatTemplateKwargs`/`chatTemplateArgs` compatibility schema support
+
+### Changed
+
+- Tightened `models.json` compat schema validation with `additionalProperties: false` and documented compat fields (`zaiToolStream`, `sendSessionAffinityHeaders`, `allowEmptySignature`, `supportsTemperature`)
 
 ### Fixed
 

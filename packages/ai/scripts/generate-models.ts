@@ -119,6 +119,104 @@ const TOGETHER_TOGGLE_REASONING_LEVEL_MAP = {
 	medium: null,
 } as const;
 
+const BASETEN_BASE_URL = "https://inference.baseten.co/v1";
+const BASETEN_BASE_COMPAT: OpenAICompletionsCompat = {
+	supportsStore: false,
+	supportsDeveloperRole: false,
+	supportsReasoningEffort: false,
+	maxTokensField: "max_tokens",
+	supportsStrictMode: false,
+	supportsLongCacheRetention: false,
+};
+// Official Baseten reasoning controls: https://docs.baseten.co/inference/model-apis/reasoning
+// Keep these allowlists in sync with Baseten docs; models.dev reasoning flags alone are not authoritative.
+const BASETEN_REASONING_EFFORT_MODELS = new Set([
+	"deepseek-ai/DeepSeek-V4-Pro",
+	"openai/gpt-oss-120b",
+]);
+const BASETEN_CHAT_TEMPLATE_ARGS_MODELS = new Set([
+	"moonshotai/Kimi-K2.5",
+	"moonshotai/Kimi-K2.6",
+	"moonshotai/Kimi-K2.7-Code",
+	"zai-org/GLM-4.7",
+	"zai-org/GLM-5",
+	"zai-org/GLM-5.1",
+	"zai-org/GLM-5.2",
+	"nvidia/Nemotron-120B-A12B",
+	"nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
+]);
+const BASETEN_REASONING_MODELS = new Set([
+	...BASETEN_REASONING_EFFORT_MODELS,
+	...BASETEN_CHAT_TEMPLATE_ARGS_MODELS,
+]);
+const BASETEN_DEEPSEEK_V4_THINKING_LEVEL_MAP = {
+	off: null,
+	minimal: null,
+	low: "low",
+	medium: "medium",
+	high: "high",
+	xhigh: "xhigh",
+} as const;
+const BASETEN_GPT_OSS_THINKING_LEVEL_MAP = {
+	off: null,
+	minimal: null,
+	low: "low",
+	medium: "medium",
+	high: "high",
+	xhigh: null,
+} as const;
+const BASETEN_CHAT_TEMPLATE_THINKING_LEVEL_MAP = {
+	minimal: null,
+	low: null,
+	medium: null,
+} as const;
+const BASETEN_REASONING_EFFORT_COMPAT: OpenAICompletionsCompat = {
+	...BASETEN_BASE_COMPAT,
+	supportsReasoningEffort: true,
+	thinkingFormat: "openai",
+};
+const BASETEN_CHAT_TEMPLATE_ARGS_COMPAT: OpenAICompletionsCompat = {
+	...BASETEN_BASE_COMPAT,
+	thinkingFormat: "chat-template",
+	requiresReasoningContentOnAssistantMessages: true,
+	chatTemplateArgs: {
+		enable_thinking: { $var: "thinking.enabled" },
+	},
+};
+
+function getBasetenCompat(modelId: string): OpenAICompletionsCompat {
+	if (BASETEN_REASONING_EFFORT_MODELS.has(modelId)) {
+		return {
+			...BASETEN_REASONING_EFFORT_COMPAT,
+			...(modelId === "deepseek-ai/DeepSeek-V4-Pro"
+				? { requiresReasoningContentOnAssistantMessages: true }
+				: {}),
+		};
+	}
+	if (BASETEN_CHAT_TEMPLATE_ARGS_MODELS.has(modelId)) {
+		return {
+			...BASETEN_CHAT_TEMPLATE_ARGS_COMPAT,
+			chatTemplateArgs: { ...BASETEN_CHAT_TEMPLATE_ARGS_COMPAT.chatTemplateArgs },
+		};
+	}
+	return { ...BASETEN_BASE_COMPAT };
+}
+
+function getBasetenThinkingLevelMap(
+	modelId: string,
+): NonNullable<Model<any>["thinkingLevelMap"]> | undefined {
+	if (modelId === "deepseek-ai/DeepSeek-V4-Pro") {
+		return { ...BASETEN_DEEPSEEK_V4_THINKING_LEVEL_MAP };
+	}
+	if (modelId === "openai/gpt-oss-120b") {
+		return { ...BASETEN_GPT_OSS_THINKING_LEVEL_MAP };
+	}
+	if (BASETEN_CHAT_TEMPLATE_ARGS_MODELS.has(modelId)) {
+		return { ...BASETEN_CHAT_TEMPLATE_THINKING_LEVEL_MAP };
+	}
+	return undefined;
+}
+
 const AI_GATEWAY_MODELS_URL = "https://ai-gateway.vercel.sh/v1";
 const AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh";
 const NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
@@ -965,6 +1063,37 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 						cacheWrite: m.cost?.cache_write || 0,
 					},
 					compat: NVIDIA_OPENAI_COMPAT,
+					contextWindow: m.limit?.context || 4096,
+					maxTokens: m.limit?.output || 4096,
+				});
+			}
+		}
+
+		// Process Baseten Model API models
+		if (data.baseten?.models) {
+			for (const [modelId, model] of Object.entries(data.baseten.models)) {
+				const m = model as ModelsDevModel & { status?: string };
+				if (m.tool_call !== true) continue;
+				if (m.status === "deprecated") continue;
+
+				const reasoning = BASETEN_REASONING_MODELS.has(modelId);
+				const thinkingLevelMap = getBasetenThinkingLevelMap(modelId);
+				models.push({
+					id: modelId,
+					name: m.name || modelId,
+					api: "openai-completions",
+					provider: "baseten",
+					baseUrl: BASETEN_BASE_URL,
+					reasoning,
+					...(thinkingLevelMap ? { thinkingLevelMap } : {}),
+					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
+					cost: {
+						input: m.cost?.input || 0,
+						output: m.cost?.output || 0,
+						cacheRead: m.cost?.cache_read || 0,
+						cacheWrite: m.cost?.cache_write || 0,
+					},
+					compat: getBasetenCompat(modelId),
 					contextWindow: m.limit?.context || 4096,
 					maxTokens: m.limit?.output || 4096,
 				});

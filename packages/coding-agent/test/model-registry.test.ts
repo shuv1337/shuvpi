@@ -7,6 +7,8 @@ import { getOAuthProvider } from "@shuv1337/pi-ai/oauth";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { clearApiKeyCache, ModelRegistry, type ProviderConfigInput } from "../src/core/model-registry.ts";
+import { defaultModelPerProvider } from "../src/core/model-resolver.ts";
+import { BUILT_IN_PROVIDER_DISPLAY_NAMES } from "../src/core/provider-display-names.ts";
 
 describe("ModelRegistry", () => {
 	let tempDir: string;
@@ -1688,6 +1690,281 @@ describe("ModelRegistry", () => {
 					expect(auth.error).toContain('Failed to resolve API key for provider "custom-provider"');
 				}
 			});
+		});
+	});
+
+	describe("chat-template compat schema and merge", () => {
+		test("accepts documented compat fields after additionalProperties tightening", () => {
+			writeRawModelsJson({
+				"anthropic-proxy": {
+					baseUrl: "https://proxy.example.com",
+					api: "anthropic-messages",
+					apiKey: "test-key",
+					compat: {
+						supportsEagerToolInputStreaming: false,
+						supportsLongCacheRetention: true,
+						forceAdaptiveThinking: true,
+						allowEmptySignature: true,
+					},
+					models: [{ id: "claude-opus-4-8", reasoning: true, input: ["text"] }],
+				},
+				"custom-openai": {
+					baseUrl: "https://example.com/v1",
+					apiKey: "test-key",
+					api: "openai-completions",
+					compat: {
+						zaiToolStream: true,
+						sendSessionAffinityHeaders: true,
+					},
+					models: [{ id: "custom-model" }],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(registry.getError()).toBeUndefined();
+		});
+
+		test("accepts valid chatTemplateArgs in models.json", () => {
+			writeRawModelsJson({
+				"custom-provider": {
+					baseUrl: "https://example.com/v1",
+					apiKey: "test-key",
+					api: "openai-completions",
+					models: [
+						{
+							id: "chat-template-model",
+							compat: {
+								thinkingFormat: "chat-template",
+								chatTemplateArgs: {
+									enable_thinking: { $var: "thinking.enabled" },
+								},
+							},
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(registry.getError()).toBeUndefined();
+		});
+
+		test("accepts valid chatTemplateKwargs in models.json", () => {
+			writeRawModelsJson({
+				"custom-provider": {
+					baseUrl: "https://example.com/v1",
+					apiKey: "test-key",
+					api: "openai-completions",
+					models: [
+						{
+							id: "chat-template-model",
+							compat: {
+								thinkingFormat: "chat-template",
+								chatTemplateKwargs: {
+									enable_thinking: { $var: "thinking.enabled" },
+								},
+							},
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(registry.getError()).toBeUndefined();
+		});
+
+		test("rejects chat-template compat without kwargs or args", () => {
+			writeRawModelsJson({
+				"custom-provider": {
+					baseUrl: "https://example.com/v1",
+					apiKey: "test-key",
+					api: "openai-completions",
+					models: [
+						{
+							id: "chat-template-model",
+							compat: {
+								thinkingFormat: "chat-template",
+							},
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(registry.getError()).toContain('thinkingFormat "chat-template" requires');
+		});
+
+		test("rejects invalid chatTemplate variable names in chatTemplateArgs", () => {
+			writeRawModelsJson({
+				"custom-provider": {
+					baseUrl: "https://example.com/v1",
+					apiKey: "test-key",
+					api: "openai-completions",
+					models: [
+						{
+							id: "chat-template-model",
+							compat: {
+								thinkingFormat: "chat-template",
+								chatTemplateArgs: {
+									enable_thinking: { $var: "thinking.depth" },
+								},
+							},
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(registry.getError()).toContain("chatTemplateArgs");
+		});
+
+		test("rejects invalid chatTemplate variable names in chatTemplateKwargs", () => {
+			writeRawModelsJson({
+				"custom-provider": {
+					baseUrl: "https://example.com/v1",
+					apiKey: "test-key",
+					api: "openai-completions",
+					models: [
+						{
+							id: "chat-template-model",
+							compat: {
+								thinkingFormat: "chat-template",
+								chatTemplateKwargs: {
+									enable_thinking: { $var: "thinking.depth" },
+								},
+							},
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(registry.getError()).toContain("chatTemplateKwargs");
+		});
+
+		test("rejects unknown properties on chat-template variable objects", () => {
+			writeRawModelsJson({
+				"custom-provider": {
+					baseUrl: "https://example.com/v1",
+					apiKey: "test-key",
+					api: "openai-completions",
+					models: [
+						{
+							id: "chat-template-model",
+							compat: {
+								thinkingFormat: "chat-template",
+								chatTemplateArgs: {
+									enable_thinking: { $var: "thinking.enabled", typo: true },
+								},
+							},
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(registry.getError()).toContain("chatTemplateArgs");
+		});
+
+		test("deep merges chatTemplateArgs across provider and model overrides", () => {
+			writeRawModelsJson({
+				baseten: {
+					compat: {
+						thinkingFormat: "chat-template",
+						chatTemplateArgs: {
+							enable_thinking: { $var: "thinking.enabled" },
+						},
+					},
+					modelOverrides: {
+						"moonshotai/Kimi-K2.6": {
+							compat: {
+								chatTemplateArgs: {
+									extra_flag: true,
+								},
+							},
+						},
+					},
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			const model = registry.find("baseten", "moonshotai/Kimi-K2.6");
+			const compat = model?.compat as OpenAICompletionsCompat | undefined;
+
+			expect(compat?.chatTemplateArgs).toEqual({
+				enable_thinking: { $var: "thinking.enabled" },
+				extra_flag: true,
+			});
+		});
+
+		test("deep merges chatTemplateKwargs across provider and model overrides", () => {
+			writeRawModelsJson({
+				"custom-provider": {
+					baseUrl: "https://example.com/v1",
+					apiKey: "test-key",
+					api: "openai-completions",
+					compat: {
+						thinkingFormat: "chat-template",
+						chatTemplateKwargs: {
+							enable_thinking: { $var: "thinking.enabled" },
+						},
+					},
+					models: [
+						{
+							id: "chat-template-model",
+							compat: {
+								chatTemplateKwargs: {
+									preserve_thinking: true,
+								},
+							},
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			const model = registry.find("custom-provider", "chat-template-model");
+			const compat = model?.compat as OpenAICompletionsCompat | undefined;
+
+			expect(compat?.chatTemplateKwargs).toEqual({
+				enable_thinking: { $var: "thinking.enabled" },
+				preserve_thinking: true,
+			});
+		});
+	});
+
+	describe("Baseten built-in provider", () => {
+		const originalBasetenApiKey = process.env.BASETEN_API_KEY;
+
+		afterEach(() => {
+			if (originalBasetenApiKey === undefined) {
+				delete process.env.BASETEN_API_KEY;
+			} else {
+				process.env.BASETEN_API_KEY = originalBasetenApiKey;
+			}
+			clearApiKeyCache();
+		});
+
+		test("uses the Baseten display name", () => {
+			expect(BUILT_IN_PROVIDER_DISPLAY_NAMES.baseten).toBe("Baseten");
+		});
+
+		test("tracks the Baseten default model", () => {
+			expect(defaultModelPerProvider.baseten).toBe("moonshotai/Kimi-K2.6");
+		});
+
+		test("exposes Baseten models only when auth is configured", () => {
+			delete process.env.BASETEN_API_KEY;
+			clearApiKeyCache();
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(registry.getAll().some((model) => model.provider === "baseten")).toBe(true);
+			expect(registry.getAvailable().some((model) => model.provider === "baseten")).toBe(false);
+
+			process.env.BASETEN_API_KEY = "test-baseten-key";
+			clearApiKeyCache();
+
+			const configuredRegistry = ModelRegistry.create(authStorage, modelsJsonPath);
+			expect(configuredRegistry.getAvailable().some((model) => model.provider === "baseten")).toBe(true);
 		});
 	});
 });

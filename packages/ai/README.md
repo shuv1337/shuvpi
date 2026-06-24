@@ -70,6 +70,7 @@ Unified LLM API with automatic model discovery, provider configuration, token an
 - **ZAI** (with separate Coding Plan China provider)
 - **MiniMax**
 - **Together AI**
+- **Baseten**
 - **GitHub Copilot** (requires OAuth, see below)
 - **Amazon Bedrock**
 - **OpenCode Zen**
@@ -807,7 +808,7 @@ A **provider** offers models through a specific API. For example:
 - **Google** models use the `google-generative-ai` API
 - **OpenAI** models use the `openai-responses` API
 - **Mistral** models use the `mistral-conversations` API
-- **xAI, Cerebras, Groq, NVIDIA NIM, Together AI, etc.** models use the `openai-completions` API (OpenAI-compatible)
+- **xAI, Cerebras, Groq, NVIDIA NIM, Together AI, Baseten, etc.** models use the `openai-completions` API (OpenAI-compatible)
 
 ### Querying Providers and Models
 
@@ -929,9 +930,17 @@ const ollamaReasoningModel: Model<'openai-completions'> = {
 
 ### OpenAI Compatibility Settings
 
-The `openai-completions` API is implemented by many providers with minor differences. By default, the library auto-detects compatibility settings based on `baseUrl` for a small set of known OpenAI-compatible providers (Cerebras, xAI, Chutes, DeepSeek, NVIDIA NIM, Together AI, zAi, OpenCode, Cloudflare Workers AI, etc.). For custom proxies or unknown endpoints, you can override these settings via the `compat` field. For `openai-responses` models, the compat field supports Responses-specific flags.
+The `openai-completions` API is implemented by many providers with minor differences. By default, the library auto-detects compatibility settings based on `baseUrl` for a small set of known OpenAI-compatible providers (Baseten, Cerebras, xAI, Chutes, DeepSeek, NVIDIA NIM, Together AI, zAi, OpenCode, Cloudflare Workers AI, etc.). For custom proxies or unknown endpoints, you can override these settings via the `compat` field. For `openai-responses` models, the compat field supports Responses-specific flags.
 
 ```typescript
+type ChatTemplateValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { $var: 'thinking.enabled' }
+  | { $var: 'thinking.effort'; omitWhenOff?: boolean };
+
 interface OpenAICompletionsCompat {
   supportsStore?: boolean;           // Whether provider supports the `store` field (default: true)
   supportsDeveloperRole?: boolean;   // Whether provider supports `developer` role vs `system` (default: true)
@@ -944,7 +953,9 @@ interface OpenAICompletionsCompat {
   requiresAssistantAfterToolResult?: boolean; // Whether tool results must be followed by an assistant message (default: false)
   requiresThinkingAsText?: boolean;  // Whether thinking blocks must be converted to text (default: false)
   requiresReasoningContentOnAssistantMessages?: boolean; // Whether all replayed assistant messages must include empty reasoning_content when reasoning is enabled (default: auto-detected for DeepSeek)
-  thinkingFormat?: 'openai' | 'openrouter' | 'deepseek' | 'together' | 'zai' | 'qwen' | 'qwen-chat-template' | 'string-thinking' | 'ant-ling'; // Format for reasoning param: 'openai' uses reasoning_effort, 'openrouter' uses reasoning: { effort }, 'deepseek' uses thinking: { type } plus reasoning_effort when supported, 'together' uses reasoning: { enabled } plus reasoning_effort when supported, 'zai' uses enable_thinking, 'qwen' uses enable_thinking, 'qwen-chat-template' uses chat_template_kwargs.enable_thinking, 'string-thinking' uses top-level thinking, 'ant-ling' uses reasoning: { effort } only for mapped efforts (default: openai)
+  thinkingFormat?: 'openai' | 'openrouter' | 'deepseek' | 'together' | 'zai' | 'qwen' | 'qwen-chat-template' | 'chat-template' | 'string-thinking' | 'ant-ling'; // Format for reasoning param: 'openai' uses reasoning_effort, 'openrouter' uses reasoning: { effort }, 'deepseek' uses thinking: { type } plus reasoning_effort when supported, 'together' uses reasoning: { enabled } plus reasoning_effort when supported, 'zai' uses enable_thinking, 'qwen' uses enable_thinking, 'qwen-chat-template' uses chat_template_kwargs.enable_thinking, 'chat-template' uses chatTemplateKwargs/chatTemplateArgs maps, 'string-thinking' uses top-level thinking, 'ant-ling' uses reasoning: { effort } only for mapped efforts (default: openai)
+  chatTemplateKwargs?: Record<string, ChatTemplateValue>; // Emitted as chat_template_kwargs when thinkingFormat is chat-template
+  chatTemplateArgs?: Record<string, ChatTemplateValue>; // Emitted as chat_template_args when thinkingFormat is chat-template
   cacheControlFormat?: 'anthropic';  // Anthropic-style cache_control on system prompt, last tool, and last user/assistant text content
   openRouterRouting?: OpenRouterRouting; // OpenRouter routing preferences (default: {})
   vercelGatewayRouting?: VercelGatewayRouting; // Vercel AI Gateway routing preferences (default: {})
@@ -1122,6 +1133,7 @@ In Node.js environments, you can set environment variables to avoid passing API 
 | xAI | `XAI_API_KEY` |
 | Fireworks | `FIREWORKS_API_KEY` |
 | Together AI | `TOGETHER_API_KEY` |
+| Baseten | `BASETEN_API_KEY` |
 | OpenRouter | `OPENROUTER_API_KEY` |
 | Vercel AI Gateway | `AI_GATEWAY_API_KEY` |
 | zAI | `ZAI_API_KEY` |
@@ -1135,6 +1147,17 @@ In Node.js environments, you can set environment variables to avoid passing API 
 | Xiaomi MiMo Token Plan (Amsterdam) | `XIAOMI_TOKEN_PLAN_AMS_API_KEY` |
 | Xiaomi MiMo Token Plan (Singapore) | `XIAOMI_TOKEN_PLAN_SGP_API_KEY` |
 | GitHub Copilot | `COPILOT_GITHUB_TOKEN` or `GH_TOKEN` or `GITHUB_TOKEN` |
+
+#### Baseten
+
+```text
+Provider: baseten
+Environment variable: BASETEN_API_KEY
+API: openai-completions
+Base URL: https://inference.baseten.co/v1
+```
+
+Built-in Baseten support targets shared Baseten Model APIs only. Private Truss or dedicated deployments should use `models.json` overrides or a custom provider entry instead.
 
 When set, the library automatically uses these keys:
 

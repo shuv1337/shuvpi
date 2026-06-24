@@ -553,6 +553,10 @@ describe("default model selection", () => {
 		expect(defaultModelPerProvider["vercel-ai-gateway"]).toBe("anthropic/claude-opus-4.8");
 	});
 
+	test("baseten default tracks current models", () => {
+		expect(defaultModelPerProvider.baseten).toBe("moonshotai/Kimi-K2.6");
+	});
+
 	test("findInitialModel accepts explicit provider custom model ids", async () => {
 		const registry = {
 			getAll: () => allModels,

@@ -30,6 +30,7 @@ export type KnownProvider =
 	| "google-vertex"
 	| "openai"
 	| "azure-openai-responses"
+	| "baseten"
 	| "openai-codex"
 	| "nvidia"
 	| "deepseek"
@@ -68,6 +69,14 @@ export type ImagesProvider = KnownImagesProvider | string;
 export type ThinkingLevel = "minimal" | "low" | "medium" | "high" | "xhigh";
 export type ModelThinkingLevel = "off" | ThinkingLevel;
 export type ThinkingLevelMap = Partial<Record<ModelThinkingLevel, string | null>>;
+
+export type ChatTemplateValue =
+	| string
+	| number
+	| boolean
+	| null
+	| { $var: "thinking.enabled" }
+	| { $var: "thinking.effort"; omitWhenOff?: boolean };
 
 /** Token budgets for each thinking level (token-based providers only) */
 export interface ThinkingBudgets {
@@ -429,7 +438,7 @@ export interface OpenAICompletionsCompat {
 	requiresThinkingAsText?: boolean;
 	/** Whether all replayed assistant messages must include an empty reasoning_content field when reasoning is enabled. Default: auto-detected from URL. */
 	requiresReasoningContentOnAssistantMessages?: boolean;
-	/** Format for reasoning/thinking parameter. "openai" uses reasoning_effort, "openrouter" uses reasoning: { effort }, "deepseek" uses thinking: { type } plus reasoning_effort when supported, "together" uses reasoning: { enabled } plus reasoning_effort when supported, "zai" uses thinking: { type }, "qwen" uses top-level enable_thinking: boolean, "qwen-chat-template" uses chat_template_kwargs.enable_thinking, "string-thinking" uses top-level thinking: string, and "ant-ling" uses reasoning: { effort } only when the mapped effort is non-null. Default: "openai". */
+	/** Format for reasoning/thinking parameter. "openai" uses reasoning_effort, "openrouter" uses reasoning: { effort }, "deepseek" uses thinking: { type } plus reasoning_effort when supported, "together" uses reasoning: { enabled } plus reasoning_effort when supported, "zai" uses thinking: { type }, "qwen" uses top-level enable_thinking: boolean, "qwen-chat-template" uses chat_template_kwargs.enable_thinking, "chat-template" uses configurable chatTemplateKwargs and chatTemplateArgs maps, "string-thinking" uses top-level thinking: string, and "ant-ling" uses reasoning: { effort } only when the mapped effort is non-null. Default: "openai". */
 	thinkingFormat?:
 		| "openai"
 		| "openrouter"
@@ -438,8 +447,13 @@ export interface OpenAICompletionsCompat {
 		| "zai"
 		| "qwen"
 		| "qwen-chat-template"
+		| "chat-template"
 		| "string-thinking"
 		| "ant-ling";
+	/** Values to send as `chat_template_kwargs` when using configurable chat-template reasoning. */
+	chatTemplateKwargs?: Record<string, ChatTemplateValue>;
+	/** Values to send as `chat_template_args` when using configurable chat-template reasoning. */
+	chatTemplateArgs?: Record<string, ChatTemplateValue>;
 	/** OpenRouter-compatible routing preferences sent as the `provider` request field. */
 	openRouterRouting?: OpenRouterRouting;
 	/** Vercel AI Gateway routing preferences. Only used when baseUrl points to Vercel AI Gateway. */

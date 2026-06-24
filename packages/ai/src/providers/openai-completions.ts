@@ -14,6 +14,7 @@ import { calculateCost, clampThinkingLevel } from "../models.ts";
 import type {
 	AssistantMessage,
 	CacheRetention,
+	ChatTemplateValue,
 	Context,
 	ImageContent,
 	Message,
@@ -85,8 +86,13 @@ interface OpenAICompatCacheControl {
 	ttl?: string;
 }
 
-type ResolvedOpenAICompletionsCompat = Omit<Required<OpenAICompletionsCompat>, "cacheControlFormat"> & {
+type ResolvedOpenAICompletionsCompat = Omit<
+	Required<OpenAICompletionsCompat>,
+	"cacheControlFormat" | "chatTemplateKwargs" | "chatTemplateArgs"
+> & {
 	cacheControlFormat?: OpenAICompletionsCompat["cacheControlFormat"];
+	chatTemplateKwargs: Record<string, ChatTemplateValue>;
+	chatTemplateArgs: Record<string, ChatTemplateValue>;
 };
 
 type ChatCompletionInstructionMessageParam = ChatCompletionDeveloperMessageParam | ChatCompletionSystemMessageParam;
@@ -586,6 +592,15 @@ function buildParams(
 			enable_thinking: !!options?.reasoningEffort,
 			preserve_thinking: true,
 		};
+	} else if (compat.thinkingFormat === "chat-template" && model.reasoning) {
+		const chatTemplateKwargs = buildChatTemplateValues(compat.chatTemplateKwargs, model, options);
+		if (chatTemplateKwargs) {
+			(params as { chat_template_kwargs?: Record<string, unknown> }).chat_template_kwargs = chatTemplateKwargs;
+		}
+		const chatTemplateArgs = buildChatTemplateValues(compat.chatTemplateArgs, model, options);
+		if (chatTemplateArgs) {
+			(params as { chat_template_args?: Record<string, unknown> }).chat_template_args = chatTemplateArgs;
+		}
 	} else if (compat.thinkingFormat === "deepseek" && model.reasoning) {
 		(params as any).thinking = { type: options?.reasoningEffort ? "enabled" : "disabled" };
 		if (options?.reasoningEffort && compat.supportsReasoningEffort) {
@@ -1113,6 +1128,7 @@ function detectCompat(model: Model<"openai-completions">): ResolvedOpenAIComplet
 	const isCloudflareAiGateway = provider === "cloudflare-ai-gateway" || baseUrl.includes("gateway.ai.cloudflare.com");
 	const isNvidia = provider === "nvidia" || baseUrl.includes("integrate.api.nvidia.com");
 	const isAntLing = provider === "ant-ling" || baseUrl.includes("api.ant-ling.com");
+	const isBaseten = provider === "baseten" || baseUrl.includes("inference.baseten.co");
 
 	const isNonStandard =
 		isNvidia ||
@@ -1121,6 +1137,7 @@ function detectCompat(model: Model<"openai-completions">): ResolvedOpenAIComplet
 		provider === "xai" ||
 		baseUrl.includes("api.x.ai") ||
 		isTogether ||
+		isBaseten ||
 		baseUrl.includes("chutes.ai") ||
 		baseUrl.includes("deepseek.com") ||
 		isZai ||
@@ -1132,7 +1149,13 @@ function detectCompat(model: Model<"openai-completions">): ResolvedOpenAIComplet
 		isAntLing;
 
 	const useMaxTokens =
-		baseUrl.includes("chutes.ai") || isMoonshot || isCloudflareAiGateway || isTogether || isNvidia || isAntLing;
+		baseUrl.includes("chutes.ai") ||
+		isMoonshot ||
+		isCloudflareAiGateway ||
+		isTogether ||
+		isBaseten ||
+		isNvidia ||
+		isAntLing;
 
 	const isGrok = provider === "xai" || baseUrl.includes("api.x.ai");
 	const isDeepSeek = provider === "deepseek" || baseUrl.includes("deepseek.com");
@@ -1144,7 +1167,14 @@ function detectCompat(model: Model<"openai-completions">): ResolvedOpenAIComplet
 		supportsStore: !isNonStandard,
 		supportsDeveloperRole: isOpenRouterDeveloperRoleModel || (!isNonStandard && !isOpenRouter),
 		supportsReasoningEffort:
-			!isGrok && !isZai && !isMoonshot && !isTogether && !isCloudflareAiGateway && !isNvidia && !isAntLing,
+			!isGrok &&
+			!isZai &&
+			!isMoonshot &&
+			!isTogether &&
+			!isBaseten &&
+			!isCloudflareAiGateway &&
+			!isNvidia &&
+			!isAntLing,
 		supportsUsageInStreaming: true,
 		maxTokensField: useMaxTokens ? "max_tokens" : "max_completion_tokens",
 		requiresToolResultName: false,
@@ -1162,14 +1192,17 @@ function detectCompat(model: Model<"openai-completions">): ResolvedOpenAIComplet
 						: isOpenRouter
 							? "openrouter"
 							: "openai",
+		chatTemplateKwargs: {},
+		chatTemplateArgs: {},
 		openRouterRouting: {},
 		vercelGatewayRouting: {},
 		zaiToolStream: false,
-		supportsStrictMode: !isMoonshot && !isTogether && !isCloudflareAiGateway && !isNvidia,
+		supportsStrictMode: !isMoonshot && !isTogether && !isBaseten && !isCloudflareAiGateway && !isNvidia,
 		cacheControlFormat,
 		sendSessionAffinityHeaders: false,
 		supportsLongCacheRetention: !(
 			isTogether ||
+			isBaseten ||
 			isCloudflareWorkersAI ||
 			isCloudflareAiGateway ||
 			isNvidia ||
@@ -1182,7 +1215,7 @@ function detectCompat(model: Model<"openai-completions">): ResolvedOpenAIComplet
  * Get resolved compatibility settings for a model.
  * Uses explicit model.compat if provided, otherwise auto-detects from provider/URL.
  */
-function getCompat(model: Model<"openai-completions">): ResolvedOpenAICompletionsCompat {
+export function getCompat(model: Model<"openai-completions">): ResolvedOpenAICompletionsCompat {
 	const detected = detectCompat(model);
 	if (!model.compat) return detected;
 
@@ -1200,6 +1233,8 @@ function getCompat(model: Model<"openai-completions">): ResolvedOpenAICompletion
 			model.compat.requiresReasoningContentOnAssistantMessages ??
 			detected.requiresReasoningContentOnAssistantMessages,
 		thinkingFormat: model.compat.thinkingFormat ?? detected.thinkingFormat,
+		chatTemplateKwargs: model.compat.chatTemplateKwargs ?? detected.chatTemplateKwargs,
+		chatTemplateArgs: model.compat.chatTemplateArgs ?? detected.chatTemplateArgs,
 		openRouterRouting: model.compat.openRouterRouting ?? {},
 		vercelGatewayRouting: model.compat.vercelGatewayRouting ?? detected.vercelGatewayRouting,
 		zaiToolStream: model.compat.zaiToolStream ?? detected.zaiToolStream,
@@ -1208,4 +1243,52 @@ function getCompat(model: Model<"openai-completions">): ResolvedOpenAICompletion
 		sendSessionAffinityHeaders: model.compat.sendSessionAffinityHeaders ?? detected.sendSessionAffinityHeaders,
 		supportsLongCacheRetention: model.compat.supportsLongCacheRetention ?? detected.supportsLongCacheRetention,
 	};
+}
+
+function resolveChatTemplateValue(
+	value: ChatTemplateValue,
+	model: Model<"openai-completions">,
+	options: OpenAICompletionsOptions | undefined,
+): unknown | undefined {
+	if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+		return value;
+	}
+
+	if (value.$var === "thinking.enabled") {
+		return !!options?.reasoningEffort;
+	}
+
+	if (value.$var === "thinking.effort") {
+		if (!options?.reasoningEffort) {
+			if (value.omitWhenOff) {
+				return undefined;
+			}
+			return null;
+		}
+
+		const mapped = model.thinkingLevelMap?.[options.reasoningEffort];
+		if (mapped === null) {
+			return undefined;
+		}
+		return mapped ?? options.reasoningEffort;
+	}
+
+	throw new Error(`Unrecognized chat-template variable: ${(value as { $var: string }).$var}`);
+}
+
+function buildChatTemplateValues(
+	values: Record<string, ChatTemplateValue>,
+	model: Model<"openai-completions">,
+	options: OpenAICompletionsOptions | undefined,
+): Record<string, unknown> | undefined {
+	const result: Record<string, unknown> = {};
+
+	for (const [key, value] of Object.entries(values)) {
+		const resolved = resolveChatTemplateValue(value, model, options);
+		if (resolved !== undefined) {
+			result[key] = resolved;
+		}
+	}
+
+	return Object.keys(result).length > 0 ? result : undefined;
 }

@@ -70,6 +70,7 @@ pi
 | Hugging Face | `HF_TOKEN` | `huggingface` |
 | Fireworks | `FIREWORKS_API_KEY` | `fireworks` |
 | Together AI | `TOGETHER_API_KEY` | `together` |
+| Baseten | `BASETEN_API_KEY` | `baseten` |
 | Kimi For Coding | `KIMI_API_KEY` | `kimi-coding` |
 | Fireworks (Fire Pass) | `FIREWORKS_API_KEY` | `fireworks` |
 | MiniMax | `MINIMAX_API_KEY` | `minimax` |
@@ -80,6 +81,15 @@ pi
 | Xiaomi MiMo Token Plan (Singapore) | `XIAOMI_TOKEN_PLAN_SGP_API_KEY` | `xiaomi-token-plan-sgp` |
 
 Reference for environment variables and `auth.json` keys: [`const envMap`](https://github.com/shuv1337/pi-mono/blob/main/packages/ai/src/env-api-keys.ts) in [`packages/ai/src/env-api-keys.ts`](https://github.com/shuv1337/pi-mono/blob/main/packages/ai/src/env-api-keys.ts).
+
+#### Baseten
+
+Built-in `baseten` targets shared Baseten Model APIs at `https://inference.baseten.co/v1` with case-sensitive model slugs (for example `moonshotai/Kimi-K2.6`). Private Truss or dedicated deployments are not discovered automatically; configure those through `models.json` overrides or a custom provider.
+
+Reasoning behavior follows Baseten's official model table:
+
+- Always-on models such as `deepseek-ai/DeepSeek-V4-Pro` and `openai/gpt-oss-120b` use `reasoning_effort`
+- Opt-in Kimi, GLM, and Nemotron families use `chat_template_args.enable_thinking`
 
 #### Auth File
 
@@ -96,6 +106,7 @@ Store credentials in `~/.pi/agent/auth.json`:
   "opencode": { "type": "api_key", "key": "..." },
   "opencode-go": { "type": "api_key", "key": "..." },
   "together": { "type": "api_key", "key": "..." },
+  "baseten": { "type": "api_key", "key": "..." },
   "xiaomi": { "type": "api_key", "key": "..." },
   "xiaomi-token-plan-cn":  { "type": "api_key", "key": "..." },
   "xiaomi-token-plan-ams": { "type": "api_key", "key": "..." },
