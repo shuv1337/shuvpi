@@ -485,4 +485,33 @@ describe("extensions discovery", () => {
 		expect(result.errors).toHaveLength(0);
 		expect(result.extensions).toHaveLength(0);
 	});
+
+	// Third-party extensions are written against the upstream package scopes
+	// (@earendil-works, legacy @mariozechner). The loader aliases those scopes
+	// to this fork's bundled modules so they load without "Cannot find module".
+	for (const scope of ["@earendil-works", "@mariozechner"]) {
+		it(`resolves ${scope} pi package imports to bundled fork modules`, async () => {
+			const upstreamExtension = `
+				import { SessionManager } from "${scope}/pi-coding-agent";
+				import type { ExtensionAPI } from "${scope}/pi-coding-agent";
+				import "${scope}/pi-tui";
+				import "${scope}/pi-ai";
+				import "${scope}/pi-agent-core";
+				export default function(pi: ExtensionAPI) {
+					pi.registerCommand("upstream", {
+						handler: async () => {
+							if (typeof SessionManager !== "function") throw new Error("SessionManager missing");
+						},
+					});
+				}
+			`;
+			fs.writeFileSync(path.join(extensionsDir, "upstream.ts"), upstreamExtension);
+
+			const result = await discoverAndLoadExtensions([], tempDir, tempDir);
+
+			expect(result.errors).toHaveLength(0);
+			expect(result.extensions).toHaveLength(1);
+			expect(result.extensions[0].commands.has("upstream")).toBe(true);
+		});
+	}
 });

@@ -40,6 +40,24 @@ import type {
 	ToolDefinition,
 } from "./types.ts";
 
+/**
+ * Scopes under which the bundled pi packages are exposed to extensions.
+ * The first is the fork's own scope (what the binary actually bundles); the
+ * rest are upstream scopes aliased to the same bundled modules so third-party
+ * extensions written against the official packages load against this fork
+ * instead of failing with "Cannot find module".
+ */
+const PI_PACKAGE_SCOPES = ["@shuv1337", "@earendil-works", "@mariozechner"];
+
+/** Bundled pi modules keyed by package suffix (scope-independent). */
+const PI_BUNDLED_MODULES: Record<string, unknown> = {
+	"pi-agent-core": _bundledPiAgentCore,
+	"pi-tui": _bundledPiTui,
+	"pi-ai": _bundledPiAi,
+	"pi-ai/oauth": _bundledPiAiOauth,
+	"pi-coding-agent": _bundledPiCodingAgent,
+};
+
 /** Modules available to extensions via virtualModules (for compiled Bun binary) */
 const VIRTUAL_MODULES: Record<string, unknown> = {
 	typebox: _bundledTypebox,
@@ -48,12 +66,12 @@ const VIRTUAL_MODULES: Record<string, unknown> = {
 	"@sinclair/typebox": _bundledTypebox,
 	"@sinclair/typebox/compile": _bundledTypeboxCompile,
 	"@sinclair/typebox/value": _bundledTypeboxValue,
-	"@shuv1337/pi-agent-core": _bundledPiAgentCore,
-	"@shuv1337/pi-tui": _bundledPiTui,
-	"@shuv1337/pi-ai": _bundledPiAi,
-	"@shuv1337/pi-ai/oauth": _bundledPiAiOauth,
-	"@shuv1337/pi-coding-agent": _bundledPiCodingAgent,
 };
+for (const scope of PI_PACKAGE_SCOPES) {
+	for (const [suffix, mod] of Object.entries(PI_BUNDLED_MODULES)) {
+		VIRTUAL_MODULES[`${scope}/${suffix}`] = mod;
+	}
+}
 
 const require = createRequire(import.meta.url);
 
@@ -82,18 +100,15 @@ function getAliases(): Record<string, string> {
 		return fileURLToPath(import.meta.resolve(specifier));
 	};
 
-	const piCodingAgentEntry = packageIndex;
-	const piAgentCoreEntry = resolveWorkspaceOrImport("agent/dist/index.js", "@shuv1337/pi-agent-core");
-	const piTuiEntry = resolveWorkspaceOrImport("tui/dist/index.js", "@shuv1337/pi-tui");
-	const piAiEntry = resolveWorkspaceOrImport("ai/dist/index.js", "@shuv1337/pi-ai");
-	const piAiOauthEntry = resolveWorkspaceOrImport("ai/dist/oauth.js", "@shuv1337/pi-ai/oauth");
+	const piEntries: Record<string, string> = {
+		"pi-coding-agent": packageIndex,
+		"pi-agent-core": resolveWorkspaceOrImport("agent/dist/index.js", "@shuv1337/pi-agent-core"),
+		"pi-tui": resolveWorkspaceOrImport("tui/dist/index.js", "@shuv1337/pi-tui"),
+		"pi-ai": resolveWorkspaceOrImport("ai/dist/index.js", "@shuv1337/pi-ai"),
+		"pi-ai/oauth": resolveWorkspaceOrImport("ai/dist/oauth.js", "@shuv1337/pi-ai/oauth"),
+	};
 
 	_aliases = {
-		"@shuv1337/pi-coding-agent": piCodingAgentEntry,
-		"@shuv1337/pi-agent-core": piAgentCoreEntry,
-		"@shuv1337/pi-tui": piTuiEntry,
-		"@shuv1337/pi-ai": piAiEntry,
-		"@shuv1337/pi-ai/oauth": piAiOauthEntry,
 		typebox: typeboxEntry,
 		"typebox/compile": typeboxCompileEntry,
 		"typebox/value": typeboxValueEntry,
@@ -101,6 +116,11 @@ function getAliases(): Record<string, string> {
 		"@sinclair/typebox/compile": typeboxCompileEntry,
 		"@sinclair/typebox/value": typeboxValueEntry,
 	};
+	for (const scope of PI_PACKAGE_SCOPES) {
+		for (const [suffix, entry] of Object.entries(piEntries)) {
+			_aliases[`${scope}/${suffix}`] = entry;
+		}
+	}
 
 	return _aliases;
 }
