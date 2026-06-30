@@ -523,7 +523,7 @@ function handleContentBlockStop(
 }
 
 /**
- * Check if the model supports adaptive thinking (Opus 4.6+, Sonnet 4.6).
+ * Check if the model supports adaptive thinking (Opus 4.6+, Sonnet 4.6, Sonnet 5).
  * Checks both model ID and model name to support application inference profiles
  * whose ARNs don't contain the model name.
  */
@@ -543,13 +543,16 @@ function supportsAdaptiveThinking(modelId: string, modelName?: string): boolean 
 			s.includes("opus-4-7") ||
 			s.includes("opus-4-8") ||
 			s.includes("sonnet-4-6") ||
+			s.includes("sonnet-5") ||
 			s.includes("fable-5"),
 	);
 }
 
 function supportsNativeXhighEffort(model: Model<"bedrock-converse-stream">): boolean {
 	const candidates = getModelMatchCandidates(model.id, model.name);
-	return candidates.some((s) => s.includes("opus-4-7") || s.includes("opus-4-8") || s.includes("fable-5"));
+	return candidates.some(
+		(s) => s.includes("opus-4-7") || s.includes("opus-4-8") || s.includes("sonnet-5") || s.includes("fable-5"),
+	);
 }
 
 function mapThinkingLevelToEffort(
@@ -607,7 +610,7 @@ function isAnthropicClaudeModel(model: Model<"bedrock-converse-stream">): boolea
 
 /**
  * Check if the model supports prompt caching.
- * Supported: Claude 3.5 Haiku, Claude 3.7 Sonnet, Claude 4.x models
+ * Supported: Claude 3.5 Haiku, Claude 3.7 Sonnet, Claude 4.x models, Claude Sonnet 5
  *
  * For base models and system-defined inference profiles the model ID / ARN
  * contains the model name, so we can decide locally.
@@ -629,6 +632,8 @@ function supportsPromptCaching(model: Model<"bedrock-converse-stream">): boolean
 	}
 	// Claude 4.x models (opus-4, sonnet-4, haiku-4)
 	if (candidates.some((s) => s.includes("-4-"))) return true;
+	// Claude Sonnet 5: dateless ID has no "-<minor>-" infix, so the 4.x check above misses it.
+	if (candidates.some((s) => s.includes("sonnet-5"))) return true;
 	// Claude 3.7 Sonnet
 	if (candidates.some((s) => s.includes("claude-3-7-sonnet"))) return true;
 	// Claude 3.5 Haiku

@@ -201,7 +201,7 @@ export interface AnthropicOptions extends StreamOptions {
 	 * Effort level for adaptive thinking models.
 	 * Controls how much thinking Claude allocates:
 	 * - "max": Always thinks with no constraints (Opus 4.6 only)
-	 * - "xhigh": Highest reasoning level (Opus 4.7+, Fable 5)
+	 * - "xhigh": Highest reasoning level (Opus 4.7+, Sonnet 5, Fable 5)
 	 * - "high": Always thinks, deep reasoning
 	 * - "medium": Moderate thinking, may skip for simple queries
 	 * - "low": Minimal thinking, skips for simple tasks
@@ -1043,7 +1043,7 @@ function convertMessages(
 	const transformedMessages = transformMessages(messages, model, normalizeToolCallId);
 
 	// Anthropic only validates (and only needs) the thinking blocks in the most
-	// recent assistant turn. Adaptive thinking models (Opus 4.8+) can emit a
+	// recent assistant turn. Adaptive thinking models (Opus 4.8+, Sonnet 5) can emit a
 	// trailing thinking block AFTER their tool calls; once such a turn is no
 	// longer the latest assistant message, replaying its thinking trips the API's
 	// "thinking blocks in the latest assistant message cannot be modified" 400 and

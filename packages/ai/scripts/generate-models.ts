@@ -340,13 +340,20 @@ function isAnthropicAdaptiveThinkingModel(modelId: string): boolean {
 		modelId.includes("opus-4.8") ||
 		modelId.includes("sonnet-4-6") ||
 		modelId.includes("sonnet-4.6") ||
+		modelId.includes("sonnet-5") ||
 		modelId.includes("fable-5")
 	);
 }
 
 function isAnthropicTemperatureUnsupportedModel(modelId: string): boolean {
 	const id = modelId.toLowerCase();
-	return id.includes("opus-4-7") || id.includes("opus-4.7") || id.includes("opus-4-8") || id.includes("opus-4.8");
+	return (
+		id.includes("opus-4-7") ||
+		id.includes("opus-4.7") ||
+		id.includes("opus-4-8") ||
+		id.includes("opus-4.8") ||
+		id.includes("sonnet-5")
+	);
 }
 
 function mergeAnthropicMessagesCompat(model: Model<Api>, compat: AnthropicMessagesCompat): void {
@@ -398,7 +405,8 @@ function applyThinkingLevelMetadata(model: Model<any>): void {
 		model.id.includes("opus-4-7") ||
 		model.id.includes("opus-4.7") ||
 		model.id.includes("opus-4-8") ||
-		model.id.includes("opus-4.8")
+		model.id.includes("opus-4.8") ||
+		model.id.includes("sonnet-5")
 	) {
 		mergeThinkingLevelMap(model, { xhigh: "xhigh" });
 	}
@@ -1245,8 +1253,8 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 				if (m.tool_call !== true) continue;
 				if (m.status === "deprecated") continue;
 
-				// Claude 4.x models route to Anthropic Messages API
-				const isCopilotClaude4 = /^claude-(haiku|sonnet|opus)-4([.\-]|$)/.test(modelId);
+				// Claude 4.x and 5.x models route to Anthropic Messages API
+				const isCopilotClaude4 = /^claude-(haiku|sonnet|opus)-[45]([.\-]|$)/.test(modelId);
 				// gpt-5 models require responses API, others use completions
 				const needsResponsesApi = modelId.startsWith("gpt-5") || modelId.startsWith("oswe");
 
@@ -1684,6 +1692,29 @@ async function generateModels() {
 			},
 			contextWindow: 1000000,
 			maxTokens: 64000,
+		});
+	}
+
+	// Add missing Claude Sonnet 5 until models.dev includes it.
+	// Introductory pricing ($2/$10, matching live Vercel AI Gateway data) runs through
+	// 2026-08-31, after which standard pricing ($3/$15, same as Sonnet 4.6) applies.
+	if (!allModels.some(m => m.provider === "anthropic" && m.id === "claude-sonnet-5")) {
+		allModels.push({
+			id: "claude-sonnet-5",
+			name: "Claude Sonnet 5",
+			api: "anthropic-messages",
+			baseUrl: "https://api.anthropic.com",
+			provider: "anthropic",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 2,
+				output: 10,
+				cacheRead: 0.2,
+				cacheWrite: 2.5,
+			},
+			contextWindow: 1000000,
+			maxTokens: 128000,
 		});
 	}
 

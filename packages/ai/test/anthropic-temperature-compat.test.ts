@@ -96,6 +96,12 @@ describe("Anthropic temperature compatibility", () => {
 		expect(payload.temperature).toBe(0);
 	});
 
+	it("omits temperature for Claude Sonnet 5", async () => {
+		const payload = await capturePayload(getModel("anthropic", "claude-sonnet-5"), { temperature: 0 });
+
+		expect(payload.temperature).toBeUndefined();
+	});
+
 	it("omits temperature for custom models with supportsTemperature disabled", async () => {
 		const payload = await capturePayload(makeCustomModel({ supportsTemperature: false }), { temperature: 0 });
 
