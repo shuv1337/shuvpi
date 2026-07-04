@@ -675,6 +675,13 @@ export interface AgentStartEvent {
 export interface AgentEndEvent {
 	type: "agent_end";
 	messages: AgentMessage[];
+	/**
+	 * True when the session will immediately retry this agent run (transient
+	 * provider error backoff). The session-level stream has carried this since
+	 * `_willRetryAfterAgentEnd`; extensions need it too so supervisors don't
+	 * treat a retryable end as a crash (shuvhelm helmd-bridge).
+	 */
+	willRetry?: boolean;
 }
 
 /** Fired at the start of each turn */
