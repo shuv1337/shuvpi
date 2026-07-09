@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { getModel, getModels, getProviders } from "../src/compat.ts";
 import { findEnvKeys, getEnvApiKey } from "../src/env-api-keys.ts";
-import { getModel, getModels, getProviders } from "../src/models.ts";
 
 const originalBasetenApiKey = process.env.BASETEN_API_KEY;
 
@@ -47,7 +47,7 @@ describe("Baseten models", () => {
 				expect(model.reasoning).toBe(false);
 				expect(model.thinkingLevelMap).toBeUndefined();
 				expect(model.compat?.thinkingFormat).toBeUndefined();
-				expect(model.compat?.chatTemplateArgs).toBeUndefined();
+				expect(model.compat?.chatTemplateKwargs).toBeUndefined();
 				expect(model.compat?.chatTemplateKwargs).toBeUndefined();
 			}
 		}
@@ -107,11 +107,10 @@ describe("Baseten models", () => {
 			expect(model?.compat).toMatchObject({
 				thinkingFormat: "chat-template",
 				requiresReasoningContentOnAssistantMessages: true,
-				chatTemplateArgs: {
+				chatTemplateKwargs: {
 					enable_thinking: { $var: "thinking.enabled" },
 				},
 			});
-			expect(model?.compat?.chatTemplateKwargs).toBeUndefined();
 		}
 	});
 

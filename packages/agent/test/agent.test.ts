@@ -1,4 +1,4 @@
-import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@shuv1337/pi-ai";
+import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@shuv1337/pi-ai/compat";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import { Agent, type AgentEvent, type AgentTool, type AgentToolUpdateCallback } from "../src/index.ts";
@@ -630,6 +630,47 @@ describe("Agent", () => {
 		expect(responseCount).toBe(2);
 	});
 
+	it("keeps legacy prepareNextTurn signal callback behavior", async () => {
+		const schema = Type.Object({});
+		const tool: AgentTool<typeof schema> = {
+			name: "noop",
+			label: "Noop",
+			description: "Noop tool",
+			parameters: schema,
+			execute: async () => ({ content: [{ type: "text", text: "ok" }], details: {} }),
+		};
+		let requestCount = 0;
+		let sawAbortSignal = false;
+		const agent = new Agent({
+			initialState: { tools: [tool] },
+			prepareNextTurn: async (signal) => {
+				sawAbortSignal = signal instanceof AbortSignal;
+				return undefined;
+			},
+			streamFn: () => {
+				requestCount++;
+				const stream = new MockAssistantStream();
+				queueMicrotask(() => {
+					if (requestCount === 1) {
+						const message = createAssistantToolUseMessage([
+							{ type: "toolCall", id: "tool-1", name: "noop", arguments: {} },
+						]);
+						stream.push({ type: "done", reason: "toolUse", message });
+						return;
+					}
+					const message = createAssistantMessage("done");
+					stream.push({ type: "done", reason: "stop", message });
+				});
+				return stream;
+			},
+		});
+
+		await agent.prompt("start");
+
+		expect(requestCount).toBe(2);
+		expect(sawAbortSignal).toBe(true);
+	});
+
 	it("forwards sessionId to streamFn options", async () => {
 		let receivedSessionId: string | undefined;
 		const agent = new Agent({
@@ -654,36 +695,5 @@ describe("Agent", () => {
 
 		await agent.prompt("hello again");
 		expect(receivedSessionId).toBe("session-def");
-	});
-
-	it("forwards shouldStopAfterTurn from AgentOptions", async () => {
-		let responseCount = 0;
-		let shouldStopCallCount = 0;
-		const agent = new Agent({
-			shouldStopAfterTurn: () => {
-				shouldStopCallCount++;
-				return true;
-			},
-			streamFn: () => {
-				responseCount++;
-				const stream = new MockAssistantStream();
-				queueMicrotask(() => {
-					stream.push({ type: "done", reason: "stop", message: createAssistantMessage("ok") });
-				});
-				return stream;
-			},
-		});
-
-		agent.followUp({
-			role: "user",
-			content: [{ type: "text", text: "queued follow-up" }],
-			timestamp: Date.now(),
-		});
-
-		await agent.prompt("hello");
-
-		expect(shouldStopCallCount).toBe(1);
-		expect(responseCount).toBe(1);
-		expect(agent.state.messages.map((message) => message.role)).toEqual(["user", "assistant"]);
 	});
 });

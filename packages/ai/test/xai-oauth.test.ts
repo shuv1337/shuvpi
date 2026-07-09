@@ -3,7 +3,7 @@ import {
 	grokSupportsReasoningEffort,
 	isXaiResponsesTarget,
 	resolveCodexUrl,
-} from "../src/providers/openai-codex-responses.ts";
+} from "../src/api/openai-codex-responses.ts";
 import {
 	exchangeXaiAuthorizationCode,
 	refreshXaiOAuthToken,

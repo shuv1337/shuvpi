@@ -17,7 +17,7 @@ import {
 	registerApiProvider,
 	resetApiProviders,
 	type SimpleStreamOptions,
-} from "@shuv1337/pi-ai";
+} from "@shuv1337/pi-ai/compat";
 import { registerOAuthProvider, resetOAuthProviders } from "@shuv1337/pi-ai/oauth";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
@@ -96,79 +96,58 @@ const ThinkingLevelMapSchema = Type.Object({
 	xhigh: Type.Optional(ThinkingLevelMapValueSchema),
 });
 
-const ChatTemplateValueSchema = Type.Union([
-	Type.String(),
-	Type.Number(),
-	Type.Boolean(),
-	Type.Null(),
-	Type.Object(
-		{
-			$var: Type.Union([Type.Literal("thinking.enabled"), Type.Literal("thinking.effort")]),
-			omitWhenOff: Type.Optional(Type.Boolean()),
-		},
-		{ additionalProperties: false },
+const ChatTemplateKwargScalarSchema = Type.Union([Type.String(), Type.Number(), Type.Boolean(), Type.Null()]);
+const ChatTemplateKwargVariableSchema = Type.Object({
+	$var: Type.Union([Type.Literal("thinking.enabled"), Type.Literal("thinking.effort")]),
+	omitWhenOff: Type.Optional(Type.Boolean()),
+});
+const ChatTemplateKwargSchema = Type.Union([ChatTemplateKwargScalarSchema, ChatTemplateKwargVariableSchema]);
+
+const OpenAICompletionsCompatSchema = Type.Object({
+	supportsStore: Type.Optional(Type.Boolean()),
+	supportsDeveloperRole: Type.Optional(Type.Boolean()),
+	supportsReasoningEffort: Type.Optional(Type.Boolean()),
+	supportsUsageInStreaming: Type.Optional(Type.Boolean()),
+	maxTokensField: Type.Optional(Type.Union([Type.Literal("max_completion_tokens"), Type.Literal("max_tokens")])),
+	requiresToolResultName: Type.Optional(Type.Boolean()),
+	requiresAssistantAfterToolResult: Type.Optional(Type.Boolean()),
+	requiresThinkingAsText: Type.Optional(Type.Boolean()),
+	requiresReasoningContentOnAssistantMessages: Type.Optional(Type.Boolean()),
+	thinkingFormat: Type.Optional(
+		Type.Union([
+			Type.Literal("openai"),
+			Type.Literal("openrouter"),
+			Type.Literal("together"),
+			Type.Literal("deepseek"),
+			Type.Literal("zai"),
+			Type.Literal("qwen"),
+			Type.Literal("chat-template"),
+			Type.Literal("qwen-chat-template"),
+			Type.Literal("string-thinking"),
+			Type.Literal("ant-ling"),
+		]),
 	),
-]);
+	chatTemplateKwargs: Type.Optional(Type.Record(Type.String(), ChatTemplateKwargSchema)),
+	cacheControlFormat: Type.Optional(Type.Literal("anthropic")),
+	openRouterRouting: Type.Optional(OpenRouterRoutingSchema),
+	vercelGatewayRouting: Type.Optional(VercelGatewayRoutingSchema),
+	supportsStrictMode: Type.Optional(Type.Boolean()),
+	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
+});
 
-const OpenAICompletionsCompatSchema = Type.Object(
-	{
-		supportsStore: Type.Optional(Type.Boolean()),
-		supportsDeveloperRole: Type.Optional(Type.Boolean()),
-		supportsReasoningEffort: Type.Optional(Type.Boolean()),
-		supportsUsageInStreaming: Type.Optional(Type.Boolean()),
-		maxTokensField: Type.Optional(Type.Union([Type.Literal("max_completion_tokens"), Type.Literal("max_tokens")])),
-		requiresToolResultName: Type.Optional(Type.Boolean()),
-		requiresAssistantAfterToolResult: Type.Optional(Type.Boolean()),
-		requiresThinkingAsText: Type.Optional(Type.Boolean()),
-		requiresReasoningContentOnAssistantMessages: Type.Optional(Type.Boolean()),
-		thinkingFormat: Type.Optional(
-			Type.Union([
-				Type.Literal("openai"),
-				Type.Literal("openrouter"),
-				Type.Literal("together"),
-				Type.Literal("deepseek"),
-				Type.Literal("zai"),
-				Type.Literal("qwen"),
-				Type.Literal("qwen-chat-template"),
-				Type.Literal("chat-template"),
-				Type.Literal("string-thinking"),
-				Type.Literal("ant-ling"),
-			]),
-		),
-		chatTemplateKwargs: Type.Optional(Type.Record(Type.String(), ChatTemplateValueSchema)),
-		chatTemplateArgs: Type.Optional(Type.Record(Type.String(), ChatTemplateValueSchema)),
-		cacheControlFormat: Type.Optional(Type.Literal("anthropic")),
-		openRouterRouting: Type.Optional(OpenRouterRoutingSchema),
-		vercelGatewayRouting: Type.Optional(VercelGatewayRoutingSchema),
-		supportsStrictMode: Type.Optional(Type.Boolean()),
-		supportsLongCacheRetention: Type.Optional(Type.Boolean()),
-		zaiToolStream: Type.Optional(Type.Boolean()),
-		sendSessionAffinityHeaders: Type.Optional(Type.Boolean()),
-	},
-	{ additionalProperties: false },
-);
+const OpenAIResponsesCompatSchema = Type.Object({
+	supportsDeveloperRole: Type.Optional(Type.Boolean()),
+	sendSessionIdHeader: Type.Optional(Type.Boolean()),
+	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
+});
 
-const OpenAIResponsesCompatSchema = Type.Object(
-	{
-		supportsDeveloperRole: Type.Optional(Type.Boolean()),
-		sendSessionIdHeader: Type.Optional(Type.Boolean()),
-		supportsLongCacheRetention: Type.Optional(Type.Boolean()),
-	},
-	{ additionalProperties: false },
-);
-
-const AnthropicMessagesCompatSchema = Type.Object(
-	{
-		supportsEagerToolInputStreaming: Type.Optional(Type.Boolean()),
-		supportsLongCacheRetention: Type.Optional(Type.Boolean()),
-		sendSessionAffinityHeaders: Type.Optional(Type.Boolean()),
-		supportsCacheControlOnTools: Type.Optional(Type.Boolean()),
-		forceAdaptiveThinking: Type.Optional(Type.Boolean()),
-		supportsTemperature: Type.Optional(Type.Boolean()),
-		allowEmptySignature: Type.Optional(Type.Boolean()),
-	},
-	{ additionalProperties: false },
-);
+const AnthropicMessagesCompatSchema = Type.Object({
+	supportsEagerToolInputStreaming: Type.Optional(Type.Boolean()),
+	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
+	sendSessionAffinityHeaders: Type.Optional(Type.Boolean()),
+	supportsCacheControlOnTools: Type.Optional(Type.Boolean()),
+	forceAdaptiveThinking: Type.Optional(Type.Boolean()),
+});
 
 const ProviderCompatSchema = Type.Union([
 	OpenAICompletionsCompatSchema,
@@ -272,6 +251,7 @@ export type ResolvedRequestAuth =
 			ok: true;
 			apiKey?: string;
 			headers?: Record<string, string>;
+			env?: Record<string, string>;
 	  }
 	| {
 			ok: false;
@@ -324,13 +304,6 @@ function mergeCompat(
 		mergedCompletions.chatTemplateKwargs = {
 			...baseCompletions?.chatTemplateKwargs,
 			...overrideCompletions.chatTemplateKwargs,
-		};
-	}
-
-	if (baseCompletions?.chatTemplateArgs || overrideCompletions.chatTemplateArgs) {
-		mergedCompletions.chatTemplateArgs = {
-			...baseCompletions?.chatTemplateArgs,
-			...overrideCompletions.chatTemplateArgs,
 		};
 	}
 
@@ -555,22 +528,6 @@ export class ModelRegistry {
 		}
 	}
 
-	private validateChatTemplateCompat(path: string, compat: ModelOverride["compat"]): void {
-		if (!compat || !("thinkingFormat" in compat) || compat.thinkingFormat !== "chat-template") {
-			return;
-		}
-
-		const completionsCompat = compat as OpenAICompletionsCompat;
-		const hasChatTemplateKwargs =
-			completionsCompat.chatTemplateKwargs !== undefined &&
-			Object.keys(completionsCompat.chatTemplateKwargs).length > 0;
-		const hasChatTemplateArgs =
-			completionsCompat.chatTemplateArgs !== undefined && Object.keys(completionsCompat.chatTemplateArgs).length > 0;
-		if (!hasChatTemplateKwargs && !hasChatTemplateArgs) {
-			throw new Error(`${path}: thinkingFormat "chat-template" requires chatTemplateKwargs and/or chatTemplateArgs`);
-		}
-	}
-
 	private validateConfig(config: ModelsConfig): void {
 		const builtInProviders = new Set<string>(getProviders());
 
@@ -589,27 +546,14 @@ export class ModelRegistry {
 					);
 				}
 			} else if (!isBuiltIn) {
-				// Non-built-in providers with custom models require endpoint + auth.
+				// Non-built-in providers with custom models require an endpoint.
+				// Auth can come from auth.json, --api-key, or provider request config.
 				if (!providerConfig.baseUrl) {
 					throw new Error(`Provider ${providerName}: "baseUrl" is required when defining custom models.`);
-				}
-				if (!providerConfig.apiKey) {
-					throw new Error(`Provider ${providerName}: "apiKey" is required when defining custom models.`);
 				}
 			}
 			// Built-in providers with custom models: baseUrl/apiKey/api are optional,
 			// inherited from built-in models. Auth comes from env vars / auth storage.
-
-			this.validateChatTemplateCompat(`Provider ${providerName}`, providerConfig.compat);
-
-			if (providerConfig.modelOverrides) {
-				for (const [modelId, modelOverride] of Object.entries(providerConfig.modelOverrides)) {
-					this.validateChatTemplateCompat(
-						`Provider ${providerName}, model override ${modelId}`,
-						modelOverride.compat,
-					);
-				}
-			}
 
 			for (const modelDef of models) {
 				const hasModelApi = !!modelDef.api;
@@ -622,7 +566,6 @@ export class ModelRegistry {
 				// For built-in providers, api is optional — inherited from built-in models.
 
 				if (!modelDef.id) throw new Error(`Provider ${providerName}: model missing "id"`);
-				this.validateChatTemplateCompat(`Provider ${providerName}, model ${modelDef.id}`, modelDef.compat);
 				// Validate contextWindow/maxTokens only if provided (they have defaults)
 				if (modelDef.contextWindow !== undefined && modelDef.contextWindow <= 0)
 					throw new Error(`Provider ${providerName}, model ${modelDef.id}: invalid contextWindow`);
@@ -758,17 +701,27 @@ export class ModelRegistry {
 	async getApiKeyAndHeaders(model: Model<Api>): Promise<ResolvedRequestAuth> {
 		try {
 			const providerConfig = this.providerRequestConfigs.get(model.provider);
+			const providerEnv = this.authStorage.getProviderEnv(model.provider);
 			const apiKeyFromAuthStorage = await this.authStorage.getApiKey(model.provider, { includeFallback: false });
 			const apiKey =
 				apiKeyFromAuthStorage ??
 				(providerConfig?.apiKey
-					? resolveConfigValueOrThrow(providerConfig.apiKey, `API key for provider "${model.provider}"`)
+					? resolveConfigValueOrThrow(
+							providerConfig.apiKey,
+							`API key for provider "${model.provider}"`,
+							providerEnv,
+						)
 					: undefined);
 
-			const providerHeaders = resolveHeadersOrThrow(providerConfig?.headers, `provider "${model.provider}"`);
+			const providerHeaders = resolveHeadersOrThrow(
+				providerConfig?.headers,
+				`provider "${model.provider}"`,
+				providerEnv,
+			);
 			const modelHeaders = resolveHeadersOrThrow(
 				this.modelRequestHeaders.get(this.getModelRequestKey(model.provider, model.id)),
 				`model "${model.provider}/${model.id}"`,
+				providerEnv,
 			);
 
 			let headers =
@@ -787,6 +740,7 @@ export class ModelRegistry {
 				ok: true,
 				apiKey,
 				headers: headers && Object.keys(headers).length > 0 ? headers : undefined,
+				env: providerEnv && Object.keys(providerEnv).length > 0 ? providerEnv : undefined,
 			};
 		} catch (error) {
 			return {
@@ -845,13 +799,15 @@ export class ModelRegistry {
 	 * Get API key for a provider.
 	 */
 	async getApiKeyForProvider(provider: string): Promise<string | undefined> {
-		const apiKey = await this.authStorage.getApiKey(provider, { includeFallback: false });
+		const apiKey = await this.authStorage.getApiKey(provider);
 		if (apiKey !== undefined) {
 			return apiKey;
 		}
 
 		const providerApiKey = this.providerRequestConfigs.get(provider)?.apiKey;
-		return providerApiKey ? resolveConfigValueUncached(providerApiKey) : undefined;
+		return providerApiKey
+			? resolveConfigValueUncached(providerApiKey, this.authStorage.getProviderEnv(provider))
+			: undefined;
 	}
 
 	/**

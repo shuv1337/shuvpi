@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Agent, type ThinkingLevel } from "@shuv1337/pi-agent-core";
-import { getModel, type Model } from "@shuv1337/pi-ai";
+import { getModel, type Model } from "@shuv1337/pi-ai/compat";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { ModelRegistry } from "../src/core/model-registry.ts";
@@ -60,7 +60,11 @@ describe.skipIf(!HAS_ANTIGRAVITY_AUTH)("Compaction with thinking models (Antigra
 		modelId: "claude-opus-4-5-thinking" | "claude-sonnet-4-5",
 		thinkingLevel: ThinkingLevel = "high",
 	) {
-		const model = getModel("google-antigravity", modelId);
+		// google-antigravity is OAuth-dynamic (not in KnownProvider catalog keys)
+		const model = (getModel as (provider: string, id: string) => Model<any> | undefined)(
+			"google-antigravity",
+			modelId,
+		);
 		if (!model) {
 			throw new Error(`Model not found: google-antigravity/${modelId}`);
 		}

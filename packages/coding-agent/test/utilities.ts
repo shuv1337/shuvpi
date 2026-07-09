@@ -6,7 +6,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync }
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Agent } from "@shuv1337/pi-agent-core";
-import { getModel, type OAuthCredentials, type OAuthProvider } from "@shuv1337/pi-ai";
+import { getModel, type OAuthCredentials, type OAuthProvider } from "@shuv1337/pi-ai/compat";
 import { getOAuthApiKey } from "@shuv1337/pi-ai/oauth";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";

@@ -1,5 +1,5 @@
 import { Agent, type AgentEvent } from "@shuv1337/pi-agent-core";
-import { getModel, type ImageContent } from "@shuv1337/pi-ai";
+import { getModel, type ImageContent } from "@shuv1337/pi-ai/compat";
 import {
 	AgentSession,
 	AuthStorage,

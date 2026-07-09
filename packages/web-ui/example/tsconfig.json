@@ -2,14 +2,31 @@
 	"compilerOptions": {
 		"target": "ES2022",
 		"module": "ES2022",
-		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"lib": [
+			"ES2022",
+			"DOM",
+			"DOM.Iterable"
+		],
 		"moduleResolution": "bundler",
 		"paths": {
-			"*": ["./*"],
-			"@shuv1337/pi-agent-core": ["../../agent/src/index.ts"],
-			"@shuv1337/pi-ai": ["../../ai/src/index.ts"],
-			"@shuv1337/pi-tui": ["../../tui/src/index.ts"],
-			"@shuv1337/pi-web-ui": ["../src/index.ts"]
+			"*": [
+				"./*"
+			],
+			"@shuv1337/pi-agent-core": [
+				"../../agent/src/index.ts"
+			],
+			"@shuv1337/pi-ai": [
+				"../../ai/src/index.ts"
+			],
+			"@shuv1337/pi-tui": [
+				"../../tui/src/index.ts"
+			],
+			"@shuv1337/pi-web-ui": [
+				"../src/index.ts"
+			],
+			"@shuv1337/pi-ai/compat": [
+				"../../ai/src/compat.ts"
+			]
 		},
 		"strict": true,
 		"skipLibCheck": true,
@@ -20,6 +37,10 @@
 		"allowImportingTsExtensions": true,
 		"noEmit": true
 	},
-	"include": ["src/**/*"],
-	"exclude": ["../src"]
+	"include": [
+		"src/**/*"
+	],
+	"exclude": [
+		"../src"
+	]
 }

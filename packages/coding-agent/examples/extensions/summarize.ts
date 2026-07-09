@@ -1,4 +1,4 @@
-import { complete, getModel } from "@shuv1337/pi-ai";
+import { complete, getModel } from "@shuv1337/pi-ai/compat";
 import type { ExtensionAPI, ExtensionCommandContext } from "@shuv1337/pi-coding-agent";
 import { DynamicBorder, getMarkdownTheme } from "@shuv1337/pi-coding-agent";
 import { Container, Markdown, matchesKey, Text } from "@shuv1337/pi-tui";
@@ -191,6 +191,7 @@ export default function (pi: ExtensionAPI) {
 				{
 					apiKey: auth.apiKey,
 					headers: auth.headers,
+					env: auth.env,
 					reasoningEffort: "high",
 				},
 			);

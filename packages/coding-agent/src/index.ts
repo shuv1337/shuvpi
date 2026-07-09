@@ -3,7 +3,15 @@
 export { type Args, parseArgs } from "./cli/args.ts";
 
 // Config paths
-export { getAgentDir, getDocsPath, getExamplesPath, getPackageDir, getReadmePath, VERSION } from "./config.ts";
+export {
+	CONFIG_DIR_NAME,
+	getAgentDir,
+	getDocsPath,
+	getExamplesPath,
+	getPackageDir,
+	getReadmePath,
+	VERSION,
+} from "./config.ts";
 export {
 	AgentSession,
 	type AgentSessionConfig,
@@ -114,6 +122,7 @@ export type {
 	SessionBeforeSwitchEvent,
 	SessionBeforeTreeEvent,
 	SessionCompactEvent,
+	SessionInfoChangedEvent,
 	SessionShutdownEvent,
 	SessionStartEvent,
 	SessionTreeEvent,
@@ -216,6 +225,7 @@ export {
 	type SessionInfoEntry,
 	SessionManager,
 	type SessionMessageEntry,
+	type SessionTreeNode,
 	type ThinkingLevelChangeEntry,
 } from "./core/session-manager.ts";
 export {
@@ -238,6 +248,7 @@ export {
 	type SkillFrontmatter,
 } from "./core/skills.ts";
 export { createSyntheticSourceInfo } from "./core/source-info.ts";
+export { type EditDiffResult, generateDiffString, generateUnifiedPatch } from "./core/tools/edit-diff.ts";
 // Tools
 export {
 	type BashOperations,
