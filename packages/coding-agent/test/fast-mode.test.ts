@@ -33,7 +33,15 @@ function createTempDir(prefix: string): TempSessionResources {
 
 async function createOpenAISession(options?: {
 	provider?: "openai" | "openai-codex";
-	modelId?: "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.4-pro" | "gpt-5.5";
+	modelId?:
+		| "gpt-5.4"
+		| "gpt-5.4-mini"
+		| "gpt-5.4-pro"
+		| "gpt-5.5"
+		| "gpt-5.6"
+		| "gpt-5.6-luna"
+		| "gpt-5.6-sol"
+		| "gpt-5.6-terra";
 	resourceLoader?: ReturnType<typeof createTestResourceLoader>;
 }) {
 	const { tempDir, cleanup } = createTempDir("pi-fast-mode-test");
@@ -42,7 +50,7 @@ async function createOpenAISession(options?: {
 	const model =
 		provider === "openai-codex"
 			? getModel("openai-codex", requestedModelId as "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.5")
-			: getModel("openai", requestedModelId as "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.4-pro");
+			: getModel("openai", requestedModelId);
 	if (!model) {
 		throw new Error(`${provider} model not found for test`);
 	}
@@ -153,6 +161,19 @@ describe("fast mode payload mutation", () => {
 			model: codexSupported55.model.id,
 			service_tier: "priority",
 		});
+
+		for (const modelId of ["gpt-5.6", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"] as const) {
+			const gpt56 = await createOpenAISession({ provider: "openai", modelId });
+			cleanups.push(gpt56.cleanup);
+			gpt56.session.setFastMode(true);
+
+			const gpt56Payload = { model: gpt56.model.id, input: [] };
+			const gpt56Mutated = await gpt56.session.agent.onPayload?.(gpt56Payload, gpt56.model);
+			expect(gpt56Mutated).toMatchObject({
+				model: gpt56.model.id,
+				service_tier: "priority",
+			});
+		}
 
 		const unsupported = await createOpenAISession({ provider: "openai", modelId: "gpt-5.4-pro" });
 		cleanups.push(unsupported.cleanup);

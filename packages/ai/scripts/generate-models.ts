@@ -301,6 +301,10 @@ const OPENAI_RESPONSES_NONE_REASONING_MODELS = new Set([
 	"gpt-5.4-mini",
 	"gpt-5.4-nano",
 	"gpt-5.5",
+	"gpt-5.6",
+	"gpt-5.6-luna",
+	"gpt-5.6-sol",
+	"gpt-5.6-terra",
 ]);
 
 const OPENCODE_OPENAI_COMPLETIONS_LONG_CACHE_RETENTION_UNSUPPORTED_MODELS = new Set([
@@ -354,7 +358,8 @@ function supportsOpenAiXhigh(modelId: string): boolean {
 		modelId.includes("gpt-5.2") ||
 		modelId.includes("gpt-5.3") ||
 		modelId.includes("gpt-5.4") ||
-		modelId.includes("gpt-5.5")
+		modelId.includes("gpt-5.5") ||
+		modelId.includes("gpt-5.6")
 	);
 }
 
@@ -567,6 +572,9 @@ function applyThinkingLevelMetadata(model: Model<any>): void {
 		mergeThinkingLevelMap(model, { xhigh: "xhigh" });
 	}
 	if (model.provider === "openai" && model.id === "gpt-5.5") {
+		mergeThinkingLevelMap(model, { minimal: null });
+	}
+	if (model.provider === "openai" && model.id.startsWith("gpt-5.6")) {
 		mergeThinkingLevelMap(model, { minimal: null });
 	}
 	if (model.id.endsWith("gpt-5.5-pro")) {
@@ -1958,6 +1966,62 @@ async function generateModels() {
 	}
 
 	// Add missing gpt models
+	const missingOpenAiGpt56Models: Model<"openai-responses">[] = [
+		{
+			id: "gpt-5.6",
+			name: "GPT-5.6",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 },
+			contextWindow: 1050000,
+			maxTokens: 128000,
+		},
+		{
+			id: "gpt-5.6-luna",
+			name: "GPT-5.6 Luna",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 1, output: 6, cacheRead: 0.1, cacheWrite: 1.25 },
+			contextWindow: 1050000,
+			maxTokens: 128000,
+		},
+		{
+			id: "gpt-5.6-sol",
+			name: "GPT-5.6 Sol",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 },
+			contextWindow: 1050000,
+			maxTokens: 128000,
+		},
+		{
+			id: "gpt-5.6-terra",
+			name: "GPT-5.6 Terra",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 2.5, output: 15, cacheRead: 0.25, cacheWrite: 3.125 },
+			contextWindow: 1050000,
+			maxTokens: 128000,
+		},
+	];
+	for (const model of missingOpenAiGpt56Models) {
+		if (!allModels.some((candidate) => candidate.provider === model.provider && candidate.id === model.id)) {
+			allModels.push(model);
+		}
+	}
+
 	if (!allModels.some(m => m.provider === "openai" && m.id === "gpt-5-chat-latest")) {
 		allModels.push({
 			id: "gpt-5-chat-latest",
@@ -2246,6 +2310,42 @@ async function generateModels() {
 			reasoning: true,
 			input: ["text", "image"],
 			cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 },
+			contextWindow: CODEX_CONTEXT,
+			maxTokens: CODEX_MAX_TOKENS,
+		},
+		{
+			id: "gpt-5.6-luna",
+			name: "GPT-5.6 Luna",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: CODEX_BASE_URL,
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 1, output: 6, cacheRead: 0.1, cacheWrite: 0 },
+			contextWindow: CODEX_CONTEXT,
+			maxTokens: CODEX_MAX_TOKENS,
+		},
+		{
+			id: "gpt-5.6-sol",
+			name: "GPT-5.6 Sol",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: CODEX_BASE_URL,
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 },
+			contextWindow: CODEX_CONTEXT,
+			maxTokens: CODEX_MAX_TOKENS,
+		},
+		{
+			id: "gpt-5.6-terra",
+			name: "GPT-5.6 Terra",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: CODEX_BASE_URL,
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 2.5, output: 15, cacheRead: 0.25, cacheWrite: 0 },
 			contextWindow: CODEX_CONTEXT,
 			maxTokens: CODEX_MAX_TOKENS,
 		},

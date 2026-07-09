@@ -19,6 +19,7 @@
 
 ### Added
 
+- Added OpenAI GPT-5.6 Sol, Terra, and Luna model options, including the `gpt-5.6` direct API alias and verified Codex OAuth support for the three named variants, with supported reasoning levels and `/fast` priority processing.
 - Added inherited Anthropic Claude Sonnet 5 model support.
 - Added `get_entries` and `get_tree` RPC commands for reading session entries and tree snapshots over RPC ([#6078](https://github.com/earendil-works/pi/pull/6078) by [@geraschenko](https://github.com/geraschenko)).
 - Added a package `./rpc-entry` export for launching Pi directly in RPC mode.

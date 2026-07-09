@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added OpenAI GPT-5.6 Sol, Terra, and Luna model metadata, including the `gpt-5.6` direct API alias and verified Codex OAuth support for the three named variants, with correct context limits, prompt-cache pricing, reasoning levels, and priority processing.
 - Added xAI Grok 4.5 model metadata (500k context, $2/$6 per 1M tokens, cached input $0.50) with configurable `reasoning_effort` (`low`/`medium`/`high`; cannot be disabled)
 
 ## [0.80.3] - 2026-06-30
