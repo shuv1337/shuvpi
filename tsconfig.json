@@ -3,23 +3,71 @@
 	"compilerOptions": {
 		"noEmit": true,
 		"paths": {
-			"*": ["./*"],
-			"@shuv1337/pi-ai": ["./packages/ai/src/index.ts"],
-			"@shuv1337/pi-ai/oauth": ["./packages/ai/src/oauth.ts"],
-			"@shuv1337/pi-ai/*": ["./packages/ai/src/*.ts", "./packages/ai/src/providers/*.ts"],
-			"@shuv1337/pi-ai/dist/*": ["./packages/ai/src/*"],
-			"@shuv1337/pi-agent-core": ["./packages/agent/src/index.ts"],
-			"@shuv1337/pi-agent-core/*": ["./packages/agent/src/*"],
-			"@shuv1337/pi-coding-agent": ["./packages/coding-agent/src/index.ts"],
-			"@shuv1337/pi-coding-agent/hooks": ["./packages/coding-agent/src/core/hooks/index.ts"],
-			"@shuv1337/pi-coding-agent/*": ["./packages/coding-agent/src/*"],
-			"typebox": ["./node_modules/typebox"],
-			"@shuv1337/pi-tui": ["./packages/tui/src/index.ts"],
-			"@shuv1337/pi-tui/*": ["./packages/tui/src/*"],
-			"@shuv1337/pi-agent-old": ["./packages/agent-old/src/index.ts"],
-			"@shuv1337/pi-agent-old/*": ["./packages/agent-old/src/*"]
+			"*": [
+				"./*"
+			],
+			"@shuv1337/pi-ai": [
+				"./packages/ai/src/index.ts"
+			],
+			"@shuv1337/pi-ai/oauth": [
+				"./packages/ai/src/oauth.ts"
+			],
+			"@shuv1337/pi-ai/*": [
+				"./packages/ai/src/*.ts",
+				"./packages/ai/src/providers/*.ts"
+			],
+			"@shuv1337/pi-ai/dist/*": [
+				"./packages/ai/src/*"
+			],
+			"@shuv1337/pi-agent-core": [
+				"./packages/agent/src/index.ts"
+			],
+			"@shuv1337/pi-agent-core/*": [
+				"./packages/agent/src/*"
+			],
+			"@shuv1337/pi-coding-agent": [
+				"./packages/coding-agent/src/index.ts"
+			],
+			"@shuv1337/pi-coding-agent/hooks": [
+				"./packages/coding-agent/src/core/hooks/index.ts"
+			],
+			"@shuv1337/pi-coding-agent/*": [
+				"./packages/coding-agent/src/*"
+			],
+			"@shuv1337/pi-orchestrator": [
+				"./packages/orchestrator/src/index.ts"
+			],
+			"@shuv1337/pi-orchestrator/*": [
+				"./packages/orchestrator/src/*"
+			],
+			"typebox": [
+				"./node_modules/typebox"
+			],
+			"@shuv1337/pi-tui": [
+				"./packages/tui/src/index.ts"
+			],
+			"@shuv1337/pi-tui/*": [
+				"./packages/tui/src/*"
+			],
+			"@shuv1337/pi-agent-old": [
+				"./packages/agent-old/src/index.ts"
+			],
+			"@shuv1337/pi-agent-old/*": [
+				"./packages/agent-old/src/*"
+			],
+			"@shuv1337/pi-ai/compat": [
+				"./packages/ai/src/compat.ts"
+			]
 		}
 	},
-	"include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/coding-agent/examples/**/*"],
-	"exclude": ["**/dist/**", "packages/coding-agent/examples/extensions/gondolin/**"]
+	"include": [
+		"packages/*/src/**/*",
+		"packages/*/test/**/*",
+		"packages/coding-agent/examples/**/*"
+	],
+	"exclude": [
+		"**/dist/**",
+		"packages/coding-agent/examples/extensions/gondolin/**",
+		"packages/mom/test/**"
+	]
 }

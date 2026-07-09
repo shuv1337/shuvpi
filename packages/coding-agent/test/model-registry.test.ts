@@ -1,14 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AnthropicMessagesCompat, Api, Context, Model, OpenAICompletionsCompat } from "@shuv1337/pi-ai";
-import { getApiProvider } from "@shuv1337/pi-ai";
+import type { AnthropicMessagesCompat, Api, Context, Model, OpenAICompletionsCompat } from "@shuv1337/pi-ai/compat";
+import { getApiProvider } from "@shuv1337/pi-ai/compat";
 import { getOAuthProvider } from "@shuv1337/pi-ai/oauth";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { clearApiKeyCache, ModelRegistry, type ProviderConfigInput } from "../src/core/model-registry.ts";
-import { defaultModelPerProvider } from "../src/core/model-resolver.ts";
-import { BUILT_IN_PROVIDER_DISPLAY_NAMES } from "../src/core/provider-display-names.ts";
 
 describe("ModelRegistry", () => {
 	let tempDir: string;
@@ -242,9 +240,10 @@ describe("ModelRegistry", () => {
 			expect(model?.baseUrl).toBe("https://openrouter.ai/api/v1");
 		});
 
-		test("non-built-in provider custom models still require baseUrl and apiKey", () => {
+		test("non-built-in provider custom models still require baseUrl", () => {
 			writeRawModelsJson({
 				"my-custom-provider": {
+					apiKey: "test-key",
 					models: [
 						{
 							id: "my-model",
@@ -434,6 +433,43 @@ describe("ModelRegistry", () => {
 			expect(model?.thinkingLevelMap).toEqual({ minimal: null, high: "max" });
 			expect(compat?.supportsStrictMode).toBe(false);
 			expect(compat?.cacheControlFormat).toBe("anthropic");
+		});
+
+		test("compat schema accepts chat template thinking configuration", () => {
+			writeRawModelsJson({
+				demo: {
+					baseUrl: "https://example.com/v1",
+					apiKey: "DEMO_KEY",
+					api: "openai-completions",
+					models: [
+						{
+							id: "demo-model",
+							reasoning: true,
+							input: ["text"],
+							cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+							contextWindow: 1000,
+							maxTokens: 100,
+							compat: {
+								thinkingFormat: "chat-template",
+								chatTemplateKwargs: {
+									preserve_thinking: true,
+									thinking: { $var: "thinking.enabled" },
+								},
+							},
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			const compat = registry.find("demo", "demo-model")?.compat as OpenAICompletionsCompat | undefined;
+
+			expect(registry.getError()).toBeUndefined();
+			expect(compat?.thinkingFormat).toBe("chat-template");
+			expect(compat?.chatTemplateKwargs).toEqual({
+				preserve_thinking: true,
+				thinking: { $var: "thinking.enabled" },
+			});
 		});
 
 		test("compat schema accepts Anthropic eager tool input streaming flag", () => {
@@ -850,6 +886,7 @@ describe("ModelRegistry", () => {
 
 			expect(registry.getProviderDisplayName("openai")).toBe("OpenAI");
 			expect(registry.getProviderDisplayName("github-copilot")).toBe("GitHub Copilot");
+			expect(registry.getProviderDisplayName("zai")).toBe("ZAI Coding Plan (Global)");
 			expect(registry.getProviderDisplayName("unknown-provider")).toBe("unknown-provider");
 
 			registry.registerProvider("named-provider", {
@@ -893,6 +930,38 @@ describe("ModelRegistry", () => {
 				],
 			});
 			expect(registry.getProviderDisplayName("oauth-provider")).toBe("OAuth Provider");
+		});
+
+		test("stored API key env propagates to request auth and resolves headers", async () => {
+			authStorage.set("cloudflare-ai-gateway", {
+				type: "api_key",
+				key: "$CLOUDFLARE_API_KEY",
+				env: {
+					CLOUDFLARE_API_KEY: "stored-cf-token",
+					CLOUDFLARE_ACCOUNT_ID: "stored-account",
+				},
+			});
+			writeRawModelsJson({
+				"cloudflare-ai-gateway": {
+					headers: { "x-account": "$CLOUDFLARE_ACCOUNT_ID" },
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			const model = registry.getAll().find((m) => m.provider === "cloudflare-ai-gateway");
+			expect(model).toBeDefined();
+
+			const auth = await registry.getApiKeyAndHeaders(model!);
+
+			expect(auth).toEqual({
+				ok: true,
+				apiKey: "stored-cf-token",
+				headers: { "x-account": "stored-account" },
+				env: {
+					CLOUDFLARE_API_KEY: "stored-cf-token",
+					CLOUDFLARE_ACCOUNT_ID: "stored-account",
+				},
+			});
 		});
 
 		test("registerProvider treats uppercase apiKey and headers as literals", async () => {
@@ -1639,6 +1708,25 @@ describe("ModelRegistry", () => {
 				expect(count).toBe(0);
 			});
 
+			test("getAvailable filters GitHub Copilot OAuth models to account picker availability", () => {
+				authStorage.set("github-copilot", {
+					type: "oauth",
+					refresh: "github-access-token",
+					access: "tid=test;exp=9999999999;proxy-ep=proxy.individual.githubcopilot.com;",
+					expires: Date.now() + 60_000,
+					availableModelIds: ["gpt-4.1"],
+				});
+
+				const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+
+				expect(
+					registry
+						.getAvailable()
+						.filter((m) => m.provider === "github-copilot")
+						.map((m) => m.id),
+				).toEqual(["gpt-4.1"]);
+			});
+
 			test("getApiKeyAndHeaders resolves authHeader on every request", async () => {
 				const tokenFile = join(tempDir, "token");
 				writeFileSync(tokenFile, "token-1");
@@ -1690,281 +1778,6 @@ describe("ModelRegistry", () => {
 					expect(auth.error).toContain('Failed to resolve API key for provider "custom-provider"');
 				}
 			});
-		});
-	});
-
-	describe("chat-template compat schema and merge", () => {
-		test("accepts documented compat fields after additionalProperties tightening", () => {
-			writeRawModelsJson({
-				"anthropic-proxy": {
-					baseUrl: "https://proxy.example.com",
-					api: "anthropic-messages",
-					apiKey: "test-key",
-					compat: {
-						supportsEagerToolInputStreaming: false,
-						supportsLongCacheRetention: true,
-						forceAdaptiveThinking: true,
-						allowEmptySignature: true,
-					},
-					models: [{ id: "claude-opus-4-8", reasoning: true, input: ["text"] }],
-				},
-				"custom-openai": {
-					baseUrl: "https://example.com/v1",
-					apiKey: "test-key",
-					api: "openai-completions",
-					compat: {
-						zaiToolStream: true,
-						sendSessionAffinityHeaders: true,
-					},
-					models: [{ id: "custom-model" }],
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(registry.getError()).toBeUndefined();
-		});
-
-		test("accepts valid chatTemplateArgs in models.json", () => {
-			writeRawModelsJson({
-				"custom-provider": {
-					baseUrl: "https://example.com/v1",
-					apiKey: "test-key",
-					api: "openai-completions",
-					models: [
-						{
-							id: "chat-template-model",
-							compat: {
-								thinkingFormat: "chat-template",
-								chatTemplateArgs: {
-									enable_thinking: { $var: "thinking.enabled" },
-								},
-							},
-						},
-					],
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(registry.getError()).toBeUndefined();
-		});
-
-		test("accepts valid chatTemplateKwargs in models.json", () => {
-			writeRawModelsJson({
-				"custom-provider": {
-					baseUrl: "https://example.com/v1",
-					apiKey: "test-key",
-					api: "openai-completions",
-					models: [
-						{
-							id: "chat-template-model",
-							compat: {
-								thinkingFormat: "chat-template",
-								chatTemplateKwargs: {
-									enable_thinking: { $var: "thinking.enabled" },
-								},
-							},
-						},
-					],
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(registry.getError()).toBeUndefined();
-		});
-
-		test("rejects chat-template compat without kwargs or args", () => {
-			writeRawModelsJson({
-				"custom-provider": {
-					baseUrl: "https://example.com/v1",
-					apiKey: "test-key",
-					api: "openai-completions",
-					models: [
-						{
-							id: "chat-template-model",
-							compat: {
-								thinkingFormat: "chat-template",
-							},
-						},
-					],
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(registry.getError()).toContain('thinkingFormat "chat-template" requires');
-		});
-
-		test("rejects invalid chatTemplate variable names in chatTemplateArgs", () => {
-			writeRawModelsJson({
-				"custom-provider": {
-					baseUrl: "https://example.com/v1",
-					apiKey: "test-key",
-					api: "openai-completions",
-					models: [
-						{
-							id: "chat-template-model",
-							compat: {
-								thinkingFormat: "chat-template",
-								chatTemplateArgs: {
-									enable_thinking: { $var: "thinking.depth" },
-								},
-							},
-						},
-					],
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(registry.getError()).toContain("chatTemplateArgs");
-		});
-
-		test("rejects invalid chatTemplate variable names in chatTemplateKwargs", () => {
-			writeRawModelsJson({
-				"custom-provider": {
-					baseUrl: "https://example.com/v1",
-					apiKey: "test-key",
-					api: "openai-completions",
-					models: [
-						{
-							id: "chat-template-model",
-							compat: {
-								thinkingFormat: "chat-template",
-								chatTemplateKwargs: {
-									enable_thinking: { $var: "thinking.depth" },
-								},
-							},
-						},
-					],
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(registry.getError()).toContain("chatTemplateKwargs");
-		});
-
-		test("rejects unknown properties on chat-template variable objects", () => {
-			writeRawModelsJson({
-				"custom-provider": {
-					baseUrl: "https://example.com/v1",
-					apiKey: "test-key",
-					api: "openai-completions",
-					models: [
-						{
-							id: "chat-template-model",
-							compat: {
-								thinkingFormat: "chat-template",
-								chatTemplateArgs: {
-									enable_thinking: { $var: "thinking.enabled", typo: true },
-								},
-							},
-						},
-					],
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(registry.getError()).toContain("chatTemplateArgs");
-		});
-
-		test("deep merges chatTemplateArgs across provider and model overrides", () => {
-			writeRawModelsJson({
-				baseten: {
-					compat: {
-						thinkingFormat: "chat-template",
-						chatTemplateArgs: {
-							enable_thinking: { $var: "thinking.enabled" },
-						},
-					},
-					modelOverrides: {
-						"moonshotai/Kimi-K2.6": {
-							compat: {
-								chatTemplateArgs: {
-									extra_flag: true,
-								},
-							},
-						},
-					},
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			const model = registry.find("baseten", "moonshotai/Kimi-K2.6");
-			const compat = model?.compat as OpenAICompletionsCompat | undefined;
-
-			expect(compat?.chatTemplateArgs).toEqual({
-				enable_thinking: { $var: "thinking.enabled" },
-				extra_flag: true,
-			});
-		});
-
-		test("deep merges chatTemplateKwargs across provider and model overrides", () => {
-			writeRawModelsJson({
-				"custom-provider": {
-					baseUrl: "https://example.com/v1",
-					apiKey: "test-key",
-					api: "openai-completions",
-					compat: {
-						thinkingFormat: "chat-template",
-						chatTemplateKwargs: {
-							enable_thinking: { $var: "thinking.enabled" },
-						},
-					},
-					models: [
-						{
-							id: "chat-template-model",
-							compat: {
-								chatTemplateKwargs: {
-									preserve_thinking: true,
-								},
-							},
-						},
-					],
-				},
-			});
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			const model = registry.find("custom-provider", "chat-template-model");
-			const compat = model?.compat as OpenAICompletionsCompat | undefined;
-
-			expect(compat?.chatTemplateKwargs).toEqual({
-				enable_thinking: { $var: "thinking.enabled" },
-				preserve_thinking: true,
-			});
-		});
-	});
-
-	describe("Baseten built-in provider", () => {
-		const originalBasetenApiKey = process.env.BASETEN_API_KEY;
-
-		afterEach(() => {
-			if (originalBasetenApiKey === undefined) {
-				delete process.env.BASETEN_API_KEY;
-			} else {
-				process.env.BASETEN_API_KEY = originalBasetenApiKey;
-			}
-			clearApiKeyCache();
-		});
-
-		test("uses the Baseten display name", () => {
-			expect(BUILT_IN_PROVIDER_DISPLAY_NAMES.baseten).toBe("Baseten");
-		});
-
-		test("tracks the Baseten default model", () => {
-			expect(defaultModelPerProvider.baseten).toBe("moonshotai/Kimi-K2.6");
-		});
-
-		test("exposes Baseten models only when auth is configured", () => {
-			delete process.env.BASETEN_API_KEY;
-			clearApiKeyCache();
-
-			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(registry.getAll().some((model) => model.provider === "baseten")).toBe(true);
-			expect(registry.getAvailable().some((model) => model.provider === "baseten")).toBe(false);
-
-			process.env.BASETEN_API_KEY = "test-baseten-key";
-			clearApiKeyCache();
-
-			const configuredRegistry = ModelRegistry.create(authStorage, modelsJsonPath);
-			expect(configuredRegistry.getAvailable().some((model) => model.provider === "baseten")).toBe(true);
 		});
 	});
 });

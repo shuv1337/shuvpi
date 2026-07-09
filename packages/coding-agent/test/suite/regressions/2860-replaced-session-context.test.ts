@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fauxAssistantMessage, registerFauxProvider } from "@shuv1337/pi-ai";
+import { fauxAssistantMessage, registerFauxProvider } from "@shuv1337/pi-ai/compat";
 import { afterEach, describe, expect, it } from "vitest";
 import type { AgentSession } from "../../../src/core/agent-session.ts";
 import {
@@ -15,12 +15,12 @@ import { SessionManager } from "../../../src/core/session-manager.ts";
 import type { ExtensionAPI, ExtensionCommandContext, ExtensionFactory } from "../../../src/index.ts";
 
 function getText(message: AgentSession["messages"][number]): string {
-	if (!("content" in message) || message.content === undefined) {
+	if (!("content" in message)) {
 		return "";
 	}
 	return typeof message.content === "string"
 		? message.content
-		: message.content
+		: (message.content ?? [])
 				.filter((part): part is { type: "text"; text: string } => part.type === "text")
 				.map((part) => part.text)
 				.join("");

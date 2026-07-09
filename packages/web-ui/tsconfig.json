@@ -1,13 +1,28 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"lib": [
+			"ES2022",
+			"DOM",
+			"DOM.Iterable"
+		],
 		"noEmit": true,
 		"paths": {
-			"@shuv1337/pi-agent-core": ["../agent/src/index.ts"],
-			"@shuv1337/pi-ai": ["../ai/src/index.ts"],
-			"@shuv1337/pi-tui": ["../tui/src/index.ts"]
+			"@shuv1337/pi-agent-core": [
+				"../agent/src/index.ts"
+			],
+			"@shuv1337/pi-ai": [
+				"../ai/src/index.ts"
+			],
+			"@shuv1337/pi-tui": [
+				"../tui/src/index.ts"
+			],
+			"@shuv1337/pi-ai/compat": [
+				"../ai/src/compat.ts"
+			]
 		}
 	},
-  "include": ["src/**/*"]
+	"include": [
+		"src/**/*"
+	]
 }

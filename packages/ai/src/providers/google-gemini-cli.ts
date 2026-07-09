@@ -5,6 +5,15 @@
  */
 
 import type { Content, ThinkingConfig } from "@google/genai";
+import {
+	convertMessages,
+	convertTools,
+	isThinkingPart,
+	mapStopReasonString,
+	mapToolChoice,
+	retainThoughtSignature,
+} from "../api/google-shared.ts";
+import { buildBaseOptions, clampReasoning } from "../api/simple-options.ts";
 import { calculateCost } from "../models.ts";
 import type {
 	Api,
@@ -23,15 +32,6 @@ import type {
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
-import {
-	convertMessages,
-	convertTools,
-	isThinkingPart,
-	mapStopReasonString,
-	mapToolChoice,
-	retainThoughtSignature,
-} from "./google-shared.ts";
-import { buildBaseOptions, clampReasoning } from "./simple-options.ts";
 
 /**
  * Thinking level for Gemini 3 models.
@@ -824,7 +824,7 @@ export const streamSimpleGoogleGeminiCli: StreamFunction<"google-gemini-cli", Si
 		throw new Error("Google Cloud Code Assist requires OAuth authentication. Use /login to authenticate.");
 	}
 
-	const base = buildBaseOptions(model, options, apiKey);
+	const base = buildBaseOptions(model, context, options, apiKey);
 	if (!options?.reasoning) {
 		return streamGoogleGeminiCli(model, context, {
 			...base,
