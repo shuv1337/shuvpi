@@ -678,8 +678,9 @@ export const OPENCODE_MODELS = {
 		api: "openai-completions",
 		provider: "opencode",
 		baseUrl: "https://opencode.ai/zen/v1",
-		compat: {"supportsStore":false,"supportsDeveloperRole":false,"maxTokensField":"max_tokens"},
+		compat: {"supportsStore":false,"supportsDeveloperRole":false,"maxTokensField":"max_tokens","supportsReasoningEffort":true},
 		reasoning: true,
+		thinkingLevelMap: {"off":null,"minimal":null,"xhigh":null},
 		input: ["text", "image"],
 		cost: {
 			input: 2,

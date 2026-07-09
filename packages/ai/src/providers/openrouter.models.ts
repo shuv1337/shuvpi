@@ -4368,8 +4368,9 @@ export const OPENROUTER_MODELS = {
 		api: "openai-completions",
 		provider: "openrouter",
 		baseUrl: "https://openrouter.ai/api/v1",
-		compat: {"supportsDeveloperRole":false,"thinkingFormat":"openrouter"},
+		compat: {"supportsDeveloperRole":false,"thinkingFormat":"openrouter","supportsReasoningEffort":true},
 		reasoning: true,
+		thinkingLevelMap: {"off":null,"minimal":null,"xhigh":null},
 		input: ["text", "image"],
 		cost: {
 			input: 2,
@@ -4625,13 +4626,13 @@ export const OPENROUTER_MODELS = {
 		thinkingLevelMap: {"xhigh":"xhigh"},
 		input: ["text"],
 		cost: {
-			input: 0.84,
-			output: 2.64,
-			cacheRead: 0.156,
+			input: 0.9,
+			output: 3.08,
+			cacheRead: 0.18,
 			cacheWrite: 0,
 		},
 		contextWindow: 1048576,
-		maxTokens: 131072,
+		maxTokens: 1048576,
 	} satisfies Model<"openai-completions">,
 	"z-ai/glm-5v-turbo": {
 		id: "z-ai/glm-5v-turbo",

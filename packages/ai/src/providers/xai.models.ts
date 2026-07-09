@@ -100,8 +100,9 @@ export const XAI_MODELS = {
 		api: "openai-completions",
 		provider: "xai",
 		baseUrl: "https://api.x.ai/v1",
-		compat: {"supportsStore":false,"supportsDeveloperRole":false,"supportsReasoningEffort":false},
+		compat: {"supportsStore":false,"supportsDeveloperRole":false,"supportsReasoningEffort":true},
 		reasoning: true,
+		thinkingLevelMap: {"off":null,"minimal":null,"xhigh":null},
 		input: ["text", "image"],
 		cost: {
 			input: 2,

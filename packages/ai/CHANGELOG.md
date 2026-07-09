@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added xAI Grok 4.5 model metadata (500k context, $2/$6 per 1M tokens, cached input $0.50) with configurable `reasoning_effort` (`low`/`medium`/`high`; cannot be disabled)
+
 ## [0.80.3] - 2026-06-30
 
 ### Added

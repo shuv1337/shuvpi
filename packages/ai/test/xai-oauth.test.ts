@@ -35,6 +35,10 @@ describe("grokSupportsReasoningEffort", () => {
 	it("accepts grok-3-mini", () => {
 		expect(grokSupportsReasoningEffort("grok-3-mini")).toBe(true);
 	});
+	it("accepts grok-4.5", () => {
+		expect(grokSupportsReasoningEffort("grok-4.5")).toBe(true);
+		expect(grokSupportsReasoningEffort("x-ai/grok-4.5")).toBe(true);
+	});
 });
 
 describe("exchangeXaiAuthorizationCode", () => {

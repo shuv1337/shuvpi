@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Default xAI model is now `grok-4.5` (flagship coding/agent model; 500k context)
+
 ## [0.80.3] - 2026-06-30
 
 ### New Features
@@ -26,6 +32,7 @@
 
 - Changed the default OpenAI model to `gpt-5.5`.
 - Changed inherited OpenAI Codex Responses SSE response-header waits to use the configured HTTP timeout instead of the previous fixed 20 second timeout, reducing false timeouts on slow connections ([#4945](https://github.com/earendil-works/pi/issues/4945)).
+- Tightened `models.json` compat schema validation with `additionalProperties: false` and documented compat fields (`zaiToolStream`, `sendSessionAffinityHeaders`, `allowEmptySignature`, `supportsTemperature`)
 
 ### Fixed
 

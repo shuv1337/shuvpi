@@ -324,6 +324,12 @@ function mergeThinkingLevelMap(model: Model<any>, map: NonNullable<Model<any>["t
 	model.thinkingLevelMap = { ...model.thinkingLevelMap, ...map };
 }
 
+/** Grok 4.5 (native id or gateway-prefixed, e.g. x-ai/grok-4.5, xai/grok-4.5). */
+function isGrok45Model(modelId: string): boolean {
+	const id = modelId.toLowerCase();
+	return id === "grok-4.5" || id.endsWith("/grok-4.5") || id.endsWith(".grok-4.5");
+}
+
 function getTogetherCompat(modelId: string, reasoning: boolean): OpenAICompletionsCompat {
 	if (!reasoning) return TOGETHER_BASE_COMPAT;
 	if (TOGETHER_REASONING_EFFORT_MODELS.has(modelId)) return TOGETHER_REASONING_EFFORT_COMPAT;
@@ -644,6 +650,16 @@ function applyThinkingLevelMetadata(model: Model<any>): void {
 	if (model.provider === "opencode" && model.id === "grok-build-0.1") {
 		// OpenCode Zen Grok Build reasons by default but rejects explicit reasoningEffort.
 		mergeThinkingLevelMap(model, { off: null, minimal: null, low: null, medium: null });
+	}
+	if (isGrok45Model(model.id)) {
+		// Docs: reasoning_effort low|medium|high (default high); cannot be disabled.
+		// https://docs.x.ai/developers/model-capabilities/text/reasoning
+		mergeThinkingLevelMap(model, { off: null, minimal: null, xhigh: null });
+		// detectOpenAICompletionsCompat disables reasoning_effort for all xAI baseUrls;
+		// override so Chat Completions can send reasoning_effort for grok-4.5.
+		if (model.api === "openai-completions") {
+			model.compat = { ...model.compat, supportsReasoningEffort: true };
+		}
 	}
 	if (model.provider === "ant-ling" && model.reasoning) {
 		// Ring reasons by default. Only high/xhigh have documented explicit effort controls.
@@ -2278,6 +2294,20 @@ async function generateModels() {
 			},
 			contextWindow: 32768,
 			maxTokens: 8192,
+		},
+		// Fallback until models.dev always carries grok-4.5 (flagship as of 2026-07-08).
+		// Specs: https://docs.x.ai/developers/models/grok-4.5
+		{
+			id: "grok-4.5",
+			name: "Grok 4.5",
+			api: "openai-completions",
+			baseUrl: "https://api.x.ai/v1",
+			provider: "xai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
+			contextWindow: 500000,
+			maxTokens: 500000,
 		},
 	];
 	for (const model of missingGrokModels) {

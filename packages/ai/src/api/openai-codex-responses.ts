@@ -78,7 +78,7 @@ export function isXaiResponsesTarget(model: Pick<Model<"openai-codex-responses">
 }
 
 /** Models that accept `reasoning.effort` on xAI /v1/responses (Hermes model_metadata parity). */
-const GROK_EFFORT_CAPABLE_PREFIXES = ["grok-3-mini", "grok-4.20-multi-agent", "grok-4.3"] as const;
+const GROK_EFFORT_CAPABLE_PREFIXES = ["grok-3-mini", "grok-4.20-multi-agent", "grok-4.3", "grok-4.5"] as const;
 
 export function grokSupportsReasoningEffort(modelId: string): boolean {
 	let name = (modelId || "").trim().toLowerCase();
