@@ -2872,6 +2872,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		provider: "vercel-ai-gateway",
 		baseUrl: "https://ai-gateway.vercel.sh",
 		reasoning: true,
+		thinkingLevelMap: {"off":null,"minimal":null,"xhigh":null},
 		input: ["text", "image"],
 		cost: {
 			input: 2,
