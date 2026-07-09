@@ -12,6 +12,7 @@
 
 ### Fixed
 
+- Fixed GPT-5.6 ChatGPT OAuth models to use the Codex backend's 372k context window instead of the older 272k default.
 - Fixed post-compaction output-token budgeting to ignore stale assistant usage from before the compaction boundary ([#6464](https://github.com/earendil-works/pi/issues/6464)).
 
 ## [0.80.5] - 2026-07-09

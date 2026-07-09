@@ -58,7 +58,7 @@ describe("OpenAI GPT-5.6 models", () => {
 					cacheRead: cacheReadCost,
 					cacheWrite: 0,
 				},
-				contextWindow: 272_000,
+				contextWindow: 372_000,
 				maxTokens: 128_000,
 				thinkingLevelMap: { minimal: "low", xhigh: "xhigh" },
 			});
