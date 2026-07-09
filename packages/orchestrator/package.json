@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/pi-orchestrator",
-	"version": "0.80.3",
+	"version": "0.80.5",
 	"description": "experimental orchestrator package for pi",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -37,7 +37,7 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@shuv1337/pi-coding-agent": "^0.80.3"
+		"@shuv1337/pi-coding-agent": "^0.80.5"
 	},
 	"devDependencies": {
 		"shx": "0.4.0"

@@ -199,9 +199,8 @@ function resolveExternalDependency(lockPackages, packageName, fromLockPath) {
 	);
 }
 
-function addInternalWorkspace(installLockPackages, addedPaths, queue, name, workspace) {
+function addInternalWorkspace(installLockPackages, addedPaths, queue, name, workspace, outputPath) {
 	const packageJson = workspace.packageJson;
-	const outputPath = `node_modules/${name}`;
 	const entry = copyPackageJsonEntry(packageJson, { includeName: false });
 	entry.resolved = registryTarballUrl(name, packageJson.version);
 
@@ -209,22 +208,25 @@ function addInternalWorkspace(installLockPackages, addedPaths, queue, name, work
 	addedPaths.add(outputPath);
 
 	for (const dependencyName of Object.keys(packageDependencies(packageJson))) {
-		queue.push({ name: dependencyName, from: outputPath });
+		queue.push({ name: dependencyName, sourcePath: workspace.lockPath, outputParentPath: outputPath });
 	}
 }
 
-function addExternalPackage(lockPackages, installLockPackages, addedPaths, queue, name, from) {
-	const lockPath = resolveExternalDependency(lockPackages, name, from);
-	if (addedPaths.has(lockPath)) {
+function addExternalPackage(lockPackages, installLockPackages, addedPaths, queue, name, sourcePath, outputParentPath) {
+	const lockPath = resolveExternalDependency(lockPackages, name, sourcePath);
+	const outputPath = lockPath.startsWith(`${sourcePath}/node_modules/`)
+		? `${outputParentPath}/node_modules/${name}`
+		: lockPath;
+	if (addedPaths.has(outputPath)) {
 		return;
 	}
 
 	const entry = lockPackages[lockPath];
-	installLockPackages[lockPath] = copyLockEntry(entry);
-	addedPaths.add(lockPath);
+	installLockPackages[outputPath] = copyLockEntry(entry);
+	addedPaths.add(outputPath);
 
 	for (const dependencyName of Object.keys(packageDependencies(entry))) {
-		queue.push({ name: dependencyName, from: lockPath });
+		queue.push({ name: dependencyName, sourcePath: lockPath, outputParentPath: outputPath });
 	}
 }
 
@@ -370,7 +372,11 @@ function generateInstallLock() {
 	};
 	const addedPaths = new Set([""]);
 	const internalNames = new Set();
-	const queue = Object.keys(packageDependencies(installerPackageJson)).map((name) => ({ name, from: "" }));
+	const queue = Object.keys(packageDependencies(installerPackageJson)).map((name) => ({
+		name,
+		sourcePath: "",
+		outputParentPath: "",
+	}));
 
 	while (queue.length > 0) {
 		const item = queue.shift();
@@ -383,12 +389,20 @@ function generateInstallLock() {
 			const outputPath = `node_modules/${item.name}`;
 			internalNames.add(item.name);
 			if (!addedPaths.has(outputPath)) {
-				addInternalWorkspace(installLockPackages, addedPaths, queue, item.name, workspace);
+				addInternalWorkspace(installLockPackages, addedPaths, queue, item.name, workspace, outputPath);
 			}
 			continue;
 		}
 
-		addExternalPackage(lockPackages, installLockPackages, addedPaths, queue, item.name, item.from);
+		addExternalPackage(
+			lockPackages,
+			installLockPackages,
+			addedPaths,
+			queue,
+			item.name,
+			item.sourcePath,
+			item.outputParentPath,
+		);
 	}
 
 	const installLock = {

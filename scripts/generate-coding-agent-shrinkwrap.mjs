@@ -192,9 +192,8 @@ function resolveExternalDependency(lockPackages, packageName, fromLockPath) {
 	);
 }
 
-function addInternalWorkspace(shrinkwrapPackages, addedPaths, queue, name, workspace) {
+function addInternalWorkspace(shrinkwrapPackages, addedPaths, queue, name, workspace, outputPath) {
 	const packageJson = workspace.packageJson;
-	const outputPath = `node_modules/${name}`;
 	const entry = copyPackageJsonEntry(packageJson, { includeName: false });
 	entry.resolved = registryTarballUrl(name, packageJson.version);
 
@@ -202,22 +201,25 @@ function addInternalWorkspace(shrinkwrapPackages, addedPaths, queue, name, works
 	addedPaths.add(outputPath);
 
 	for (const dependencyName of Object.keys(packageDependencies(packageJson))) {
-		queue.push({ name: dependencyName, from: outputPath });
+		queue.push({ name: dependencyName, sourcePath: workspace.lockPath, outputParentPath: outputPath });
 	}
 }
 
-function addExternalPackage(lockPackages, shrinkwrapPackages, addedPaths, queue, name, from) {
-	const lockPath = resolveExternalDependency(lockPackages, name, from);
-	if (addedPaths.has(lockPath)) {
+function addExternalPackage(lockPackages, shrinkwrapPackages, addedPaths, queue, name, sourcePath, outputParentPath) {
+	const lockPath = resolveExternalDependency(lockPackages, name, sourcePath);
+	const outputPath = lockPath.startsWith(`${sourcePath}/node_modules/`)
+		? `${outputParentPath}/node_modules/${name}`
+		: lockPath;
+	if (addedPaths.has(outputPath)) {
 		return;
 	}
 
 	const entry = lockPackages[lockPath];
-	shrinkwrapPackages[lockPath] = copyLockEntry(entry);
-	addedPaths.add(lockPath);
+	shrinkwrapPackages[outputPath] = copyLockEntry(entry);
+	addedPaths.add(outputPath);
 
 	for (const dependencyName of Object.keys(packageDependencies(entry))) {
-		queue.push({ name: dependencyName, from: lockPath });
+		queue.push({ name: dependencyName, sourcePath: lockPath, outputParentPath: outputPath });
 	}
 }
 
@@ -301,7 +303,11 @@ function generateShrinkwrap() {
 	};
 	const addedPaths = new Set([""]);
 	const internalNames = new Set();
-	const queue = Object.keys(packageDependencies(codingAgentPackage)).map((name) => ({ name, from: "" }));
+	const queue = Object.keys(packageDependencies(codingAgentPackage)).map((name) => ({
+		name,
+		sourcePath: "",
+		outputParentPath: "",
+	}));
 
 	while (queue.length > 0) {
 		const item = queue.shift();
@@ -314,12 +320,20 @@ function generateShrinkwrap() {
 			const outputPath = `node_modules/${item.name}`;
 			internalNames.add(item.name);
 			if (!addedPaths.has(outputPath)) {
-				addInternalWorkspace(shrinkwrapPackages, addedPaths, queue, item.name, workspace);
+				addInternalWorkspace(shrinkwrapPackages, addedPaths, queue, item.name, workspace, outputPath);
 			}
 			continue;
 		}
 
-		addExternalPackage(lockPackages, shrinkwrapPackages, addedPaths, queue, item.name, item.from);
+		addExternalPackage(
+			lockPackages,
+			shrinkwrapPackages,
+			addedPaths,
+			queue,
+			item.name,
+			item.sourcePath,
+			item.outputParentPath,
+		);
 	}
 
 	const shrinkwrap = {

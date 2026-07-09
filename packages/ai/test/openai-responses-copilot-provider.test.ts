@@ -100,9 +100,9 @@ describe("openai-responses provider defaults", () => {
 		"gpt-5.4-nano",
 		"gpt-5.5",
 		"gpt-5.6",
-		"gpt-5.6-luna",
 		"gpt-5.6-sol",
 		"gpt-5.6-terra",
+		"gpt-5.6-luna",
 	] as const)("sends none reasoning effort for OpenAI %s when no reasoning is requested", async (modelId) => {
 		const model = getModel("openai", modelId);
 		let capturedPayload: unknown;
