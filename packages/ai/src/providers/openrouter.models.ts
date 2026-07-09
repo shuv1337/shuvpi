@@ -1486,7 +1486,7 @@ export const OPENROUTER_MODELS = {
 			cacheWrite: 0,
 		},
 		contextWindow: 1048576,
-		maxTokens: 512000,
+		maxTokens: 131072,
 	} satisfies Model<"openai-completions">,
 	"mistralai/codestral-2508": {
 		id: "mistralai/codestral-2508",
