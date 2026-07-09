@@ -3166,14 +3166,12 @@ export class InteractiveMode {
 				// Tool results are rendered inline with tool calls, handled separately
 				break;
 			}
-			case "artifact":
-			case "user-with-attachments": {
-				// web-ui CustomAgentMessages augmentation is visible via root tsconfig paths;
-				// coding-agent does not render these roles.
-				break;
-			}
 			default: {
-				const _exhaustive: never = message;
+				// Unknown/custom roles (e.g. web-ui artifact messages via monorepo type merge)
+				// are not rendered by coding-agent. Cast keeps package-local builds exhaustive
+				// when CustomAgentMessages is empty.
+				const _exhaustive: never = message as never;
+				void _exhaustive;
 			}
 		}
 	}

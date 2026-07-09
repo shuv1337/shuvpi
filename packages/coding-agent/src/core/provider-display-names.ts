@@ -27,6 +27,7 @@ export const BUILT_IN_PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 	together: "Together AI",
 	"vercel-ai-gateway": "Vercel AI Gateway",
 	xai: "xAI",
+	"xai-oauth": "xAI SuperGrok (OAuth)",
 	zai: "ZAI Coding Plan (Global)",
 	"zai-coding-cn": "ZAI Coding Plan (China)",
 	xiaomi: "Xiaomi MiMo",

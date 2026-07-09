@@ -2252,6 +2252,43 @@ async function generateModels() {
 	];
 	allModels.push(...codexModels);
 
+	// SuperGrok OAuth models (api.x.ai/v1/responses via openai-codex-responses transport).
+	// Not published on models.dev — keep a static catalog entry so settings patterns like
+	// xai-oauth/grok-composer-2.5-fast resolve after login.
+	const xaiOAuthModels: Model<"openai-codex-responses">[] = [
+		{
+			id: "grok-composer-2.5-fast",
+			name: "Grok Composer 2.5 Fast",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 200000,
+			maxTokens: 128000,
+		},
+		// Same flagship as xai/grok-4.5, reachable via SuperGrok OAuth.
+		// Specs: https://docs.x.ai/developers/models/grok-4.5
+		{
+			id: "grok-4.5",
+			name: "Grok 4.5",
+			api: "openai-codex-responses",
+			provider: "xai-oauth",
+			baseUrl: "https://api.x.ai/v1",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
+			contextWindow: 500000,
+			maxTokens: 500000,
+		},
+	];
+	for (const model of xaiOAuthModels) {
+		if (!allModels.some((m) => m.provider === model.provider && m.id === model.id)) {
+			allModels.push(model);
+		}
+	}
+
 	// Add missing Grok models
 	const missingGrokModels: Model<"openai-completions">[] = [
 		{
