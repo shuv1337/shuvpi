@@ -339,7 +339,7 @@ describe("openai-completions tool_choice", () => {
 				low: "high",
 				medium: "high",
 				high: "high",
-				xhigh: "max",
+				max: "max",
 			});
 		}
 	});
@@ -350,7 +350,7 @@ describe("openai-completions tool_choice", () => {
 			{ reasoning: "low", effort: "high" },
 			{ reasoning: "medium", effort: "high" },
 			{ reasoning: "high", effort: "high" },
-			{ reasoning: "xhigh", effort: "max" },
+			{ reasoning: "max", effort: "max" },
 		] as const;
 
 		for (const testCase of cases) {

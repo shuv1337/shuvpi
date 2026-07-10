@@ -10,10 +10,19 @@
 
 - Added prompt-cache write pricing and priority processing metadata for the OpenAI GPT-5.6 direct API variants.
 
+## [0.80.6] - 2026-07-09
+
+### Added
+
+- Added a separate opt-in `max` thinking level, including native `xhigh` and `max` support for GPT-5.6 and Anthropic adaptive-thinking effort metadata matching Anthropic's documentation: `max` on all adaptive Claude models, native `xhigh` on Opus 4.7/4.8, Sonnet 5, and Fable 5 only.
+- Added request-wide input-token pricing tiers to model cost metadata and usage cost calculation.
+
 ### Fixed
 
-- Fixed GPT-5.6 ChatGPT OAuth models to use the Codex backend's 372k context window instead of the older 272k default.
 - Fixed post-compaction output-token budgeting to ignore stale assistant usage from before the compaction boundary ([#6464](https://github.com/earendil-works/pi/issues/6464)).
+- Fixed GPT-5.4 and GPT-5.5 long-context cost accounting while retaining the intentional 272K default context limit for models that require an explicit override.
+- Fixed GPT-5.6 metadata to keep direct OpenAI requests in the 272K short-context tier while exposing the Codex backend's 372K context window with long-context pricing, and removed the nonexistent bare `gpt-5.6` alias from the OpenAI and Azure OpenAI Responses catalogs.
+- Fixed Anthropic message conversion to preserve thinking blocks with empty thinking text but a valid signature instead of dropping them, avoiding thinking-block errors on newer Claude models ([#6457](https://github.com/earendil-works/pi/pull/6457) by [@davidbrai](https://github.com/davidbrai)).
 
 ## [0.80.5] - 2026-07-09
 
@@ -57,11 +66,6 @@
 
 - Changed OpenAI Codex Responses SSE response-header waits to use the configured HTTP timeout instead of the previous fixed 20 second timeout, reducing false timeouts on slow connections ([#4945](https://github.com/earendil-works/pi/issues/4945)).
 
-### Added
-
-- Added native Baseten provider with generated Model API catalog and `BASETEN_API_KEY` authentication
-- Added generic `chat-template` OpenAI-completions compatibility support for `chat_template_kwargs` and `chat_template_args` maps
-
 ### Fixed
 
 - Fixed Claude Sonnet 5 metadata to use adaptive thinking payloads for Anthropic-compatible and Bedrock requests.
@@ -97,19 +101,19 @@
 
 ### Breaking Changes
 
-- The root entrypoint (`@shuv1337/pi-ai`) is now core-only and side-effect free. The old global API moved to the temporary `@shuv1337/pi-ai/compat` entrypoint, a strict superset of the root: switching a file's import path is the only migration step. Moved symbols include `stream`/`complete`/`streamSimple`/`completeSimple`, `getModel`/`getModels`/`getProviders` (now deprecated aliases of `getBuiltinModel`/`getBuiltinModels`/`getBuiltinProviders` from `@shuv1337/pi-ai/providers/all`), `registerApiProvider`/`unregisterApiProviders`/`resetApiProviders`/`getApiProvider`, `getEnvApiKey`/`findEnvKeys`, `setBedrockProviderModule`, the per-API lazy stream wrappers (`anthropicMessagesApi`, ...), and the image-generation API.
+- The root entrypoint (`@earendil-works/pi-ai`) is now core-only and side-effect free. The old global API moved to the temporary `@earendil-works/pi-ai/compat` entrypoint, a strict superset of the root: switching a file's import path is the only migration step. Moved symbols include `stream`/`complete`/`streamSimple`/`completeSimple`, `getModel`/`getModels`/`getProviders` (now deprecated aliases of `getBuiltinModel`/`getBuiltinModels`/`getBuiltinProviders` from `@earendil-works/pi-ai/providers/all`), `registerApiProvider`/`unregisterApiProviders`/`resetApiProviders`/`getApiProvider`, `getEnvApiKey`/`findEnvKeys`, `setBedrockProviderModule`, the per-API lazy stream wrappers (`anthropicMessagesApi`, ...), and the image-generation API.
 - Renamed the `Provider` type to `ProviderId`. `Provider` now names the runtime provider interface (id, name, auth, model listing, stream behavior).
-- API implementation modules moved from `src/providers/` to `@shuv1337/pi-ai/api/*`, renamed by API id (`anthropic` -> `api/anthropic-messages`, `google` -> `api/google-generative-ai`, `mistral` -> `api/mistral-conversations`, `amazon-bedrock` -> `api/bedrock-converse-stream`), each exporting exactly `stream` and `streamSimple`. The old per-impl export names (`streamAnthropic`, `streamSimpleAnthropic`, ...) and legacy raw API subpaths (`./anthropic`, `./google`, `./openai-completions`, ...) are gone; import raw API implementations through `@shuv1337/pi-ai/api/*`.
-- Removed the `@shuv1337/pi-ai/base` selective-provider entrypoint; use the root/core APIs with explicit `createModels()` collections and provider factories for isolated bundles.
+- API implementation modules moved from `src/providers/` to `@earendil-works/pi-ai/api/*`, renamed by API id (`anthropic` -> `api/anthropic-messages`, `google` -> `api/google-generative-ai`, `mistral` -> `api/mistral-conversations`, `amazon-bedrock` -> `api/bedrock-converse-stream`), each exporting exactly `stream` and `streamSimple`. The old per-impl export names (`streamAnthropic`, `streamSimpleAnthropic`, ...) and legacy raw API subpaths (`./anthropic`, `./google`, `./openai-completions`, ...) are gone; import raw API implementations through `@earendil-works/pi-ai/api/*`.
+- Removed the `@earendil-works/pi-ai/base` selective-provider entrypoint; use the root/core APIs with explicit `createModels()` collections and provider factories for isolated bundles.
 
 Migration guide:
 
 - Read `packages/ai/README.md` in full for the new `Models` API, provider factories, auth configuration, image generation, and custom provider examples.
-- To keep the old global API temporarily, change imports from `@shuv1337/pi-ai` to `@shuv1337/pi-ai/compat`. The compat entrypoint preserves `stream`/`complete`, generated catalog reads, API registry helpers, env API-key helpers, lazy API wrappers, and image globals, but it will be removed in a future release.
+- To keep the old global API temporarily, change imports from `@earendil-works/pi-ai` to `@earendil-works/pi-ai/compat`. The compat entrypoint preserves `stream`/`complete`, generated catalog reads, API registry helpers, env API-key helpers, lazy API wrappers, and image globals, but it will be removed in a future release.
 - To migrate to the new runtime, create a `Models` collection and call methods on it:
 
   ```ts
-  import { builtinModels } from "@shuv1337/pi-ai/providers/all";
+  import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 
   const models = builtinModels();
   const model = models.getModel("anthropic", "claude-haiku-4-5");
@@ -123,18 +127,18 @@ Migration guide:
 - For an isolated provider set, register provider factories explicitly:
 
   ```ts
-  import { createModels } from "@shuv1337/pi-ai";
-  import { anthropicProvider } from "@shuv1337/pi-ai/providers/anthropic";
+  import { createModels } from "@earendil-works/pi-ai";
+  import { anthropicProvider } from "@earendil-works/pi-ai/providers/anthropic";
 
   const models = createModels();
   models.setProvider(anthropicProvider());
   ```
 
-- To call a raw API implementation directly, import from `@shuv1337/pi-ai/api/*` and pass a compatible model plus auth/options yourself. Raw API modules export `stream` and `streamSimple`; use `.result()` on the returned stream for `complete`/`completeSimple` behavior:
+- To call a raw API implementation directly, import from `@earendil-works/pi-ai/api/*` and pass a compatible model plus auth/options yourself. Raw API modules export `stream` and `streamSimple`; use `.result()` on the returned stream for `complete`/`completeSimple` behavior:
 
   ```ts
-  import { streamSimple } from "@shuv1337/pi-ai/api/anthropic-messages";
-  import { getBuiltinModel } from "@shuv1337/pi-ai/providers/all";
+  import { streamSimple } from "@earendil-works/pi-ai/api/anthropic-messages";
+  import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 
   const model = getBuiltinModel("anthropic", "claude-haiku-4-5");
   const stream = streamSimple(
@@ -152,7 +156,7 @@ Migration guide:
 
 - New `Models` runtime: `createModels()` builds an isolated provider collection with sync model reads (`getModels`/`getModel` return the last-known lists), an explicit async `refresh(provider?)` for dynamic providers, auth resolution (`getAuth`), and `stream`/`complete`/`streamSimple`/`completeSimple` that resolve auth through the owning provider. `createProvider()` builds providers from parts (single API implementation or a map dispatched on `model.api`; static `models` array plus an optional `refreshModels` fetcher with in-flight dedupe); `hasApi()` narrows dynamically listed models.
 - Provider auth substrate: `ProviderAuth` (`{ apiKey?, oauth? }`), one type-tagged credential per provider, `CredentialStore` (`read`/`modify`/`delete` with serialized writes; in-memory default), `envApiKeyAuth()`, `lazyOAuth()`, and injectable `AuthContext`. OAuth refresh runs under the store lock with double-checked expiry; a stored credential owns its provider (no silent env fallback).
-- One provider factory per built-in provider under `@shuv1337/pi-ai/providers/*` (e.g. `anthropicProvider()`, `openrouterProvider()`), plus `@shuv1337/pi-ai/providers/all` with `builtinProviders()`/`builtinModels()` and typed `getBuiltin*` catalog reads. Generated catalogs are split per provider, so importing one provider pulls one catalog; `sideEffects` metadata makes the package tree-shakeable.
+- One provider factory per built-in provider under `@earendil-works/pi-ai/providers/*` (e.g. `anthropicProvider()`, `openrouterProvider()`), plus `@earendil-works/pi-ai/providers/all` with `builtinProviders()`/`builtinModels()` and typed `getBuiltin*` catalog reads. Generated catalogs are split per provider, so importing one provider pulls one catalog; `sideEffects` metadata makes the package tree-shakeable.
 - OAuth flows (Anthropic, OpenAI Codex, GitHub Copilot) gained `OAuthAuth` adapters (`login`/`refresh`/`toAuth`) on unified `prompt()`/`notify()` login callbacks; Copilot's per-credential base URL is derived in `toAuth()`.
 - `fauxProvider()` returns a faux `Provider` for tests built on explicit `Models` collections.
 - Image generation mirrors the chat-side design: `createImagesModels()`/`ImagesProvider`/`createImagesProvider()` with sync model reads, explicit `refresh()`, provider-resolved auth, and never-rejecting `generateImages()`; `openrouterImagesProvider()` factory plus `builtinImagesProviders()`/`builtinImagesModels()` in `providers/all`. The `ImagesProvider` id type alias is renamed to `ImagesProviderId`; the old global image API stays on `/compat`.
@@ -189,7 +193,7 @@ Migration guide:
 
 ### Added
 
-- Added `@shuv1337/pi-ai/base` and direct provider registration exports for bundlers that want selective provider transports without root built-in registration ([#5348](https://github.com/earendil-works/pi/pull/5348) by [@FredKSchott](https://github.com/FredKSchott)).
+- Added `@earendil-works/pi-ai/base` and direct provider registration exports for bundlers that want selective provider transports without root built-in registration ([#5348](https://github.com/earendil-works/pi/pull/5348) by [@FredKSchott](https://github.com/FredKSchott)).
 - Added prompt caching for Mistral requests using the pi session ID as `prompt_cache_key`, including cached-token usage and cost accounting ([#5854](https://github.com/earendil-works/pi/issues/5854)).
 - Added the OpenRouter Fusion alias as `openrouter/fusion` ([#5866](https://github.com/earendil-works/pi/pull/5866) by [@dannote](https://github.com/dannote)).
 
@@ -278,16 +282,8 @@ Migration guide:
 - Added MiniMax-M3 model to the `minimax` and `minimax-cn` direct providers, and removed the hardcoded context-window override that was masking models.dev values ([#5313](https://github.com/earendil-works/pi/issues/5313)).
 - Added NVIDIA NIM as a built-in OpenAI-compatible provider, exposing public NIM models that support tool use.
 
-### Added
-
-- Added Claude Opus 4.8 (`claude-opus-4-8`) on the Anthropic Messages API and the corresponding Bedrock cross-region inference profiles (`us.`, `eu.`, `global.`, `jp.`, `au.`, and the bare `anthropic.claude-opus-4-8`). Pricing, 1M context window, 128k max output, adaptive thinking with `xhigh` effort, and bedrock cache pricing all match Opus 4.7. The Anthropic and Bedrock providers now recognise Opus 4.8 for adaptive thinking and native `xhigh` effort.
-- Added a new `SystemMessage` (`role: "system"`) variant to the `Message` union for mid-conversation system messages. The Anthropic provider forwards these as `role: "system"` `MessageParam` blocks (Claude Opus 4.8+); every other provider's message converter silently drops them via `transformMessages`.
-- Added `AnthropicOptions.speed` (`"default" | "fast"`) to opt in to the Claude Opus 4.8 fast mode research preview. The value is forwarded as `speed` in the Messages API request payload.
-- Added structured `AssistantMessage.stopDetails` (currently `{ type: "refusal"; category; explanation }`). The Anthropic provider populates this from the `message_delta.stop_details` event so callers can distinguish refusal categories (Claude Opus 4.7+) from other error stops.
-
 ### Fixed
 
-- Fixed a `400 invalid_request_error` ("`thinking` blocks in the latest assistant message cannot be modified") that permanently bricked Anthropic and Bedrock sessions with adaptive thinking models (Claude Opus 4.8+). These models can emit a trailing `thinking` block after their tool calls; replaying that block once the turn was no longer the most recent assistant message tripped the API's extended-thinking validation, and every subsequent request (including retries) hit the same error. The Anthropic and Bedrock message converters now strip thinking blocks from all but the most recent assistant turn, matching Anthropic's documented guidance and reducing input tokens.
 - Fixed Amazon Bedrock requests to replace blank required user/tool-result text with a placeholder and skip blank replay text blocks ([#4975](https://github.com/earendil-works/pi/issues/4975)).
 - Fixed Anthropic Claude Opus 4.7+ requests to suppress deprecated temperature parameters ([#5251](https://github.com/earendil-works/pi/pull/5251) by [@yzhg1983](https://github.com/yzhg1983)).
 - Fixed OpenAI GPT-5.5 generated metadata to omit unsupported minimal thinking ([#5243](https://github.com/earendil-works/pi/issues/5243)).

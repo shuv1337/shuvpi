@@ -33,15 +33,7 @@ function createTempDir(prefix: string): TempSessionResources {
 
 async function createOpenAISession(options?: {
 	provider?: "openai" | "openai-codex";
-	modelId?:
-		| "gpt-5.4"
-		| "gpt-5.4-mini"
-		| "gpt-5.4-pro"
-		| "gpt-5.5"
-		| "gpt-5.6"
-		| "gpt-5.6-luna"
-		| "gpt-5.6-sol"
-		| "gpt-5.6-terra";
+	modelId?: "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.4-pro" | "gpt-5.5" | "gpt-5.6-luna" | "gpt-5.6-sol" | "gpt-5.6-terra";
 	resourceLoader?: ReturnType<typeof createTestResourceLoader>;
 }) {
 	const { tempDir, cleanup } = createTempDir("pi-fast-mode-test");
@@ -162,7 +154,7 @@ describe("fast mode payload mutation", () => {
 			service_tier: "priority",
 		});
 
-		for (const modelId of ["gpt-5.6", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"] as const) {
+		for (const modelId of ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"] as const) {
 			const gpt56 = await createOpenAISession({ provider: "openai", modelId });
 			cleanups.push(gpt56.cleanup);
 			gpt56.session.setFastMode(true);

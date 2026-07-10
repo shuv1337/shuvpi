@@ -1,17 +1,17 @@
 {
 	"name": "@shuv1337/pi-coding-agent",
-	"version": "0.80.5",
+	"version": "0.80.6",
 	"lockfileVersion": 3,
 	"requires": true,
 	"packages": {
 		"": {
 			"name": "@shuv1337/pi-coding-agent",
-			"version": "0.80.5",
+			"version": "0.80.6",
 			"license": "MIT",
 			"dependencies": {
-				"@shuv1337/pi-agent-core": "^0.80.5",
-				"@shuv1337/pi-ai": "^0.80.5",
-				"@shuv1337/pi-tui": "^0.80.5",
+				"@shuv1337/pi-agent-core": "^0.80.6",
+				"@shuv1337/pi-ai": "^0.80.6",
+				"@shuv1337/pi-tui": "^0.80.6",
 				"@silvia-odwyer/photon-node": "0.3.4",
 				"chalk": "5.6.2",
 				"cross-spawn": "7.0.6",
@@ -814,11 +814,11 @@
 			"license": "BSD-3-Clause"
 		},
 		"node_modules/@shuv1337/pi-agent-core": {
-			"version": "0.80.5",
-			"resolved": "https://registry.npmjs.org/@shuv1337/pi-agent-core/-/pi-agent-core-0.80.5.tgz",
+			"version": "0.80.6",
+			"resolved": "https://registry.npmjs.org/@shuv1337/pi-agent-core/-/pi-agent-core-0.80.6.tgz",
 			"license": "MIT",
 			"dependencies": {
-				"@shuv1337/pi-ai": "^0.80.5",
+				"@shuv1337/pi-ai": "^0.80.6",
 				"ignore": "7.0.5",
 				"typebox": "1.1.38",
 				"yaml": "2.9.0"
@@ -828,8 +828,8 @@
 			}
 		},
 		"node_modules/@shuv1337/pi-ai": {
-			"version": "0.80.5",
-			"resolved": "https://registry.npmjs.org/@shuv1337/pi-ai/-/pi-ai-0.80.5.tgz",
+			"version": "0.80.6",
+			"resolved": "https://registry.npmjs.org/@shuv1337/pi-ai/-/pi-ai-0.80.6.tgz",
 			"license": "MIT",
 			"dependencies": {
 				"@anthropic-ai/sdk": "0.91.1",
@@ -852,8 +852,8 @@
 			}
 		},
 		"node_modules/@shuv1337/pi-tui": {
-			"version": "0.80.5",
-			"resolved": "https://registry.npmjs.org/@shuv1337/pi-tui/-/pi-tui-0.80.5.tgz",
+			"version": "0.80.6",
+			"resolved": "https://registry.npmjs.org/@shuv1337/pi-tui/-/pi-tui-0.80.6.tgz",
 			"license": "MIT",
 			"dependencies": {
 				"get-east-asian-width": "1.6.0",
