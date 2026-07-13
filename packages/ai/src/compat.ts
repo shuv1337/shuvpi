@@ -53,11 +53,42 @@ import type {
 	StreamOptions,
 } from "./types.ts";
 
+/** Runtime model overlay for app-specific extensions (compat path). */
+const runtimeModelRegistry = new Map<string, Map<string, Model<Api>>>();
+
+/**
+ * Register or replace models at runtime on the compat catalog.
+ * Useful for app-specific model extensions without regenerating the bundled catalog.
+ * @deprecated Prefer `createModels()` + provider factories for new code.
+ */
+export function registerModels<TApi extends Api>(models: Model<TApi>[]): void {
+	for (const model of models) {
+		let providerModels = runtimeModelRegistry.get(model.provider);
+		if (!providerModels) {
+			providerModels = new Map<string, Model<Api>>();
+			runtimeModelRegistry.set(model.provider, providerModels);
+		}
+		providerModels.set(model.id, model as Model<Api>);
+	}
+}
+
 /** @deprecated Static catalog read. Use `getBuiltinModel` from "@shuv1337/pi-ai/providers/all" or `Models.getModel()`. */
-export const getModel = getBuiltinModel;
+export const getModel: typeof getBuiltinModel = (provider, modelId) => {
+	const registered = runtimeModelRegistry.get(provider)?.get(modelId as string);
+	return (registered ?? getBuiltinModel(provider, modelId)) as ReturnType<typeof getBuiltinModel>;
+};
 
 /** @deprecated Static catalog read. Use `getBuiltinModels` from "@shuv1337/pi-ai/providers/all" or `Models.getModels()`. */
-export const getModels = getBuiltinModels;
+export const getModels: typeof getBuiltinModels = (provider) => {
+	const builtin = getBuiltinModels(provider);
+	const registered = runtimeModelRegistry.get(provider);
+	if (!registered || registered.size === 0) return builtin;
+	const byId = new Map<string, Model<Api>>(builtin.map((model) => [model.id, model]));
+	for (const model of registered.values()) {
+		byId.set(model.id, model);
+	}
+	return Array.from(byId.values()) as ReturnType<typeof getBuiltinModels>;
+};
 
 /** @deprecated Static catalog read. Use `getBuiltinProviders` from "@shuv1337/pi-ai/providers/all" or `Models.getProviders()`. */
 export const getProviders = getBuiltinProviders;
