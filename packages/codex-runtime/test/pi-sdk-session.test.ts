@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { create } from "@bufbuild/protobuf";
 import { fauxAssistantMessage, fauxToolCall, registerFauxProvider } from "@shuv1337/shuvpi-ai/compat";
 import { AuthStorage, ModelRegistry } from "@shuv1337/shuvpi-coding-agent";
-import { create } from "@bufbuild/protobuf";
 import { afterEach, describe, expect, it } from "vitest";
-import { HostToolDefinitionSchema, type SessionEvent } from "../src/gen/pi_codex_runtime_pb.js";
-import { PiSdkSessionFactory } from "../src/sdk/pi-sdk-session.js";
+import { HostToolDefinitionSchema, type SessionEvent } from "../src/gen/pi_codex_runtime_pb.ts";
+import { PiSdkSessionFactory } from "../src/sdk/pi-sdk-session.ts";
 
 describe("PiSdkSessionFactory", () => {
 	const cleanups: Array<() => Promise<void> | void> = [];
@@ -86,9 +86,7 @@ describe("PiSdkSessionFactory", () => {
 				"tokenUsage",
 			]),
 		);
-		expect(firstEvents.map((event) => event.sequence)).toEqual(
-			firstEvents.map((_event, index) => BigInt(index)),
-		);
+		expect(firstEvents.map((event) => event.sequence)).toEqual(firstEvents.map((_event, index) => BigInt(index)));
 		const assistantStart = firstEvents.find(
 			(event) => event.event.case === "messageStart" && event.event.value.role === "assistant",
 		);
@@ -127,26 +125,35 @@ describe("PiSdkSessionFactory", () => {
 		const faux = registerFauxProvider();
 		cleanups.push(() => faux.unregister());
 		faux.setResponses([
-			fauxAssistantMessage(fauxToolCall("host_echo", { text: "hello" }, { id: "call-1" }), { stopReason: "toolUse" }),
+			fauxAssistantMessage(fauxToolCall("host_echo", { text: "hello" }, { id: "call-1" }), {
+				stopReason: "toolUse",
+			}),
 			fauxAssistantMessage("host tool completed"),
 		]);
 		const model = faux.getModel();
-		writeFileSync(join(agentDir, "models.json"), JSON.stringify({ providers: {
-			[model.provider]: {
-				baseUrl: model.baseUrl,
-				api: model.api,
-				apiKey: "faux-key",
-				models: [{
-					id: model.id,
-					name: model.name,
-					reasoning: model.reasoning,
-					input: model.input,
-					cost: model.cost,
-					contextWindow: model.contextWindow,
-					maxTokens: model.maxTokens,
-				}],
-			},
-		} }));
+		writeFileSync(
+			join(agentDir, "models.json"),
+			JSON.stringify({
+				providers: {
+					[model.provider]: {
+						baseUrl: model.baseUrl,
+						api: model.api,
+						apiKey: "faux-key",
+						models: [
+							{
+								id: model.id,
+								name: model.name,
+								reasoning: model.reasoning,
+								input: model.input,
+								cost: model.cost,
+								contextWindow: model.contextWindow,
+								maxTokens: model.maxTokens,
+							},
+						],
+					},
+				},
+			}),
+		);
 		const authStorage = AuthStorage.inMemory();
 		authStorage.setRuntimeApiKey(model.provider, "faux-key");
 		const factory = new PiSdkSessionFactory({
@@ -161,15 +168,19 @@ describe("PiSdkSessionFactory", () => {
 			sessionDir,
 			provider: model.provider,
 			model: model.id,
-			hostTools: [create(HostToolDefinitionSchema, {
-				name: "host_echo",
-				description: "Echo through the Codex host",
-				inputSchemaJson: new TextEncoder().encode(JSON.stringify({
-					type: "object",
-					properties: { text: { type: "string" } },
-					required: ["text"],
-				})),
-			})],
+			hostTools: [
+				create(HostToolDefinitionSchema, {
+					name: "host_echo",
+					description: "Echo through the Codex host",
+					inputSchemaJson: new TextEncoder().encode(
+						JSON.stringify({
+							type: "object",
+							properties: { text: { type: "string" } },
+							required: ["text"],
+						}),
+					),
+				}),
+			],
 			onHostToolCall: async (id, name, argumentsValue) => {
 				calls.push({ id, name, argumentsValue });
 				return { content: [{ type: "text", text: "echoed hello" }], details: { hosted: true } };

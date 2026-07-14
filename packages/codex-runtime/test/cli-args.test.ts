@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRuntimeArguments } from "../src/cli-args.js";
+import { parseRuntimeArguments } from "../src/cli-args.ts";
 
 describe("parseRuntimeArguments", () => {
 	it("requires and returns the Unix socket path", () => {

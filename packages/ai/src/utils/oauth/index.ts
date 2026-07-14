@@ -28,6 +28,15 @@ export {
 	openaiCodexOAuthProvider,
 	refreshOpenAICodexToken,
 } from "./openai-codex.ts";
+// Radius (pi-messages gateway)
+export {
+	createRadiusOAuthProvider,
+	DEFAULT_RADIUS_GATEWAY,
+	type RadiusGatewayConfig,
+	type RadiusGatewayModel,
+	type RadiusOAuthCredentials,
+	type RadiusOAuthProviderOptions,
+} from "./radius.ts";
 export * from "./types.ts";
 // xAI OAuth
 export {
@@ -46,9 +55,11 @@ export {
 // Provider Registry
 // ============================================================================
 
+import { getProviderEnvValue } from "../provider-env.ts";
 import { anthropicOAuthProvider } from "./anthropic.ts";
 import { githubCopilotOAuthProvider } from "./github-copilot.ts";
 import { openaiCodexOAuthProvider } from "./openai-codex.ts";
+import { createRadiusOAuthProvider, DEFAULT_RADIUS_GATEWAY } from "./radius.ts";
 import type { OAuthCredentials, OAuthProviderId, OAuthProviderInfo, OAuthProviderInterface } from "./types.ts";
 import { xaiOAuthProvider } from "./xai-oauth.ts";
 
@@ -57,6 +68,11 @@ const BUILT_IN_OAUTH_PROVIDERS: OAuthProviderInterface[] = [
 	githubCopilotOAuthProvider,
 	openaiCodexOAuthProvider,
 	xaiOAuthProvider,
+	createRadiusOAuthProvider({
+		id: "radius",
+		name: "Radius",
+		gateway: getProviderEnvValue("PI_GATEWAY") || DEFAULT_RADIUS_GATEWAY,
+	}),
 ];
 
 const oauthProviderRegistry = new Map<string, OAuthProviderInterface>(

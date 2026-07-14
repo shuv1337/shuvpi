@@ -1,11 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
-import {
-	type Envelope,
-	EnvelopeSchema,
-	HandshakeRequestSchema,
-} from "../src/gen/pi_codex_runtime_pb.ts";
-import { FrameDecoder, FrameSizeError, MAX_FRAME_BYTES, encodeFrame } from "../src/protocol/framing.ts";
+import { type Envelope, EnvelopeSchema, HandshakeRequestSchema } from "../src/gen/pi_codex_runtime_pb.ts";
+import { encodeFrame, FrameDecoder, FrameSizeError, MAX_FRAME_BYTES } from "../src/protocol/framing.ts";
 
 function handshakeEnvelope(clientName: string): Envelope {
 	return create(EnvelopeSchema, {

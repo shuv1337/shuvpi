@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-orchestrator",
-	"version": "0.80.6",
+	"version": "0.80.7",
 	"description": "experimental orchestrator package for shuvpi",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -37,7 +37,7 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-coding-agent": "^0.80.6"
+		"@shuv1337/shuvpi-coding-agent": "^0.80.7"
 	},
 	"devDependencies": {
 		"shx": "0.4.0"

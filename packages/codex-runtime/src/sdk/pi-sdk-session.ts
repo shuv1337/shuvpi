@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import {
 	type AgentSessionEvent,
 	type AgentSessionRuntime,
+	type AgentToolResult,
 	type AuthStorage,
 	type CreateAgentSessionRuntimeFactory,
 	createAgentSessionFromServices,
@@ -10,7 +11,6 @@ import {
 	getAgentDir,
 	type ModelRegistry,
 	SessionManager,
-	type AgentToolResult,
 	type ToolDefinition,
 } from "@shuv1337/shuvpi-coding-agent";
 import {
@@ -18,6 +18,7 @@ import {
 	AgentStartSchema,
 	CompactionEventSchema,
 	ErrorEventSchema,
+	type HostToolDefinition,
 	MessageDeltaSchema,
 	MessageEndSchema,
 	MessageStartSchema,
@@ -27,14 +28,13 @@ import {
 	SessionEventSchema,
 	type SessionStatus,
 	SessionStatusSchema,
-	type HostToolDefinition,
 	TokenUsageSchema,
 	ToolExecutionEndSchema,
 	ToolExecutionStartSchema,
 	ToolExecutionUpdateSchema,
 	TurnEndSchema,
 	TurnStartSchema,
-} from "../gen/pi_codex_runtime_pb.js";
+} from "../gen/pi_codex_runtime_pb.ts";
 
 type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 type SessionEventPayload = Exclude<SessionEvent["event"], { case: undefined }>;
@@ -98,11 +98,7 @@ export class PiSdkSessionFactory {
 	}
 
 	async resume(options: ResumePiSessionOptions): Promise<PiSdkSession> {
-		const sessionManager = SessionManager.open(
-			options.sessionLocator,
-			undefined,
-			options.cwdOverride || undefined,
-		);
+		const sessionManager = SessionManager.open(options.sessionLocator, undefined, options.cwdOverride || undefined);
 		return this.createSession({
 			sessionId: options.sessionId,
 			cwd: sessionManager.getCwd(),
@@ -158,12 +154,14 @@ export class PiSdkSessionFactory {
 		});
 		await runtime.session.bindExtensions({});
 		if (process.env.PI_CODEX_RUNTIME_DEBUG_HOST_TOOLS === "1") {
-			console.error(JSON.stringify({
-				event: "pi-codex-runtime.host-tools",
-				sessionId: options.sessionId,
-				requested: (options.hostTools ?? []).map((tool) => tool.name),
-				active: runtime.session.getActiveToolNames(),
-			}));
+			console.error(
+				JSON.stringify({
+					event: "pi-codex-runtime.host-tools",
+					sessionId: options.sessionId,
+					requested: (options.hostTools ?? []).map((tool) => tool.name),
+					active: runtime.session.getActiveToolNames(),
+				}),
+			);
 		}
 		return new PiSdkSession(options.sessionId, runtime, options.onEvent);
 	}
@@ -188,11 +186,13 @@ function createHostToolDefinitions(
 			parameters: parameters as ToolDefinition["parameters"],
 			execute: async (toolCallId, args, signal): Promise<AgentToolResult<unknown>> => {
 				if (process.env.PI_CODEX_RUNTIME_DEBUG_HOST_TOOLS === "1") {
-					console.error(JSON.stringify({
-						event: "pi-codex-runtime.host-tool-call",
-						toolCallId,
-						name: definition.name,
-					}));
+					console.error(
+						JSON.stringify({
+							event: "pi-codex-runtime.host-tool-call",
+							toolCallId,
+							name: definition.name,
+						}),
+					);
 				}
 				return normalizeHostToolResult(await handler?.(toolCallId, definition.name, args, signal));
 			},
@@ -213,9 +213,7 @@ function normalizeHostToolResult(value: unknown): AgentToolResult<unknown> {
 		return {
 			content: value.content as AgentToolResult<unknown>["content"],
 			details: "details" in value ? value.details : {},
-			...("terminate" in value && typeof value.terminate === "boolean"
-				? { terminate: value.terminate }
-				: {}),
+			...("terminate" in value && typeof value.terminate === "boolean" ? { terminate: value.terminate } : {}),
 		};
 	}
 	return {
@@ -345,10 +343,7 @@ class PiSessionEventMapper {
 				if (event.message.role === "assistant") {
 					this.activeAssistantMessageId = messageId;
 				}
-				this.emit(
-					"messageStart",
-					create(MessageStartSchema, { messageId, role: event.message.role }),
-				);
+				this.emit("messageStart", create(MessageStartSchema, { messageId, role: event.message.role }));
 				break;
 			}
 			case "message_update": {
@@ -446,10 +441,7 @@ class PiSessionEventMapper {
 				);
 				break;
 			case "compaction_start":
-				this.emit(
-					"compaction",
-					create(CompactionEventSchema, { phase: "start", reason: event.reason }),
-				);
+				this.emit("compaction", create(CompactionEventSchema, { phase: "start", reason: event.reason }));
 				break;
 			case "compaction_end":
 				this.emit(

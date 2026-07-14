@@ -1,5 +1,5 @@
 import { fromBinary, toBinary } from "@bufbuild/protobuf";
-import { type Envelope, EnvelopeSchema } from "../gen/pi_codex_runtime_pb.js";
+import { type Envelope, EnvelopeSchema } from "../gen/pi_codex_runtime_pb.ts";
 
 const FRAME_HEADER_BYTES = 4;
 
@@ -42,11 +42,10 @@ export class FrameDecoder {
 		const envelopes: Envelope[] = [];
 		let offset = 0;
 		while (combined.byteLength - offset >= FRAME_HEADER_BYTES) {
-			const frameBytes = new DataView(
-				combined.buffer,
-				combined.byteOffset + offset,
-				FRAME_HEADER_BYTES,
-			).getUint32(0, false);
+			const frameBytes = new DataView(combined.buffer, combined.byteOffset + offset, FRAME_HEADER_BYTES).getUint32(
+				0,
+				false,
+			);
 			if (frameBytes > MAX_FRAME_BYTES) {
 				throw new FrameSizeError(frameBytes);
 			}

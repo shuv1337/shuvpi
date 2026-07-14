@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createFauxRuntimeFixture } from "../src/sdk/faux-runtime-fixture.js";
+import { createFauxRuntimeFixture } from "../src/sdk/faux-runtime-fixture.ts";
 
 describe("createFauxRuntimeFixture", () => {
 	it("creates a selectable in-memory model and cleans up registration", async () => {

@@ -26,14 +26,16 @@ export function createFauxRuntimeFixture(responses: FauxRuntimeResponse[]): Faux
 		throw new Error("the Pi runtime faux fixture requires at least one response");
 	}
 	const faux = registerFauxProvider();
-	faux.setResponses(responses.map((response) =>
-		typeof response === "string"
-			? fauxAssistantMessage(response)
-			: fauxAssistantMessage(
-				fauxToolCall(response.toolCall.name, response.toolCall.arguments, { id: response.toolCall.id }),
-				{ stopReason: "toolUse" },
-			),
-	));
+	faux.setResponses(
+		responses.map((response) =>
+			typeof response === "string"
+				? fauxAssistantMessage(response)
+				: fauxAssistantMessage(
+						fauxToolCall(response.toolCall.name, response.toolCall.arguments, { id: response.toolCall.id }),
+						{ stopReason: "toolUse" },
+					),
+		),
+	);
 	const model = faux.getModel();
 	const authStorage = AuthStorage.inMemory();
 	authStorage.setRuntimeApiKey(model.provider, "faux-key");
@@ -84,14 +86,14 @@ function isFauxRuntimeResponse(value: unknown): value is FauxRuntimeResponse {
 	if (!value || typeof value !== "object" || !("toolCall" in value)) return false;
 	const toolCall = value.toolCall;
 	return Boolean(
-		toolCall
-		&& typeof toolCall === "object"
-		&& "name" in toolCall
-		&& typeof toolCall.name === "string"
-		&& "arguments" in toolCall
-		&& toolCall.arguments
-		&& typeof toolCall.arguments === "object"
-		&& !Array.isArray(toolCall.arguments)
-		&& (!("id" in toolCall) || toolCall.id === undefined || typeof toolCall.id === "string"),
+		toolCall &&
+			typeof toolCall === "object" &&
+			"name" in toolCall &&
+			typeof toolCall.name === "string" &&
+			"arguments" in toolCall &&
+			toolCall.arguments &&
+			typeof toolCall.arguments === "object" &&
+			!Array.isArray(toolCall.arguments) &&
+			(!("id" in toolCall) || toolCall.id === undefined || typeof toolCall.id === "string"),
 	);
 }

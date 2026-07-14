@@ -6,6 +6,12 @@
 
 - Renamed the package from `@shuv1337/pi-tui` to `@shuv1337/shuvpi-tui` and renamed Shuvpi-owned debug artifacts.
 
+## [0.80.7] - 2026-07-14
+
+### Fixed
+
+- Fixed legacy terminal decoding for Alt+symbol key combinations such as `Alt+,` and `Alt+.` ([#6523](https://github.com/earendil-works/pi-mono/pull/6523) by [@ribelo](https://github.com/ribelo)).
+
 ## [0.80.6] - 2026-07-09
 
 ## [0.80.5] - 2026-07-09

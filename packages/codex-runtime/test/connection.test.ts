@@ -4,14 +4,10 @@ import {
 	type Envelope,
 	EnvelopeSchema,
 	HandshakeRequestSchema,
-	StatusRequestSchema,
 	RuntimeRequestSchema,
+	StatusRequestSchema,
 } from "../src/gen/pi_codex_runtime_pb.ts";
-import {
-	ProtocolStateError,
-	RuntimeProtocolConnection,
-	type ProtocolTransport,
-} from "../src/protocol/connection.ts";
+import { ProtocolStateError, type ProtocolTransport, RuntimeProtocolConnection } from "../src/protocol/connection.ts";
 import { encodeFrame, FrameDecoder } from "../src/protocol/framing.ts";
 
 class RecordingTransport implements ProtocolTransport {

@@ -4,7 +4,7 @@ import {
 	EnvelopeSchema,
 	HandshakeResponseSchema,
 	RuntimeErrorSchema,
-} from "../gen/pi_codex_runtime_pb.js";
+} from "../gen/pi_codex_runtime_pb.ts";
 import { encodeFrame, FrameDecoder } from "./framing.ts";
 import { PI_CODEX_PROTOCOL_VERSION } from "./version.ts";
 
@@ -94,10 +94,7 @@ export class RuntimeProtocolConnection {
 		}
 
 		const request = envelope.payload.value;
-		if (
-			request.minimumVersion > PI_CODEX_PROTOCOL_VERSION ||
-			request.maximumVersion < PI_CODEX_PROTOCOL_VERSION
-		) {
+		if (request.minimumVersion > PI_CODEX_PROTOCOL_VERSION || request.maximumVersion < PI_CODEX_PROTOCOL_VERSION) {
 			this.options.transport.write(
 				encodeFrame(
 					create(EnvelopeSchema, {

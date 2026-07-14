@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync, statSync } from "node:fs";
+import { createConnection, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createConnection, type Socket } from "node:net";
 import { create } from "@bufbuild/protobuf";
 import { afterEach, describe, expect, it } from "vitest";
 import {

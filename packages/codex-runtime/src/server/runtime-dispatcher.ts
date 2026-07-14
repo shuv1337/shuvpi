@@ -9,16 +9,12 @@ import {
 	type RuntimeRequest,
 	type RuntimeResponse,
 	RuntimeResponseSchema,
-	SpawnedSessionSchema,
 	type SessionEvent,
 	type SessionStatus,
-} from "../gen/pi_codex_runtime_pb.js";
+	SpawnedSessionSchema,
+} from "../gen/pi_codex_runtime_pb.ts";
 import { PI_CODEX_PROTOCOL_VERSION } from "../protocol/version.ts";
-import {
-	type ResumePiSessionOptions,
-	type SpawnPiSessionOptions,
-	PiSdkSessionFactory,
-} from "../sdk/pi-sdk-session.ts";
+import { PiSdkSessionFactory, type ResumePiSessionOptions, type SpawnPiSessionOptions } from "../sdk/pi-sdk-session.ts";
 
 export interface RuntimeResponseSink {
 	send(envelope: Envelope): void;
@@ -240,19 +236,21 @@ export class RuntimeDispatcher {
 			signal?.addEventListener("abort", abort, { once: true });
 			this.pendingHostTools.set(requestId, { sessionId, toolCallId, resolve, reject, cleanup });
 			try {
-				connection.send(create(EnvelopeSchema, {
-					protocolVersion: PI_CODEX_PROTOCOL_VERSION,
-					payload: {
-						case: "hostToolRequest",
-						value: create(HostToolRequestSchema, {
-							requestId,
-							sessionId,
-							toolCallId,
-							toolName,
-							argumentsJson: encodeJson(argumentsValue),
-						}),
-					},
-				}));
+				connection.send(
+					create(EnvelopeSchema, {
+						protocolVersion: PI_CODEX_PROTOCOL_VERSION,
+						payload: {
+							case: "hostToolRequest",
+							value: create(HostToolRequestSchema, {
+								requestId,
+								sessionId,
+								toolCallId,
+								toolName,
+								argumentsJson: encodeJson(argumentsValue),
+							}),
+						},
+					}),
+				);
 			} catch (error) {
 				this.pendingHostTools.delete(requestId);
 				cleanup();
@@ -288,10 +286,13 @@ export class RuntimeDispatcher {
 		if (!managed) {
 			return;
 		}
-		trySend(managed.connection, create(EnvelopeSchema, {
-			protocolVersion: PI_CODEX_PROTOCOL_VERSION,
-			payload: { case: "event", value: event },
-		}));
+		trySend(
+			managed.connection,
+			create(EnvelopeSchema, {
+				protocolVersion: PI_CODEX_PROTOCOL_VERSION,
+				payload: { case: "event", value: event },
+			}),
+		);
 	}
 
 	private sendAck(connection: RuntimeResponseSink, request: RuntimeRequest): void {
@@ -301,11 +302,7 @@ export class RuntimeDispatcher {
 		});
 	}
 
-	private sendSpawned(
-		connection: RuntimeResponseSink,
-		request: RuntimeRequest,
-		session: RuntimeSession,
-	): void {
+	private sendSpawned(connection: RuntimeResponseSink, request: RuntimeRequest, session: RuntimeSession): void {
 		this.sendResponse(connection, request.requestId, request.sessionId, {
 			case: "spawned",
 			value: create(SpawnedSessionSchema, {
@@ -317,11 +314,7 @@ export class RuntimeDispatcher {
 		});
 	}
 
-	private sendStatus(
-		connection: RuntimeResponseSink,
-		request: RuntimeRequest,
-		status: SessionStatus,
-	): void {
+	private sendStatus(connection: RuntimeResponseSink, request: RuntimeRequest, status: SessionStatus): void {
 		this.sendResponse(connection, request.requestId, request.sessionId, { case: "status", value: status });
 	}
 

@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, lstatSync, unlinkSync } from "node:fs";
 import { createConnection, createServer, type Server, type Socket } from "node:net";
-import type { Envelope } from "../gen/pi_codex_runtime_pb.js";
+import type { Envelope } from "../gen/pi_codex_runtime_pb.ts";
 import { RuntimeProtocolConnection } from "../protocol/connection.ts";
 
 export interface UnixRuntimeServerOptions {

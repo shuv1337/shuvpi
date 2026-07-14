@@ -13,14 +13,14 @@ import {
 	SessionStatusSchema,
 	SpawnRequestSchema,
 	StatusRequestSchema,
-} from "../src/gen/pi_codex_runtime_pb.js";
+} from "../src/gen/pi_codex_runtime_pb.ts";
+import type { ResumePiSessionOptions, SpawnPiSessionOptions } from "../src/sdk/pi-sdk-session.ts";
 import {
 	RuntimeDispatcher,
 	type RuntimeResponseSink,
 	type RuntimeSession,
 	type RuntimeSessionFactory,
-} from "../src/server/runtime-dispatcher.js";
-import type { ResumePiSessionOptions, SpawnPiSessionOptions } from "../src/sdk/pi-sdk-session.js";
+} from "../src/server/runtime-dispatcher.ts";
 
 class RecordingSink implements RuntimeResponseSink {
 	readonly envelopes: Envelope[] = [];
@@ -99,12 +99,14 @@ function spawnRequest(requestId = "spawn-1"): Envelope {
 						sessionDir: "/sessions",
 						provider: "faux",
 						model: "faux-model",
-					thinkingLevel: "high",
-					hostTools: [create(HostToolDefinitionSchema, {
-						name: "host_echo",
-						description: "Echo through Codex",
-						inputSchemaJson: new TextEncoder().encode(JSON.stringify({ type: "object" })),
-					})],
+						thinkingLevel: "high",
+						hostTools: [
+							create(HostToolDefinitionSchema, {
+								name: "host_echo",
+								description: "Echo through Codex",
+								inputSchemaJson: new TextEncoder().encode(JSON.stringify({ type: "object" })),
+							}),
+						],
 					}),
 				},
 			}),
@@ -158,7 +160,11 @@ describe("RuntimeDispatcher", () => {
 		expect(sink.envelopes[1].payload.case).toBe("event");
 
 		let finishPrompt: (() => void) | undefined;
-		factory.session.setPromptCompletion(new Promise<void>((resolve) => (finishPrompt = resolve)));
+		factory.session.setPromptCompletion(
+			new Promise<void>((resolve) => {
+				finishPrompt = resolve;
+			}),
+		);
 		await dispatcher.handleEnvelope(
 			sink,
 			sessionRequest("prompt-1", { case: "prompt", value: create(PromptRequestSchema, { text: "hello" }) }),
@@ -224,29 +230,27 @@ describe("RuntimeDispatcher", () => {
 		const sink = new RecordingSink();
 		await dispatcher.handleEnvelope(sink, spawnRequest());
 
-		const completion = factory.spawnOptions?.onHostToolCall?.(
-			"call-1",
-			"host_echo",
-			{ text: "hello" },
-			undefined,
-		);
+		const completion = factory.spawnOptions?.onHostToolCall?.("call-1", "host_echo", { text: "hello" }, undefined);
 		expect(completion).toBeDefined();
 		const requestEnvelope = sink.envelopes.at(-1);
 		expect(requestEnvelope?.payload.case).toBe("hostToolRequest");
 		if (requestEnvelope?.payload.case !== "hostToolRequest") throw new Error("missing host request");
 
-		await dispatcher.handleEnvelope(sink, create(EnvelopeSchema, {
-			protocolVersion: 1,
-			payload: {
-				case: "hostToolResult",
-				value: create(HostToolResultSchema, {
-					requestId: requestEnvelope.payload.value.requestId,
-					sessionId: "child-1",
-					toolCallId: "call-1",
-					resultJson: new TextEncoder().encode(JSON.stringify({ content: [{ type: "text", text: "hello" }] })),
-				}),
-			},
-		}));
+		await dispatcher.handleEnvelope(
+			sink,
+			create(EnvelopeSchema, {
+				protocolVersion: 1,
+				payload: {
+					case: "hostToolResult",
+					value: create(HostToolResultSchema, {
+						requestId: requestEnvelope.payload.value.requestId,
+						sessionId: "child-1",
+						toolCallId: "call-1",
+						resultJson: new TextEncoder().encode(JSON.stringify({ content: [{ type: "text", text: "hello" }] })),
+					}),
+				},
+			}),
+		);
 
 		await expect(completion).resolves.toEqual({ content: [{ type: "text", text: "hello" }] });
 	});

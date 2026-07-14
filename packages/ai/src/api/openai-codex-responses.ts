@@ -36,6 +36,7 @@ import type {
 	Usage,
 } from "../types.ts";
 import { combineAbortSignals } from "../utils/abort-signals.ts";
+import { splitDeferredTools } from "../utils/deferred-tools.ts";
 import {
 	appendAssistantMessageDiagnostic,
 	createAssistantMessageDiagnostic,
@@ -111,6 +112,7 @@ export interface OpenAICodexResponsesOptions extends StreamOptions {
 	reasoningSummary?: "auto" | "concise" | "detailed" | "off" | "on" | null;
 	serviceTier?: ResponseCreateParamsStreaming["service_tier"];
 	textVerbosity?: "low" | "medium" | "high";
+	toolChoice?: "auto" | "none" | "required";
 }
 
 type CodexResponseStatus = "completed" | "incomplete" | "failed" | "cancelled" | "queued" | "in_progress";
@@ -123,7 +125,7 @@ interface RequestBody {
 	previous_response_id?: string;
 	input?: ResponseInput;
 	tools?: OpenAITool[];
-	tool_choice?: "auto";
+	tool_choice?: OpenAICodexResponsesOptions["toolChoice"];
 	parallel_tool_calls?: boolean;
 	temperature?: number;
 	reasoning?: { effort?: string; summary?: string };
@@ -287,15 +289,9 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 			if (isXai) {
 				delete body.service_tier;
 			}
-			const websocketRequestId = options?.sessionId || createCodexRequestId();
-			const sseHeaders = buildSSEHeaders(
-				model.headers,
-				options?.headers,
-				accountId,
-				apiKey,
-				options?.sessionId,
-				isXai,
-			);
+			const codexSessionId = isXai ? options?.sessionId : clampOpenAIPromptCacheKey(options?.sessionId);
+			const websocketRequestId = codexSessionId || createCodexRequestId();
+			const sseHeaders = buildSSEHeaders(model.headers, options?.headers, accountId, apiKey, codexSessionId, isXai);
 			const websocketHeaders = buildWebSocketHeaders(
 				model.headers,
 				options?.headers,
@@ -523,8 +519,10 @@ function buildRequestBody(
 	context: Context,
 	options?: OpenAICodexResponsesOptions,
 ): RequestBody {
+	const toolPlacement = splitDeferredTools(context, model.compat?.supportsToolSearch ?? false);
 	const messages = convertResponsesMessages(model, context, CODEX_TOOL_CALL_PROVIDERS, {
 		includeSystemPrompt: false,
+		deferredTools: toolPlacement.deferred,
 	});
 
 	const body: RequestBody = {
@@ -548,9 +546,9 @@ function buildRequestBody(
 
 	// tool_choice / parallel_tool_calls are only valid alongside a non-empty tools array.
 	// xAI rejects tool_choice with no tools.
-	if (context.tools && context.tools.length > 0) {
-		body.tools = convertResponsesTools(context.tools, { strict: null });
-		body.tool_choice = "auto";
+	if (toolPlacement.immediate.length > 0) {
+		body.tools = convertResponsesTools(toolPlacement.immediate, { strict: null });
+		body.tool_choice = options?.toolChoice ?? "auto";
 		body.parallel_tool_calls = true;
 	}
 
