@@ -1,0 +1,1 @@
+export const PI_CODEX_PROTOCOL_VERSION = 1;

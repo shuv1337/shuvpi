@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+
+import { parseRuntimeArguments } from "./cli-args.ts";
+import { fauxRuntimeFixtureFromEnvironment } from "./sdk/faux-runtime-fixture.ts";
+import { RuntimeDispatcher } from "./server/runtime-dispatcher.ts";
+import { UnixRuntimeServer } from "./server/unix-runtime-server.ts";
+
+const SERVER_VERSION = process.env.PI_CODEX_RUNTIME_VERSION ?? "0.80.6";
+
+async function main(): Promise<void> {
+	const options = parseRuntimeArguments(process.argv.slice(2));
+	if (options.showHelp) {
+		process.stdout.write("Usage: pi-codex-runtime --socket <unix-socket-path>\n");
+		return;
+	}
+	if (options.showVersion) {
+		process.stdout.write(`${SERVER_VERSION}\n`);
+		return;
+	}
+
+	const fauxFixture = fauxRuntimeFixtureFromEnvironment();
+	const dispatcher = new RuntimeDispatcher(fauxFixture?.factory);
+	const server = new UnixRuntimeServer({
+		socketPath: options.socketPath,
+		serverVersion: SERVER_VERSION,
+		onEnvelope: (connection, envelope) => {
+			void dispatcher.handleEnvelope(connection, envelope).catch((error: unknown) => {
+				process.stderr.write(`pi-codex-runtime request failure: ${errorMessage(error)}\n`);
+			});
+		},
+		onConnectionError: (error) => {
+			process.stderr.write(`pi-codex-runtime connection failure: ${error.message}\n`);
+		},
+	});
+	await server.listen();
+
+	let shuttingDown = false;
+	const shutdown = async (exitCode: number) => {
+		if (shuttingDown) {
+			return;
+		}
+		shuttingDown = true;
+		await dispatcher.close();
+		await server.close();
+		fauxFixture?.dispose();
+		process.exitCode = exitCode;
+	};
+	process.once("SIGINT", () => void shutdown(0));
+	process.once("SIGTERM", () => void shutdown(0));
+}
+
+function errorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
+main().catch((error: unknown) => {
+	process.stderr.write(`pi-codex-runtime fatal: ${errorMessage(error)}\n`);
+	process.exitCode = 1;
+});
