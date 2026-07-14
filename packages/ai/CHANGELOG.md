@@ -13,6 +13,7 @@
 ### Changed
 
 - Added prompt-cache write pricing and priority processing metadata for the OpenAI GPT-5.6 direct API variants.
+- Reduced the GPT-5.6 Codex OAuth context window from 372K to 272K tokens.
 
 ### Fixed
 

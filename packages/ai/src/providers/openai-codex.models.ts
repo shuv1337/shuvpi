@@ -94,7 +94,7 @@ export const OPENAI_CODEX_MODELS = {
 			cacheWrite: 1.25,
 			tiers: [{"inputTokensAbove":272000,"input":2,"output":9,"cacheRead":0.2,"cacheWrite":2.5}],
 		},
-		contextWindow: 372000,
+		contextWindow: 272000,
 		maxTokens: 128000,
 	} satisfies Model<"openai-codex-responses">,
 	"gpt-5.6-sol": {
@@ -113,7 +113,7 @@ export const OPENAI_CODEX_MODELS = {
 			cacheWrite: 6.25,
 			tiers: [{"inputTokensAbove":272000,"input":10,"output":45,"cacheRead":1,"cacheWrite":12.5}],
 		},
-		contextWindow: 372000,
+		contextWindow: 272000,
 		maxTokens: 128000,
 	} satisfies Model<"openai-codex-responses">,
 	"gpt-5.6-terra": {
@@ -132,7 +132,7 @@ export const OPENAI_CODEX_MODELS = {
 			cacheWrite: 3.125,
 			tiers: [{"inputTokensAbove":272000,"input":5,"output":22.5,"cacheRead":0.5,"cacheWrite":6.25}],
 		},
-		contextWindow: 372000,
+		contextWindow: 272000,
 		maxTokens: 128000,
 	} satisfies Model<"openai-codex-responses">,
 } as const;
