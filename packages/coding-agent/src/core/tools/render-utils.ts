@@ -1,7 +1,7 @@
 import * as os from "node:os";
 import { pathToFileURL } from "node:url";
-import type { ImageContent, TextContent } from "@shuv1337/pi-ai";
-import { getCapabilities, getImageDimensions, hyperlink, imageFallback } from "@shuv1337/pi-tui";
+import type { ImageContent, TextContent } from "@shuv1337/shuvpi-ai";
+import { getCapabilities, getImageDimensions, hyperlink, imageFallback } from "@shuv1337/shuvpi-tui";
 import type { Theme } from "../../modes/interactive/theme/theme.ts";
 import { stripAnsi } from "../../utils/ansi.ts";
 import { resolvePath } from "../../utils/paths.ts";

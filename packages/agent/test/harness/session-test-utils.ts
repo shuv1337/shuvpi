@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentMessage } from "@shuv1337/pi-agent-core";
+import type { AgentMessage } from "@shuv1337/shuvpi-agent-core";
 import { afterEach } from "vitest";
 
 export function createUserMessage(text: string): AgentMessage {
@@ -35,7 +35,7 @@ export function createAssistantMessage(text: string): AgentMessage {
 const tempDirs: string[] = [];
 
 export function createTempDir(): string {
-	const dir = join(tmpdir(), `pi-agent-session-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const dir = join(tmpdir(), `shuvpi-agent-session-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(dir, { recursive: true });
 	tempDirs.push(dir);
 	return dir;

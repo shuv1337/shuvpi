@@ -1,5 +1,5 @@
 {
-	"name": "@shuv1337/pi-ai",
+	"name": "@shuv1337/shuvpi-ai",
 	"version": "0.80.6",
 	"description": "Unified LLM API with automatic model discovery and provider configuration",
 	"type": "module",
@@ -37,7 +37,7 @@
 		}
 	},
 	"bin": {
-		"pi-ai": "./dist/cli.js"
+		"shuvpi-ai": "./dist/cli.js"
 	},
 	"files": [
 		"dist",

@@ -1,4 +1,4 @@
-import { setKeybindings } from "@shuv1337/pi-tui";
+import { setKeybindings } from "@shuv1337/shuvpi-tui";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { KeybindingsManager } from "../src/core/keybindings.ts";
 import { TrustSelectorComponent } from "../src/modes/interactive/components/trust-selector.ts";

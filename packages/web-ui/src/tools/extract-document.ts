@@ -1,5 +1,5 @@
-import type { AgentTool } from "@shuv1337/pi-agent-core";
-import type { ToolResultMessage } from "@shuv1337/pi-ai/compat";
+import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
+import type { ToolResultMessage } from "@shuv1337/shuvpi-ai/compat";
 import { html } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { FileText } from "lucide";

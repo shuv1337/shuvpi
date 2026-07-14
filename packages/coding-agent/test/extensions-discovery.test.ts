@@ -12,7 +12,7 @@ describe("extensions discovery", () => {
 	let extensionsDir: string;
 
 	beforeEach(() => {
-		tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-ext-test-"));
+		tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shuvpi-ext-test-"));
 		extensionsDir = path.join(tempDir, "extensions");
 		fs.mkdirSync(extensionsDir);
 	});
@@ -22,15 +22,15 @@ describe("extensions discovery", () => {
 	});
 
 	const extensionCode = `
-		export default function(pi) {
-			pi.registerCommand("test", { handler: async () => {} });
+		export default function(shuvpi) {
+			shuvpi.registerCommand("test", { handler: async () => {} });
 		}
 	`;
 
 	const extensionCodeWithTool = (toolName: string) => `
 		import { Type } from "typebox";
-		export default function(pi) {
-			pi.registerTool({
+		export default function(shuvpi) {
+			shuvpi.registerTool({
 				name: "${toolName}",
 				label: "${toolName}",
 				description: "Test tool",
@@ -99,7 +99,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions[0].path).toContain("index.ts");
 	});
 
-	it("discovers subdirectory with package.json pi field", async () => {
+	it("discovers subdirectory with package.json shuvpi field", async () => {
 		const subdir = path.join(extensionsDir, "my-package");
 		const srcDir = path.join(subdir, "src");
 		fs.mkdirSync(subdir);
@@ -109,7 +109,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				shuvpi: {
 					extensions: ["./src/main.ts"],
 				},
 			}),
@@ -123,7 +123,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions[0].path).toContain("main.ts");
 	});
 
-	it("keeps package.json pi extension entries with leading tilde package-relative", async () => {
+	it("keeps package.json shuvpi extension entries with leading tilde package-relative", async () => {
 		const subdir = path.join(extensionsDir, "tilde-package");
 		const directExtensionPath = path.join(subdir, "~entry.ts");
 		const slashExtensionPath = path.join(subdir, "~", "entry.ts");
@@ -134,7 +134,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "tilde-package",
-				pi: {
+				shuvpi: {
 					extensions: ["~entry.ts", "~/entry.ts"],
 				},
 			}),
@@ -157,7 +157,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				shuvpi: {
 					extensions: ["./ext1.ts", "./ext2.ts"],
 				},
 			}),
@@ -169,7 +169,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions).toHaveLength(2);
 	});
 
-	it("package.json with pi field takes precedence over index.ts", async () => {
+	it("package.json with shuvpi field takes precedence over index.ts", async () => {
 		const subdir = path.join(extensionsDir, "my-package");
 		fs.mkdirSync(subdir);
 		fs.writeFileSync(path.join(subdir, "index.ts"), extensionCodeWithTool("from-index"));
@@ -178,7 +178,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				shuvpi: {
 					extensions: ["./custom.ts"],
 				},
 			}),
@@ -194,7 +194,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions[0].tools.has("from-index")).toBe(false);
 	});
 
-	it("ignores package.json without pi field, falls back to index.ts", async () => {
+	it("ignores package.json without shuvpi field, falls back to index.ts", async () => {
 		const subdir = path.join(extensionsDir, "my-package");
 		fs.mkdirSync(subdir);
 		fs.writeFileSync(path.join(subdir, "index.ts"), extensionCode);
@@ -252,7 +252,7 @@ describe("extensions discovery", () => {
 		const subdir2 = path.join(extensionsDir, "with-manifest");
 		fs.mkdirSync(subdir2);
 		fs.writeFileSync(path.join(subdir2, "entry.ts"), extensionCode);
-		fs.writeFileSync(path.join(subdir2, "package.json"), JSON.stringify({ pi: { extensions: ["./entry.ts"] } }));
+		fs.writeFileSync(path.join(subdir2, "package.json"), JSON.stringify({ shuvpi: { extensions: ["./entry.ts"] } }));
 
 		const result = await discoverAndLoadExtensions([], tempDir, tempDir);
 
@@ -267,7 +267,7 @@ describe("extensions discovery", () => {
 		fs.writeFileSync(
 			path.join(subdir, "package.json"),
 			JSON.stringify({
-				pi: {
+				shuvpi: {
 					extensions: ["./exists.ts", "./missing.ts"],
 				},
 			}),
@@ -337,11 +337,11 @@ describe("extensions discovery", () => {
 
 	it("registers message and entry renderers", async () => {
 		const extCode = `
-			export default function(pi) {
-				pi.registerMessageRenderer("my-custom-type", (message, options, theme) => {
+			export default function(shuvpi) {
+				shuvpi.registerMessageRenderer("my-custom-type", (message, options, theme) => {
 					return null; // Use default rendering
 				});
-				pi.registerEntryRenderer("my-entry-type", (entry, options, theme) => {
+				shuvpi.registerEntryRenderer("my-entry-type", (entry, options, theme) => {
 					return null;
 				});
 			}
@@ -358,7 +358,7 @@ describe("extensions discovery", () => {
 
 	it("reports error when extension throws during initialization", async () => {
 		const extCode = `
-			export default function(pi) {
+			export default function(shuvpi) {
 				throw new Error("Initialization failed!");
 			}
 		`;
@@ -373,8 +373,8 @@ describe("extensions discovery", () => {
 
 	it("reports error when extension has no default export", async () => {
 		const extCode = `
-			export function notDefault(pi) {
-				pi.registerCommand("test", { handler: async () => {} });
+			export function notDefault(shuvpi) {
+				shuvpi.registerCommand("test", { handler: async () => {} });
 			}
 		`;
 		fs.writeFileSync(path.join(extensionsDir, "no-default.ts"), extCode);
@@ -407,10 +407,10 @@ describe("extensions discovery", () => {
 
 	it("loads extension with event handlers", async () => {
 		const extCode = `
-			export default function(pi) {
-				pi.on("agent_start", async () => {});
-				pi.on("tool_call", async (event) => undefined);
-				pi.on("agent_end", async () => {});
+			export default function(shuvpi) {
+				shuvpi.on("agent_start", async () => {});
+				shuvpi.on("tool_call", async (event) => undefined);
+				shuvpi.on("agent_end", async () => {});
 			}
 		`;
 		fs.writeFileSync(path.join(extensionsDir, "with-handlers.ts"), extCode);
@@ -426,8 +426,8 @@ describe("extensions discovery", () => {
 
 	it("loads extension with shortcuts", async () => {
 		const extCode = `
-			export default function(pi) {
-				pi.registerShortcut("ctrl+t", {
+			export default function(shuvpi) {
+				shuvpi.registerShortcut("ctrl+t", {
 					description: "Test shortcut",
 					handler: async (ctx) => {},
 				});
@@ -444,8 +444,8 @@ describe("extensions discovery", () => {
 
 	it("loads extension with flags", async () => {
 		const extCode = `
-			export default function(pi) {
-				pi.registerFlag("my-flag", {
+			export default function(shuvpi) {
+				shuvpi.registerFlag("my-flag", {
 					description: "My custom flag",
 					handler: async (value) => {},
 				});
@@ -490,32 +490,27 @@ describe("extensions discovery", () => {
 		expect(result.extensions).toHaveLength(0);
 	});
 
-	// Third-party extensions are written against the upstream package scopes
-	// (@earendil-works, legacy @mariozechner). The loader aliases those scopes
-	// to this fork's bundled modules so they load without "Cannot find module".
-	for (const scope of ["@earendil-works", "@mariozechner"]) {
-		it(`resolves ${scope} pi package imports to bundled fork modules`, async () => {
-			const upstreamExtension = `
-				import { SessionManager } from "${scope}/pi-coding-agent";
-				import type { ExtensionAPI } from "${scope}/pi-coding-agent";
-				import "${scope}/pi-tui";
-				import "${scope}/pi-ai";
-				import "${scope}/pi-agent-core";
-				export default function(pi: ExtensionAPI) {
-					pi.registerCommand("upstream", {
+	it("resolves canonical shuvpi package imports to bundled modules", async () => {
+		const extension = `
+				import { SessionManager } from "@shuv1337/shuvpi-coding-agent";
+				import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
+				import "@shuv1337/shuvpi-tui";
+				import "@shuv1337/shuvpi-ai";
+				import "@shuv1337/shuvpi-agent-core";
+				export default function(shuvpi: ExtensionAPI) {
+					shuvpi.registerCommand("canonical", {
 						handler: async () => {
 							if (typeof SessionManager !== "function") throw new Error("SessionManager missing");
 						},
 					});
 				}
 			`;
-			fs.writeFileSync(path.join(extensionsDir, "upstream.ts"), upstreamExtension);
+		fs.writeFileSync(path.join(extensionsDir, "canonical.ts"), extension);
 
-			const result = await discoverAndLoadExtensions([], tempDir, tempDir);
+		const result = await discoverAndLoadExtensions([], tempDir, tempDir);
 
-			expect(result.errors).toHaveLength(0);
-			expect(result.extensions).toHaveLength(1);
-			expect(result.extensions[0].commands.has("upstream")).toBe(true);
-		});
-	}
+		expect(result.errors).toHaveLength(0);
+		expect(result.extensions).toHaveLength(1);
+		expect(result.extensions[0].commands.has("canonical")).toBe(true);
+	});
 });

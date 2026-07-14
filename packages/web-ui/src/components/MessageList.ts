@@ -1,8 +1,8 @@
-import type { AgentMessage, AgentTool } from "@shuv1337/pi-agent-core";
+import type { AgentMessage, AgentTool } from "@shuv1337/shuvpi-agent-core";
 import type {
 	AssistantMessage as AssistantMessageType,
 	ToolResultMessage as ToolResultMessageType,
-} from "@shuv1337/pi-ai";
+} from "@shuv1337/shuvpi-ai";
 import { html, LitElement, type TemplateResult } from "lit";
 import { property } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";

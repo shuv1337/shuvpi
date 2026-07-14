@@ -1,4 +1,4 @@
-import type { AgentTool } from "@shuv1337/pi-agent-core";
+import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
 import { Type } from "typebox";
 import type { Executor } from "../sandbox.ts";
 

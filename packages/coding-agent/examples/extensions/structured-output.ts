@@ -5,8 +5,8 @@
  * without paying for an extra follow-up LLM turn.
  */
 
-import { defineTool, type ExtensionAPI } from "@shuv1337/pi-coding-agent";
-import { Text } from "@shuv1337/pi-tui";
+import { defineTool, type ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
+import { Text } from "@shuv1337/shuvpi-tui";
 import { Type } from "typebox";
 
 interface StructuredOutputDetails {
@@ -60,6 +60,6 @@ const structuredOutputTool = defineTool({
 	},
 });
 
-export default function (pi: ExtensionAPI) {
-	pi.registerTool(structuredOutputTool);
+export default function (shuvpi: ExtensionAPI) {
+	shuvpi.registerTool(structuredOutputTool);
 }

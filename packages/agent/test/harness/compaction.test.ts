@@ -7,7 +7,7 @@ import {
 	type Message,
 	type Model,
 	type Usage,
-} from "@shuv1337/pi-ai";
+} from "@shuv1337/shuvpi-ai";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	type CompactionPreparation,

@@ -15,7 +15,7 @@ type GeminiCredentials = OAuthCredentials & {
 	projectId: string;
 };
 
-const CALLBACK_HOST = process.env.PI_OAUTH_CALLBACK_HOST || "127.0.0.1";
+const CALLBACK_HOST = process.env.SHUVPI_OAUTH_CALLBACK_HOST || "127.0.0.1";
 
 let _createServer: typeof import("node:http").createServer | null = null;
 let _httpImportPromise: Promise<void> | null = null;

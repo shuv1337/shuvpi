@@ -1,4 +1,4 @@
-import type { AgentTool } from "@shuv1337/pi-agent-core";
+import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
 import type { ExtensionContext, ToolDefinition } from "../extensions/types.ts";
 
 /** Wrap a ToolDefinition into an AgentTool for the core runtime. */

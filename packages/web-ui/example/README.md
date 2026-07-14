@@ -1,6 +1,6 @@
-# Pi Web UI - Example
+# Shuvpi Web UI - Example
 
-This is a minimal example showing how to use `@shuv1337/pi-web-ui` in a web application.
+This is a minimal example showing how to use `@shuv1337/shuvpi-web-ui` in a web application.
 
 ## Setup
 
@@ -56,6 +56,6 @@ example/
 
 ## Learn More
 
-- [Pi Web UI Documentation](../README.md)
-- [Pi AI Documentation](../../ai/README.md)
+- [Shuvpi Web UI Documentation](../README.md)
+- [Shuvpi AI Documentation](../../ai/README.md)
 - [Mini Lit Documentation](https://github.com/badlogic/mini-lit)

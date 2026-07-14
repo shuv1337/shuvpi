@@ -15,7 +15,7 @@
  */
 
 import { mkdtemp, writeFile } from "node:fs/promises";
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 import {
 	DEFAULT_MAX_BYTES,
 	DEFAULT_MAX_LINES,
@@ -23,8 +23,8 @@ import {
 	type TruncationResult,
 	truncateHead,
 	withFileMutationQueue,
-} from "@shuv1337/pi-coding-agent";
-import { Text } from "@shuv1337/pi-tui";
+} from "@shuv1337/shuvpi-coding-agent";
+import { Text } from "@shuv1337/shuvpi-tui";
 import { execSync } from "child_process";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -45,8 +45,8 @@ interface RgDetails {
 	fullOutputPath?: string;
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerTool({
+export default function (shuvpi: ExtensionAPI) {
+	shuvpi.registerTool({
 		name: "rg",
 		label: "ripgrep",
 		// Document the truncation limits in the tool description so the LLM knows
@@ -109,7 +109,7 @@ export default function (pi: ExtensionAPI) {
 
 			if (truncation.truncated) {
 				// Save full output to a temp file so LLM can access it if needed
-				const tempDir = await mkdtemp(join(tmpdir(), "pi-rg-"));
+				const tempDir = await mkdtemp(join(tmpdir(), "shuvpi-rg-"));
 				const tempFile = join(tempDir, "output.txt");
 				await withFileMutationQueue(tempFile, async () => {
 					await writeFile(tempFile, output, "utf8");

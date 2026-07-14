@@ -14,13 +14,15 @@ export const XAI_OAUTH_CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828";
 export const XAI_OAUTH_SCOPE = "openid profile email offline_access grok-cli:access api:access";
 export const DEFAULT_XAI_OAUTH_BASE_URL = "https://api.x.ai/v1";
 
-const CALLBACK_HOST = process.env.PI_XAI_OAUTH_CALLBACK_HOST || process.env.XAI_OAUTH_REDIRECT_HOST || "127.0.0.1";
-const CALLBACK_PORT = Number(process.env.PI_XAI_OAUTH_CALLBACK_PORT || process.env.XAI_OAUTH_REDIRECT_PORT || "56121");
+const CALLBACK_HOST = process.env.SHUVPI_XAI_OAUTH_CALLBACK_HOST || process.env.XAI_OAUTH_REDIRECT_HOST || "127.0.0.1";
+const CALLBACK_PORT = Number(
+	process.env.SHUVPI_XAI_OAUTH_CALLBACK_PORT || process.env.XAI_OAUTH_REDIRECT_PORT || "56121",
+);
 const CALLBACK_PATH = process.env.XAI_OAUTH_REDIRECT_PATH || "/callback";
 const REDIRECT_URI = `http://${CALLBACK_HOST}:${CALLBACK_PORT}${CALLBACK_PATH}`;
 
 // Defer the node:http dependency to call time so importing this module (and the public
-// `@shuv1337/pi-ai/oauth` barrel that re-exports it) stays load-safe in browser/edge/Workers
+// `@shuv1337/shuvpi-ai/oauth` barrel that re-exports it) stays load-safe in browser/edge/Workers
 // runtimes. Mirrors the lazy + environment-guard pattern in anthropic.ts and the other providers.
 type NodeApis = {
 	createServer: typeof import("node:http").createServer;
@@ -119,7 +121,7 @@ function buildAuthorizeUrl(params: {
 	url.searchParams.set("state", params.state);
 	url.searchParams.set("nonce", params.nonce);
 	url.searchParams.set("plan", "generic");
-	url.searchParams.set("referrer", "pi");
+	url.searchParams.set("referrer", "shuvpi");
 	return url.toString();
 }
 
@@ -271,7 +273,7 @@ async function startCallbackServer(expectedState: string): Promise<CallbackServe
 				reject(
 					new Error(
 						`xAI OAuth callback port ${CALLBACK_PORT} on ${CALLBACK_HOST} is already in use. ` +
-							`Close the process using it, or set PI_XAI_OAUTH_CALLBACK_PORT to a free port and retry.`,
+							`Close the process using it, or set SHUVPI_XAI_OAUTH_CALLBACK_PORT to a free port and retry.`,
 					),
 				);
 				return;

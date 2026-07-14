@@ -1,4 +1,4 @@
-import type { Model, Models } from "@shuv1337/pi-ai";
+import type { Model, Models } from "@shuv1337/shuvpi-ai";
 
 import type { AgentMessage } from "../../types.ts";
 import {

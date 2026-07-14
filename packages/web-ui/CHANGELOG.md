@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Renamed the package from `@shuv1337/pi-web-ui` to `@shuv1337/shuvpi-web-ui` and renamed product-owned browser storage and custom-element keys.
+
 ## [0.79.0] - 2026-06-09
 
 ### Changed

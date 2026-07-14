@@ -5,10 +5,15 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentMessage, AgentTool } from "@shuv1337/pi-agent-core";
-import { Agent } from "@shuv1337/pi-agent-core";
-import type { FauxModelDefinition, FauxProviderRegistration, FauxResponseStep, Model } from "@shuv1337/pi-ai/compat";
-import { registerFauxProvider } from "@shuv1337/pi-ai/compat";
+import type { AgentMessage, AgentTool } from "@shuv1337/shuvpi-agent-core";
+import { Agent } from "@shuv1337/shuvpi-agent-core";
+import type {
+	FauxModelDefinition,
+	FauxProviderRegistration,
+	FauxResponseStep,
+	Model,
+} from "@shuv1337/shuvpi-ai/compat";
+import { registerFauxProvider } from "@shuv1337/shuvpi-ai/compat";
 import { AgentSession, type AgentSessionEvent } from "../../src/core/agent-session.ts";
 import { AuthStorage } from "../../src/core/auth-storage.ts";
 import type { ExtensionRunner } from "../../src/core/extensions/index.ts";
@@ -87,7 +92,7 @@ export interface Harness {
 }
 
 function createTempDir(): string {
-	const tempDir = join(tmpdir(), `pi-suite-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const tempDir = join(tmpdir(), `shuvpi-suite-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 	return tempDir;
 }

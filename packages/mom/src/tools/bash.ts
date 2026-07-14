@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentTool } from "@shuv1337/pi-agent-core";
+import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
 import { Type } from "typebox";
 import type { Executor } from "../sandbox.ts";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateTail } from "./truncate.ts";

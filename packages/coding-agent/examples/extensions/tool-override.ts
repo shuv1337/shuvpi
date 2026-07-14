@@ -5,7 +5,7 @@
  * This is useful for:
  * - Adding logging or auditing to tool calls
  * - Implementing access control or sandboxing
- * - Routing tool calls to remote systems (e.g., pi-ssh-remote)
+ * - Routing tool calls to remote systems (e.g., shuvpi-ssh-remote)
  * - Modifying tool behavior for specific workflows
  *
  * This example overrides the `read` tool to:
@@ -17,11 +17,11 @@
  * is used automatically (syntax highlighting, line numbers, truncation warnings).
  *
  * Usage:
- *   pi -e ./tool-override.ts
+ *   shuvpi -e ./tool-override.ts
  */
 
-import type { TextContent } from "@shuv1337/pi-ai";
-import { type ExtensionAPI, getAgentDir, withFileMutationQueue } from "@shuv1337/pi-coding-agent";
+import type { TextContent } from "@shuv1337/shuvpi-ai";
+import { type ExtensionAPI, getAgentDir, withFileMutationQueue } from "@shuv1337/shuvpi-coding-agent";
 import { constants, readFileSync } from "fs";
 import { access, appendFile, readFile } from "fs/promises";
 import { join, resolve } from "path";
@@ -65,8 +65,8 @@ const readSchema = Type.Object({
 	limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" })),
 });
 
-export default function (pi: ExtensionAPI) {
-	pi.registerTool({
+export default function (shuvpi: ExtensionAPI) {
+	shuvpi.registerTool({
 		name: "read", // Same name as built-in - this will override it
 		label: "read (audited)",
 		description:
@@ -129,7 +129,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Also register a command to view the access log
-	pi.registerCommand("read-log", {
+	shuvpi.registerCommand("read-log", {
 		description: "View the file access log",
 		handler: async (_args, ctx) => {
 			try {

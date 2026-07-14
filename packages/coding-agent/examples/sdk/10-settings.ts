@@ -4,7 +4,7 @@
  * Override settings using SettingsManager.
  */
 
-import { createAgentSession, SessionManager, SettingsManager } from "@shuv1337/pi-coding-agent";
+import { createAgentSession, SessionManager, SettingsManager } from "@shuv1337/shuvpi-coding-agent";
 
 const cwd = process.cwd();
 

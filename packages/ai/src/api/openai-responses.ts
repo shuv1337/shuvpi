@@ -45,13 +45,13 @@ function getClientApiKey(provider: string, apiKey: string | undefined, headers: 
 
 /**
  * Resolve cache retention preference.
- * Defaults to "short" and uses PI_CACHE_RETENTION for backward compatibility.
+ * Defaults to "short" and uses SHUVPI_CACHE_RETENTION for backward compatibility.
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEnv): CacheRetention {
 	if (cacheRetention) {
 		return cacheRetention;
 	}
-	if (getProviderEnvValue("PI_CACHE_RETENTION", env) === "long") {
+	if (getProviderEnvValue("SHUVPI_CACHE_RETENTION", env) === "long") {
 		return "long";
 	}
 	return "short";

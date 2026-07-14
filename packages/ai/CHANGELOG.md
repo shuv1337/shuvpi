@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Renamed the package and CLI from `@shuv1337/pi-ai` / `pi-ai` to `@shuv1337/shuvpi-ai` / `shuvpi-ai`.
+
 ### Added
 
 - Added xAI Grok 4.5 model metadata (500k context, $2/$6 per 1M tokens, cached input $0.50) with configurable `reasoning_effort` (`low`/`medium`/`high`; cannot be disabled).

@@ -5,7 +5,7 @@ import type { Config, Pod } from "./types.ts";
 
 // Get config directory from env or use default
 const getConfigDir = (): string => {
-	const configDir = process.env.PI_CONFIG_DIR || join(homedir(), ".pi");
+	const configDir = process.env.SHUVPI_CONFIG_DIR || join(homedir(), ".shuvpi");
 	if (!existsSync(configDir)) {
 		mkdirSync(configDir, { recursive: true });
 	}

@@ -1,4 +1,4 @@
-import { Box, Container, Markdown, type MarkdownTheme } from "@shuv1337/pi-tui";
+import { Box, Container, Markdown, type MarkdownTheme } from "@shuv1337/shuvpi-tui";
 import { getMarkdownTheme, theme } from "../theme/theme.ts";
 
 const OSC133_ZONE_START = "\x1b]133;A\x07";

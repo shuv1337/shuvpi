@@ -1,4 +1,4 @@
-import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@shuv1337/pi-ai/compat";
+import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@shuv1337/shuvpi-ai/compat";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import { Agent, type AgentEvent, type AgentTool, type AgentToolUpdateCallback } from "../src/index.ts";

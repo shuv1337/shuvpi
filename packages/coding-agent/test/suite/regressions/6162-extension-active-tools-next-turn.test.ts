@@ -1,21 +1,21 @@
-import { fauxAssistantMessage, fauxToolCall } from "@shuv1337/pi-ai";
+import { fauxAssistantMessage, fauxToolCall } from "@shuv1337/shuvpi-ai";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import type { ExtensionFactory } from "../../../src/index.ts";
 import { createHarness } from "../harness.ts";
 
 describe("extension active tools next-turn refresh", () => {
-	it("applies pi.setActiveTools before the next provider request in the same run", async () => {
+	it("applies shuvpi.setActiveTools before the next provider request in the same run", async () => {
 		const extensionFactories: ExtensionFactory[] = [
-			(pi) => {
-				pi.registerTool({
+			(shuvpi) => {
+				shuvpi.registerTool({
 					name: "switch_tools",
 					label: "Switch Tools",
 					description: "Switch the active extension tool set",
 					promptSnippet: "Switch to the next extension tool",
 					parameters: Type.Object({}),
 					execute: async () => {
-						pi.setActiveTools(["after_switch"]);
+						shuvpi.setActiveTools(["after_switch"]);
 						return {
 							content: [{ type: "text", text: "switched" }],
 							details: {},
@@ -23,7 +23,7 @@ describe("extension active tools next-turn refresh", () => {
 					},
 				});
 
-				pi.registerTool({
+				shuvpi.registerTool({
 					name: "after_switch",
 					label: "After Switch",
 					description: "Tool that should be available after switching",
@@ -68,19 +68,19 @@ describe("extension active tools next-turn refresh", () => {
 
 	it("preserves before_agent_start system prompt overrides when tools change mid-run", async () => {
 		const extensionFactories: ExtensionFactory[] = [
-			(pi) => {
-				pi.on("before_agent_start", async (event) => ({
+			(shuvpi) => {
+				shuvpi.on("before_agent_start", async (event) => ({
 					systemPrompt: `${event.systemPrompt}\n\nkeep this run override`,
 				}));
 
-				pi.registerTool({
+				shuvpi.registerTool({
 					name: "switch_tools",
 					label: "Switch Tools",
 					description: "Switch the active extension tool set",
 					promptSnippet: "Switch to the next extension tool",
 					parameters: Type.Object({}),
 					execute: async () => {
-						pi.setActiveTools(["after_switch"]);
+						shuvpi.setActiveTools(["after_switch"]);
 						return {
 							content: [{ type: "text", text: "switched" }],
 							details: {},
@@ -88,7 +88,7 @@ describe("extension active tools next-turn refresh", () => {
 					},
 				});
 
-				pi.registerTool({
+				shuvpi.registerTool({
 					name: "after_switch",
 					label: "After Switch",
 					description: "Tool that should be available after switching",

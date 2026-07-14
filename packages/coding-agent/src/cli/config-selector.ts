@@ -1,8 +1,8 @@
 /**
- * TUI config selector for `pi config` command
+ * TUI config selector for `shuvpi config` command
  */
 
-import { ProcessTerminal, TUI } from "@shuv1337/pi-tui";
+import { ProcessTerminal, TUI } from "@shuv1337/shuvpi-tui";
 import type { SettingsManager } from "../core/settings-manager.ts";
 import { ConfigSelectorComponent, type ScopedResolvedPaths } from "../modes/interactive/components/config-selector.ts";
 import { initTheme, stopThemeWatcher } from "../modes/interactive/theme/theme.ts";

@@ -1,4 +1,4 @@
-import type { Message } from "@shuv1337/pi-ai";
+import type { Message } from "@shuv1337/shuvpi-ai";
 import type { AgentMessage } from "../../types.ts";
 
 /** File paths touched by a session branch or compaction range. */

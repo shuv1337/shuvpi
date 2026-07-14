@@ -1,4 +1,4 @@
-import type { TUI } from "@shuv1337/pi-tui";
+import type { TUI } from "@shuv1337/shuvpi-tui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { IdleStatus, RetryStatusIndicator } from "../src/modes/interactive/components/status-indicator.ts";
 import { initTheme } from "../src/modes/interactive/theme/theme.ts";

@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { ThinkingLevel } from "@shuv1337/pi-agent-core";
+import type { ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
 import {
 	type EditorTheme,
 	getCapabilities,
@@ -8,7 +8,7 @@ import {
 	type RgbColor,
 	type SelectListTheme,
 	type SettingsListTheme,
-} from "@shuv1337/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import chalk from "chalk";
 import { type Static, Type } from "typebox";
 import { Compile } from "typebox/compile";
@@ -797,8 +797,8 @@ export function getDefaultTheme(): string {
 // ============================================================================
 
 // Use globalThis to share theme across module loaders (tsx + jiti in dev mode)
-const THEME_KEY = Symbol.for("@shuv1337/pi-coding-agent:theme");
-const THEME_KEY_OLD = Symbol.for("@shuv1337/pi-coding-agent:theme");
+const THEME_KEY = Symbol.for("@shuv1337/shuvpi-coding-agent:theme");
+const THEME_KEY_OLD = Symbol.for("@shuv1337/shuvpi-coding-agent:theme");
 
 // Export theme as a getter that reads from globalThis
 // This ensures all module instances (tsx, jiti) see the same theme

@@ -8,16 +8,16 @@
 		],
 		"noEmit": true,
 		"paths": {
-			"@shuv1337/pi-agent-core": [
+			"@shuv1337/shuvpi-agent-core": [
 				"../agent/src/index.ts"
 			],
-			"@shuv1337/pi-ai": [
+			"@shuv1337/shuvpi-ai": [
 				"../ai/src/index.ts"
 			],
-			"@shuv1337/pi-tui": [
+			"@shuv1337/shuvpi-tui": [
 				"../tui/src/index.ts"
 			],
-			"@shuv1337/pi-ai/compat": [
+			"@shuv1337/shuvpi-ai/compat": [
 				"../ai/src/compat.ts"
 			]
 		}

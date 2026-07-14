@@ -1,6 +1,6 @@
 import { i18n } from "@mariozechner/mini-lit";
 import { Select } from "@mariozechner/mini-lit/dist/Select.js";
-import { getProviders } from "@shuv1337/pi-ai/compat";
+import { getProviders } from "@shuv1337/shuvpi-ai/compat";
 import { html, type TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import "../components/CustomProviderCard.ts";

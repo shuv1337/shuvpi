@@ -1,5 +1,5 @@
-import type { AgentTool } from "@shuv1337/pi-agent-core";
-import { Container, Text } from "@shuv1337/pi-tui";
+import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
+import { Container, Text } from "@shuv1337/shuvpi-tui";
 import { mkdir as fsMkdir, writeFile as fsWriteFile } from "fs/promises";
 import { dirname } from "path";
 import { type Static, Type } from "typebox";

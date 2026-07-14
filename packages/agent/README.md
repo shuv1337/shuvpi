@@ -1,18 +1,18 @@
-# @shuv1337/pi-agent-core
+# @shuv1337/shuvpi-agent-core
 
-Stateful agent with tool execution and event streaming. Built on `@shuv1337/pi-ai`.
+Stateful agent with tool execution and event streaming. Built on `@shuv1337/shuvpi-ai`.
 
 ## Installation
 
 ```bash
-npm install @shuv1337/pi-agent-core
+npm install @shuv1337/shuvpi-agent-core
 ```
 
 ## Quick Start
 
 ```typescript
-import { Agent } from "@shuv1337/pi-agent-core";
-import { getModel } from "@shuv1337/pi-ai";
+import { Agent } from "@shuv1337/shuvpi-agent-core";
+import { getModel } from "@shuv1337/shuvpi-ai";
 
 const agent = new Agent({
   initialState: {
@@ -355,7 +355,7 @@ Follow-up messages are checked only when there are no more tool calls and no ste
 Extend `AgentMessage` via declaration merging:
 
 ```typescript
-declare module "@shuv1337/pi-agent-core" {
+declare module "@shuv1337/shuvpi-agent-core" {
   interface CustomAgentMessages {
     notification: { role: "notification"; text: string; timestamp: number };
   }
@@ -436,7 +436,7 @@ Return `terminate: true` from `execute()` or `afterToolCall` to hint that the ag
 For browser apps that proxy through a backend:
 
 ```typescript
-import { Agent, streamProxy } from "@shuv1337/pi-agent-core";
+import { Agent, streamProxy } from "@shuv1337/shuvpi-agent-core";
 
 const agent = new Agent({
   streamFn: (model, context, options) =>
@@ -453,7 +453,7 @@ const agent = new Agent({
 For direct control without the Agent class:
 
 ```typescript
-import { agentLoop, agentLoopContinue } from "@shuv1337/pi-agent-core";
+import { agentLoop, agentLoopContinue } from "@shuv1337/shuvpi-agent-core";
 
 const context: AgentContext = {
   systemPrompt: "You are helpful.",

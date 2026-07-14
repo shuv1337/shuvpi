@@ -1,18 +1,18 @@
 /**
  * Input Transform Example - demonstrates the `input` event for intercepting user input.
  *
- * Start pi with this extension:
- *   pi -e ./examples/extensions/input-transform.ts
+ * Start shuvpi with this extension:
+ *   shuvpi -e ./examples/extensions/input-transform.ts
  *
- * Then type these inside pi:
+ * Then type these inside shuvpi:
  *   ?quick What is TypeScript?  → "Respond briefly: What is TypeScript?"
  *   ping                        → "pong" (instant, no LLM)
  *   time                        → current time (instant, no LLM)
  */
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
-export default function (pi: ExtensionAPI) {
-	pi.on("input", async (event, ctx) => {
+export default function (shuvpi: ExtensionAPI) {
+	shuvpi.on("input", async (event, ctx) => {
 		// Source-based logic: skip processing for extension-injected messages
 		if (event.source === "extension") {
 			return { action: "continue" };

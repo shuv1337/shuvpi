@@ -1,7 +1,7 @@
 // Main chat interface
 
-export type { Agent, AgentMessage, AgentState, ThinkingLevel } from "@shuv1337/pi-agent-core";
-export type { Model } from "@shuv1337/pi-ai";
+export type { Agent, AgentMessage, AgentState, ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
+export type { Model } from "@shuv1337/shuvpi-ai";
 export { ChatPanel } from "./ChatPanel.ts";
 // Components
 export { AgentInterface } from "./components/AgentInterface.ts";

@@ -1,4 +1,4 @@
-import type { AgentState } from "@shuv1337/pi-agent-core";
+import type { AgentState } from "@shuv1337/shuvpi-agent-core";
 import { Store } from "../store.ts";
 import type { SessionData, SessionMetadata, StoreConfig } from "../types.ts";
 

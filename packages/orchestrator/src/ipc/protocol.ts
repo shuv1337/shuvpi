@@ -4,7 +4,7 @@ import type {
 	RpcExtensionUIRequest,
 	RpcExtensionUIResponse,
 	RpcResponse,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 import type { InstanceStatus } from "../types.ts";
 
 export interface SpawnRequest {
@@ -58,7 +58,7 @@ export interface InstanceSummary {
 	label?: string;
 	sessionId?: string;
 	sessionFile?: string;
-	radiusPiId?: string;
+	radiusShuvpiId?: string;
 }
 
 export interface ResponseBase {

@@ -1,7 +1,7 @@
 import { icon } from "@mariozechner/mini-lit";
 import { Button } from "@mariozechner/mini-lit/dist/Button.js";
 import { Select, type SelectOption } from "@mariozechner/mini-lit/dist/Select.js";
-import type { Model } from "@shuv1337/pi-ai";
+import type { Model } from "@shuv1337/shuvpi-ai";
 import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { createRef, ref } from "lit/directives/ref.js";
@@ -9,7 +9,7 @@ import { Brain, Loader2, Paperclip, Send, Sparkles, Square } from "lucide";
 import { type Attachment, loadAttachment } from "../utils/attachment-utils.ts";
 import { i18n } from "../utils/i18n.ts";
 import "./AttachmentTile.ts";
-import type { ThinkingLevel } from "@shuv1337/pi-agent-core";
+import type { ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
 
 @customElement("message-editor")
 export class MessageEditor extends LitElement {

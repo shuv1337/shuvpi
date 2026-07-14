@@ -1,4 +1,4 @@
-import { setKeybindings, type TUI } from "@shuv1337/pi-tui";
+import { setKeybindings, type TUI } from "@shuv1337/shuvpi-tui";
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { KeybindingsManager } from "../../../src/core/keybindings.ts";
 import { LoginDialogComponent } from "../../../src/modes/interactive/components/login-dialog.ts";

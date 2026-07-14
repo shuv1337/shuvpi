@@ -1,4 +1,4 @@
-import { type Model, modelsAreEqual } from "@shuv1337/pi-ai";
+import { type Model, modelsAreEqual } from "@shuv1337/shuvpi-ai";
 import {
 	Container,
 	type Focusable,
@@ -8,7 +8,7 @@ import {
 	Spacer,
 	Text,
 	type TUI,
-} from "@shuv1337/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import type { ModelRegistry } from "../../../core/model-registry.ts";
 import type { SettingsManager } from "../../../core/settings-manager.ts";
 import { getModelSelectorSearchText } from "../model-search.ts";

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>shuvpi rebrand implementation notes</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; --bg:#f7f6f2; --surface:#fff; --text:#171a20; --muted:#646b76; --border:#d8d5cc; --accent:#38617b; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#14181f; --surface:#1c2129; --text:#eceef2; --muted:#9aa0aa; --border:#343b46; --accent:#86abc5; } }
+    body { margin:0; background:var(--bg); color:var(--text); }
+    main { max-width:920px; margin:0 auto; padding:48px 24px 72px; }
+    h1 { font-size:clamp(2rem,5vw,4rem); letter-spacing:-.05em; margin:0 0 8px; }
+    h2 { margin-top:36px; }
+    p, li { line-height:1.6; }
+    .meta { color:var(--muted); margin-bottom:28px; }
+    section { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin:16px 0; }
+    code { color:var(--accent); }
+    .status { display:inline-block; border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:.82rem; font-weight:700; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="status">Complete</span>
+    <h1>shuvpi full rebrand</h1>
+    <p class="meta">Implementation log for <code>PLAN-rename-pi-to-shuvpi.md</code>.</p>
+    <section>
+      <h2>Decisions</h2>
+      <ul>
+        <li>Use <code>shuvpi</code> as the sole active fork identity; do not preserve <code>pi</code> or <code>shuvcode</code> aliases.</li>
+        <li>Rename fork-owned npm packages to <code>@shuv1337/shuvpi-*</code>.</li>
+        <li>Start runtime state under <code>~/.shuvpi</code>; do not mutate existing <code>~/.pi</code> data automatically.</li>
+        <li>Keep the current <code>shuv1337/pi-mono</code> repository remote until an external rename is separately authorized.</li>
+        <li>Remove old-scope extension aliases instead of creating nonexistent <code>@earendil-works/shuvpi-*</code> or <code>@mariozechner/shuvpi-*</code> compatibility packages.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Exceptions</h2>
+      <ul>
+        <li>Released changelog sections and frozen session fixtures remain historical.</li>
+        <li>Upstream issue, PR, and source URLs remain when they are provenance.</li>
+        <li><code>https://pi.dev/session/</code> remains an external share-viewer endpoint, not product branding.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Implementation notes</h2>
+      <ul>
+        <li>Aligned stale <code>mom</code>, <code>pods</code>, and <code>web-ui</code> package versions and internal ranges to the repository's current lockstep version, <code>0.80.6</code>, so npm links renamed workspaces locally.</li>
+        <li>Made the package-manager filter test assert only the package skill under test; machine-global <code>~/.agents/skills</code> discovery remains intentional.</li>
+        <li>Audited word-level substitutions and restored non-brand uses of <code>pi</code>, including mathematical and Greek-alphabet tokens, vendored language definitions, and third-party package/repository names.</li>
+        <li>Renamed remaining embedded source identifiers such as version-check helpers, observability examples, package-test variables, and Radius bookkeeping while preserving external API paths.</li>
+        <li>Regenerated four standalone example lockfiles after the completion audit found stale <code>pi-extension-*</code> identities and dependency ranges.</li>
+        <li>Regenerated lockfiles, the coding-agent shrinkwrap, installer lock, compiled package output, npm tarballs, Bun installs, and the Linux x64 archive.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Validation</h2>
+      <ul>
+        <li><code>npm run check</code> passed formatting, dependency policy, generated metadata checks, TypeScript, browser smoke, and web UI checks.</li>
+        <li>Focused post-audit validation passed 109 tests across agent and coding-agent.</li>
+        <li><code>HOME=/tmp/shuvpi-test-home ./test.sh</code> passed: 180 agent tests, 509 AI tests, 1,538 coding-agent tests, and the TUI suite; provider/e2e tests remained intentionally skipped.</li>
+        <li><code>npm run release:local -- --out /tmp/shuvpi-local-release --force</code> produced npm, Bun, and standalone Linux x64 artifacts.</li>
+        <li>Active-surface grep found only documented <code>~/.pi</code> migration text and external <code>pi.dev</code>/<code>pi-mono</code> provenance.</li>
+        <li><code>shuvpi --version</code>, <code>--help</code>, and <code>--list-models</code> passed; the installed command resolves to this checkout. <code>shuvcode</code> still resolves to the OpenCode fork, and no <code>pi</code> command was installed.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -7,11 +7,11 @@ import * as fs from "node:fs";
 import { createRequire } from "node:module";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as _bundledPiAgentCore from "@shuv1337/pi-agent-core";
-import * as _bundledPiAiCompat from "@shuv1337/pi-ai/compat";
-import * as _bundledPiAiOauth from "@shuv1337/pi-ai/oauth";
-import type { KeyId } from "@shuv1337/pi-tui";
-import * as _bundledPiTui from "@shuv1337/pi-tui";
+import * as _bundledShuvpiAgentCore from "@shuv1337/shuvpi-agent-core";
+import * as _bundledShuvpiAiCompat from "@shuv1337/shuvpi-ai/compat";
+import * as _bundledShuvpiAiOauth from "@shuv1337/shuvpi-ai/oauth";
+import type { KeyId } from "@shuv1337/shuvpi-tui";
+import * as _bundledShuvpiTui from "@shuv1337/shuvpi-tui";
 import { createJiti } from "jiti/static";
 // Static imports of packages that extensions may use.
 // These MUST be static so Bun bundles them into the compiled binary.
@@ -21,8 +21,8 @@ import * as _bundledTypeboxCompile from "typebox/compile";
 import * as _bundledTypeboxValue from "typebox/value";
 import { CONFIG_DIR_NAME, getAgentDir, isBunBinary } from "../../config.ts";
 // NOTE: This import works because loader.ts exports are NOT re-exported from index.ts,
-// avoiding a circular dependency. Extensions can import from @shuv1337/pi-coding-agent.
-import * as _bundledPiCodingAgent from "../../index.ts";
+// avoiding a circular dependency. Extensions can import from @shuv1337/shuvpi-coding-agent.
+import * as _bundledShuvpiCodingAgent from "../../index.ts";
 import { resolvePath } from "../../utils/paths.ts";
 import { createEventBus, type EventBus } from "../event-bus.ts";
 import type { ExecOptions } from "../exec.ts";
@@ -51,27 +51,15 @@ const VIRTUAL_MODULES: Record<string, unknown> = {
 	"@sinclair/typebox/compile": _bundledTypeboxCompile,
 	"@sinclair/typebox/value": _bundledTypeboxValue,
 	// Fork's own scope plus upstream scopes so third-party extensions load.
-	"@shuv1337/pi-agent-core": _bundledPiAgentCore,
-	"@shuv1337/pi-tui": _bundledPiTui,
-	// Extensions resolve the pi-ai root to the compat entrypoint (a strict
+	"@shuv1337/shuvpi-agent-core": _bundledShuvpiAgentCore,
+	"@shuv1337/shuvpi-tui": _bundledShuvpiTui,
+	// Extensions resolve the shuvpi-ai root to the compat entrypoint (a strict
 	// superset of the core entrypoint): existing extensions using the old
 	// global API keep working at runtime until compat is removed.
-	"@shuv1337/pi-ai": _bundledPiAiCompat,
-	"@shuv1337/pi-ai/compat": _bundledPiAiCompat,
-	"@shuv1337/pi-ai/oauth": _bundledPiAiOauth,
-	"@shuv1337/pi-coding-agent": _bundledPiCodingAgent,
-	"@earendil-works/pi-agent-core": _bundledPiAgentCore,
-	"@earendil-works/pi-tui": _bundledPiTui,
-	"@earendil-works/pi-ai": _bundledPiAiCompat,
-	"@earendil-works/pi-ai/compat": _bundledPiAiCompat,
-	"@earendil-works/pi-ai/oauth": _bundledPiAiOauth,
-	"@earendil-works/pi-coding-agent": _bundledPiCodingAgent,
-	"@mariozechner/pi-agent-core": _bundledPiAgentCore,
-	"@mariozechner/pi-tui": _bundledPiTui,
-	"@mariozechner/pi-ai": _bundledPiAiCompat,
-	"@mariozechner/pi-ai/compat": _bundledPiAiCompat,
-	"@mariozechner/pi-ai/oauth": _bundledPiAiOauth,
-	"@mariozechner/pi-coding-agent": _bundledPiCodingAgent,
+	"@shuv1337/shuvpi-ai": _bundledShuvpiAiCompat,
+	"@shuv1337/shuvpi-ai/compat": _bundledShuvpiAiCompat,
+	"@shuv1337/shuvpi-ai/oauth": _bundledShuvpiAiOauth,
+	"@shuv1337/shuvpi-coding-agent": _bundledShuvpiCodingAgent,
 };
 
 const require = createRequire(import.meta.url);
@@ -101,41 +89,29 @@ function getAliases(): Record<string, string> {
 		return fileURLToPath(import.meta.resolve(specifier));
 	};
 
-	const piCodingAgentEntry = packageIndex;
-	const piAgentCoreEntry = resolveWorkspaceOrImport("agent/dist/index.js", "@shuv1337/pi-agent-core");
-	const piTuiEntry = resolveWorkspaceOrImport("tui/dist/index.js", "@shuv1337/pi-tui");
-	// Extensions resolve the pi-ai root to the compat entrypoint (a strict
+	const shuvpiCodingAgentEntry = packageIndex;
+	const shuvpiAgentCoreEntry = resolveWorkspaceOrImport("agent/dist/index.js", "@shuv1337/shuvpi-agent-core");
+	const shuvpiTuiEntry = resolveWorkspaceOrImport("tui/dist/index.js", "@shuv1337/shuvpi-tui");
+	// Extensions resolve the shuvpi-ai root to the compat entrypoint (a strict
 	// superset of the core entrypoint): existing extensions using the old
 	// global API keep working at runtime until compat is removed.
 	// Prefer dist; fall back to src for monorepo checkouts without a built ai package.
-	const piAiCompatEntry = resolveWorkspaceOrImport(
+	const shuvpiAiCompatEntry = resolveWorkspaceOrImport(
 		fs.existsSync(path.join(packagesRoot, "ai/dist/compat.js")) ? "ai/dist/compat.js" : "ai/src/compat.ts",
-		"@shuv1337/pi-ai/compat",
+		"@shuv1337/shuvpi-ai/compat",
 	);
-	const piAiOauthEntry = resolveWorkspaceOrImport(
+	const shuvpiAiOauthEntry = resolveWorkspaceOrImport(
 		fs.existsSync(path.join(packagesRoot, "ai/dist/oauth.js")) ? "ai/dist/oauth.js" : "ai/src/oauth.ts",
-		"@shuv1337/pi-ai/oauth",
+		"@shuv1337/shuvpi-ai/oauth",
 	);
 
 	_aliases = {
-		"@shuv1337/pi-coding-agent": piCodingAgentEntry,
-		"@shuv1337/pi-agent-core": piAgentCoreEntry,
-		"@shuv1337/pi-tui": piTuiEntry,
-		"@shuv1337/pi-ai": piAiCompatEntry,
-		"@shuv1337/pi-ai/compat": piAiCompatEntry,
-		"@shuv1337/pi-ai/oauth": piAiOauthEntry,
-		"@earendil-works/pi-coding-agent": piCodingAgentEntry,
-		"@earendil-works/pi-agent-core": piAgentCoreEntry,
-		"@earendil-works/pi-tui": piTuiEntry,
-		"@earendil-works/pi-ai": piAiCompatEntry,
-		"@earendil-works/pi-ai/compat": piAiCompatEntry,
-		"@earendil-works/pi-ai/oauth": piAiOauthEntry,
-		"@mariozechner/pi-coding-agent": piCodingAgentEntry,
-		"@mariozechner/pi-agent-core": piAgentCoreEntry,
-		"@mariozechner/pi-tui": piTuiEntry,
-		"@mariozechner/pi-ai": piAiCompatEntry,
-		"@mariozechner/pi-ai/compat": piAiCompatEntry,
-		"@mariozechner/pi-ai/oauth": piAiOauthEntry,
+		"@shuv1337/shuvpi-coding-agent": shuvpiCodingAgentEntry,
+		"@shuv1337/shuvpi-agent-core": shuvpiAgentCoreEntry,
+		"@shuv1337/shuvpi-tui": shuvpiTuiEntry,
+		"@shuv1337/shuvpi-ai": shuvpiAiCompatEntry,
+		"@shuv1337/shuvpi-ai/compat": shuvpiAiCompatEntry,
+		"@shuv1337/shuvpi-ai/oauth": shuvpiAiOauthEntry,
 		typebox: typeboxEntry,
 		"typebox/compile": typeboxCompileEntry,
 		"typebox/value": typeboxValueEntry,
@@ -210,7 +186,7 @@ export function createExtensionRuntime(): ExtensionRuntime {
 		invalidate: (message) => {
 			state.staleMessage ??=
 				message ??
-				"This extension ctx is stale after session replacement or reload. Do not use a captured pi or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
+				"This extension ctx is stale after session replacement or reload. Do not use a captured shuvpi or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
 		},
 		// Pre-bind: queue registrations so bindCore() can flush them once the
 		// model registry is available. bindCore() replaces both with direct calls.
@@ -556,19 +532,19 @@ export async function loadExtensionsCached(
 	return loadExtensionsInternal(paths, cwd, eventBus, runtime, true);
 }
 
-interface PiManifest {
+interface ShuvpiManifest {
 	extensions?: string[];
 	themes?: string[];
 	skills?: string[];
 	prompts?: string[];
 }
 
-function readPiManifest(packageJsonPath: string): PiManifest | null {
+function readShuvpiManifest(packageJsonPath: string): ShuvpiManifest | null {
 	try {
 		const content = fs.readFileSync(packageJsonPath, "utf-8");
 		const pkg = JSON.parse(content);
-		if (pkg.pi && typeof pkg.pi === "object") {
-			return pkg.pi as PiManifest;
+		if (pkg.shuvpi && typeof pkg.shuvpi === "object") {
+			return pkg.shuvpi as ShuvpiManifest;
 		}
 		return null;
 	} catch {
@@ -584,16 +560,16 @@ function isExtensionFile(name: string): boolean {
  * Resolve extension entry points from a directory.
  *
  * Checks for:
- * 1. package.json with "pi.extensions" field -> returns declared paths
+ * 1. package.json with "shuvpi.extensions" field -> returns declared paths
  * 2. index.ts or index.js -> returns the index file
  *
  * Returns resolved paths or null if no entry points found.
  */
 function resolveExtensionEntries(dir: string): string[] | null {
-	// Check for package.json with "pi" field first
+	// Check for package.json with "shuvpi" field first
 	const packageJsonPath = path.join(dir, "package.json");
 	if (fs.existsSync(packageJsonPath)) {
-		const manifest = readPiManifest(packageJsonPath);
+		const manifest = readShuvpiManifest(packageJsonPath);
 		if (manifest?.extensions?.length) {
 			const entries: string[] = [];
 			for (const extPath of manifest.extensions) {
@@ -627,7 +603,7 @@ function resolveExtensionEntries(dir: string): string[] | null {
  * Discovery rules:
  * 1. Direct files: `extensions/*.ts` or `*.js` → load
  * 2. Subdirectory with index: `extensions/* /index.ts` or `index.js` → load
- * 3. Subdirectory with package.json: `extensions/* /package.json` with "pi" field → load what it declares
+ * 3. Subdirectory with package.json: `extensions/* /package.json` with "shuvpi" field → load what it declares
  *
  * No recursion beyond one level. Complex packages must use package.json manifest.
  */
@@ -701,7 +677,7 @@ export async function discoverAndLoadExtensions(
 	for (const p of configuredPaths) {
 		const resolved = resolvePath(p, resolvedCwd, { normalizeUnicodeSpaces: true });
 		if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
-			// Check for package.json with pi manifest or index.ts
+			// Check for package.json with shuvpi manifest or index.ts
 			const entries = resolveExtensionEntries(resolved);
 			if (entries) {
 				addPaths(entries);

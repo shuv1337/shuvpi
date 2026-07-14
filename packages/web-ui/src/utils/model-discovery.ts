@@ -1,5 +1,5 @@
 import { LMStudioClient } from "@lmstudio/sdk";
-import type { Model } from "@shuv1337/pi-ai";
+import type { Model } from "@shuv1337/shuvpi-ai";
 import { Ollama } from "ollama/browser";
 
 function normalizeOpenAIBaseUrl(baseUrl: string): string {

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Renamed the package from `@shuv1337/pi-tui` to `@shuv1337/shuvpi-tui` and renamed Shuvpi-owned debug artifacts.
+
 ## [0.80.6] - 2026-07-09
 
 ## [0.80.5] - 2026-07-09

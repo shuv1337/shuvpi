@@ -2,7 +2,7 @@ import { Badge } from "@mariozechner/mini-lit/dist/Badge.js";
 import { html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import "./components/AgentInterface.ts";
-import type { Agent, AgentTool } from "@shuv1337/pi-agent-core";
+import type { Agent, AgentTool } from "@shuv1337/shuvpi-agent-core";
 import type { AgentInterface } from "./components/AgentInterface.ts";
 import { ArtifactsRuntimeProvider } from "./components/sandbox/ArtifactsRuntimeProvider.ts";
 import { AttachmentsRuntimeProvider } from "./components/sandbox/AttachmentsRuntimeProvider.ts";
@@ -14,7 +14,7 @@ import { i18n } from "./utils/i18n.ts";
 
 const BREAKPOINT = 800; // px - switch between overlay and side-by-side
 
-@customElement("pi-chat-panel")
+@customElement("shuvpi-chat-panel")
 export class ChatPanel extends LitElement {
 	@state() public agent?: Agent;
 	@state() public agentInterface?: AgentInterface;

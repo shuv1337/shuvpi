@@ -1,8 +1,8 @@
-> pi can help you use the SDK. Ask it to build an integration for your use case.
+> shuvpi can help you use the SDK. Ask it to build an integration for your use case.
 
 # SDK
 
-The SDK provides programmatic access to pi's agent capabilities. Use it to embed pi in other applications, build custom interfaces, or integrate with automated workflows.
+The SDK provides programmatic access to shuvpi's agent capabilities. Use it to embed shuvpi in other applications, build custom interfaces, or integrate with automated workflows.
 
 **Example use cases:**
 - Build a custom UI (web, desktop, mobile)
@@ -16,7 +16,7 @@ See [examples/sdk/](../examples/sdk/) for working examples from minimal to full 
 ## Quick Start
 
 ```typescript
-import { AuthStorage, createAgentSession, ModelRegistry, SessionManager } from "@shuv1337/pi-coding-agent";
+import { AuthStorage, createAgentSession, ModelRegistry, SessionManager } from "@shuv1337/shuvpi-coding-agent";
 
 // Set up credential storage and model registry
 const authStorage = AuthStorage.create();
@@ -40,7 +40,7 @@ await session.prompt("What files are in the current directory?");
 ## Installation
 
 ```bash
-npm install @shuv1337/pi-coding-agent
+npm install @shuv1337/shuvpi-coding-agent
 ```
 
 The SDK is included in the main package. No separate installation needed.
@@ -54,7 +54,7 @@ The main factory function for a single `AgentSession`.
 `createAgentSession()` uses a `ResourceLoader` to supply extensions, skills, prompt templates, themes, and context files. If you do not provide one, it uses `DefaultResourceLoader` with standard discovery.
 
 ```typescript
-import { createAgentSession, SessionManager } from "@shuv1337/pi-coding-agent";
+import { createAgentSession, SessionManager } from "@shuv1337/shuvpi-coding-agent";
 
 // Minimal: defaults with DefaultResourceLoader
 const { session } = await createAgentSession();
@@ -132,7 +132,7 @@ import {
   createAgentSessionServices,
   getAgentDir,
   SessionManager,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 const createRuntime: CreateAgentSessionRuntimeFactory = async ({ cwd, sessionManager, sessionStartEvent }) => {
   const services = await createAgentSessionServices({ cwd });
@@ -219,7 +219,7 @@ await session.prompt("After you're done, also check X", { streamingBehavior: "fo
 ```
 
 **Behavior:**
-- **Extension commands** (e.g., `/mycommand`): Execute immediately, even during streaming. They manage their own LLM interaction via `pi.sendMessage()`.
+- **Extension commands** (e.g., `/mycommand`): Execute immediately, even during streaming. They manage their own LLM interaction via `shuvpi.sendMessage()`.
 - **File-based prompt templates** (from `.md` files): Expanded to their content before sending or queueing.
 - **During streaming without `streamingBehavior`**: Throws an error. Use `steer()` or `followUp()` directly, or specify the option.
 - **`preflightResult(true)`**: Means the prompt was accepted, queued, or handled immediately.
@@ -239,7 +239,7 @@ Both `steer()` and `followUp()` expand file-based prompt templates but error on 
 
 ### Agent and AgentState
 
-The `Agent` class (from `@shuv1337/pi-agent-core`) handles the core LLM interaction. Access it via `session.agent`.
+The `Agent` class (from `@shuv1337/shuvpi-agent-core`) handles the core LLM interaction. Access it via `session.agent`.
 
 ```typescript
 // Access current state
@@ -338,23 +338,23 @@ const { session } = await createAgentSession({
   cwd: process.cwd(), // default
   
   // Global config directory
-  agentDir: "~/.pi/agent", // default (expands ~)
+  agentDir: "~/.shuvpi/agent", // default (expands ~)
 });
 ```
 
 `cwd` is used by `DefaultResourceLoader` for:
-- Project extensions (`.pi/extensions/`)
+- Project extensions (`.shuvpi/extensions/`)
 - Project skills:
-  - `.pi/skills/`
+  - `.shuvpi/skills/`
   - `.agents/skills/` in `cwd` and ancestor directories (up to git repo root, or filesystem root when not in a repo)
-- Project prompts (`.pi/prompts/`)
+- Project prompts (`.shuvpi/prompts/`)
 - Context files (`AGENTS.md` walking up from cwd)
 - Session directory naming
 
 `agentDir` is used by `DefaultResourceLoader` for:
 - Global extensions (`extensions/`)
 - Global skills:
-  - `skills/` under `agentDir` (for example `~/.pi/agent/skills/`)
+  - `skills/` under `agentDir` (for example `~/.shuvpi/agent/skills/`)
   - `~/.agents/skills/`
 - Global prompts (`prompts/`)
 - Global context file (`AGENTS.md`)
@@ -368,8 +368,8 @@ When you pass a custom `ResourceLoader`, `cwd` and `agentDir` no longer control 
 ### Model
 
 ```typescript
-import { getModel } from "@shuv1337/pi-ai";
-import { AuthStorage, ModelRegistry } from "@shuv1337/pi-coding-agent";
+import { getModel } from "@shuv1337/shuvpi-ai";
+import { AuthStorage, ModelRegistry } from "@shuv1337/shuvpi-coding-agent";
 
 const authStorage = AuthStorage.create();
 const modelRegistry = ModelRegistry.create(authStorage);
@@ -411,7 +411,7 @@ To match CLI model parsing, use the exported resolver helpers:
 import {
   resolveCliModel,
   resolveModelScopeWithDiagnostics,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 const cliModel = resolveCliModel({
   cliModel: "anthropic/claude-opus-4-5:high",
@@ -442,9 +442,9 @@ API key resolution priority (handled by AuthStorage):
 4. Fallback resolver (for custom provider keys from `models.json`)
 
 ```typescript
-import { AuthStorage, ModelRegistry } from "@shuv1337/pi-coding-agent";
+import { AuthStorage, ModelRegistry } from "@shuv1337/shuvpi-coding-agent";
 
-// Default: uses ~/.pi/agent/auth.json and ~/.pi/agent/models.json
+// Default: uses ~/.shuvpi/agent/auth.json and ~/.shuvpi/agent/models.json
 const authStorage = AuthStorage.create();
 const modelRegistry = ModelRegistry.create(authStorage);
 
@@ -478,7 +478,7 @@ const simpleRegistry = ModelRegistry.inMemory(authStorage);
 Use a `ResourceLoader` to override the system prompt:
 
 ```typescript
-import { createAgentSession, DefaultResourceLoader } from "@shuv1337/pi-coding-agent";
+import { createAgentSession, DefaultResourceLoader } from "@shuv1337/shuvpi-coding-agent";
 
 const loader = new DefaultResourceLoader({
   systemPromptOverride: () => "You are a helpful assistant.",
@@ -500,10 +500,10 @@ Specify which built-in tools to enable:
 - `noTools: "builtin"` disables default built-ins while keeping extension and custom tools enabled
 - `excludeTools` disables specific built-in, extension, or custom tool names after any `tools` allowlist is applied
 
-The `edit` tool returns `details.diff` for Pi's TUI display and `details.patch` as a standard unified patch for SDK consumers.
+The `edit` tool returns `details.diff` for Shuvpi's TUI display and `details.patch` as a standard unified patch for SDK consumers.
 
 ```typescript
-import { createAgentSession } from "@shuv1337/pi-coding-agent";
+import { createAgentSession } from "@shuv1337/shuvpi-coding-agent";
 
 // Read-only mode
 const { session } = await createAgentSession({
@@ -526,7 +526,7 @@ const { session } = await createAgentSession({
 When you pass a custom `cwd`, `createAgentSession()` builds selected built-in tools for that cwd.
 
 ```typescript
-import { createAgentSession, SessionManager } from "@shuv1337/pi-coding-agent";
+import { createAgentSession, SessionManager } from "@shuv1337/shuvpi-coding-agent";
 
 const cwd = "/path/to/project";
 
@@ -550,7 +550,7 @@ const { session } = await createAgentSession({
 
 ```typescript
 import { Type } from "typebox";
-import { createAgentSession, defineTool } from "@shuv1337/pi-coding-agent";
+import { createAgentSession, defineTool } from "@shuv1337/shuvpi-coding-agent";
 
 // Inline custom tool
 const myTool = defineTool({
@@ -572,9 +572,9 @@ const { session } = await createAgentSession({
 });
 ```
 
-Use `defineTool()` for standalone definitions and arrays like `customTools: [myTool]`. Inline `pi.registerTool({ ... })` already infers parameter types correctly.
+Use `defineTool()` for standalone definitions and arrays like `customTools: [myTool]`. Inline `shuvpi.registerTool({ ... })` already infers parameter types correctly.
 
-Custom tools passed via `customTools` are combined with extension-registered tools. Extensions loaded by the ResourceLoader can also register tools via `pi.registerTool()`.
+Custom tools passed via `customTools` are combined with extension-registered tools. Extensions loaded by the ResourceLoader can also register tools via `shuvpi.registerTool()`.
 
 If you pass `tools`, include each custom or extension tool name you want enabled, for example `tools: ["read", "bash", "my_tool"]`.
 
@@ -582,16 +582,16 @@ If you pass `tools`, include each custom or extension tool name you want enabled
 
 ### Extensions
 
-Extensions are loaded by the `ResourceLoader`. `DefaultResourceLoader` discovers extensions from `~/.pi/agent/extensions/`, `.pi/extensions/`, and settings.json extension sources.
+Extensions are loaded by the `ResourceLoader`. `DefaultResourceLoader` discovers extensions from `~/.shuvpi/agent/extensions/`, `.shuvpi/extensions/`, and settings.json extension sources.
 
 ```typescript
-import { createAgentSession, DefaultResourceLoader } from "@shuv1337/pi-coding-agent";
+import { createAgentSession, DefaultResourceLoader } from "@shuv1337/shuvpi-coding-agent";
 
 const loader = new DefaultResourceLoader({
   additionalExtensionPaths: ["/path/to/my-extension.ts"],
   extensionFactories: [
-    (pi) => {
-      pi.on("agent_start", () => {
+    (shuvpi) => {
+      shuvpi.on("agent_start", () => {
         console.log("[Inline Extension] Agent starting");
       });
     },
@@ -607,12 +607,12 @@ Extensions can register tools, subscribe to events, add commands, and more. See 
 **Named inline extensions:** By default, inline factories display as `<inline:1>`, `<inline:2>`, etc. in the startup Extensions list. To show a descriptive name instead, wrap the factory:
 
 ```typescript
-import type { InlineExtension } from "@shuv1337/pi-coding-agent";
+import type { InlineExtension } from "@shuv1337/shuvpi-coding-agent";
 
 const myProvider: InlineExtension = {
   name: "my-provider",
-  factory: (pi) => {
-    pi.on("agent_start", () => {
+  factory: (shuvpi) => {
+    shuvpi.on("agent_start", () => {
       console.log("[my-provider] Agent starting");
     });
   },
@@ -625,10 +625,10 @@ const loader = new DefaultResourceLoader({
 
 This displays as `<inline:my-provider>` instead of `<inline:1>`. Bare factory functions are still accepted for backward compatibility.
 
-**Event Bus:** Extensions can communicate via `pi.events`. Pass a shared `eventBus` to `DefaultResourceLoader` if you need to emit or listen from outside:
+**Event Bus:** Extensions can communicate via `shuvpi.events`. Pass a shared `eventBus` to `DefaultResourceLoader` if you need to emit or listen from outside:
 
 ```typescript
-import { createEventBus, DefaultResourceLoader } from "@shuv1337/pi-coding-agent";
+import { createEventBus, DefaultResourceLoader } from "@shuv1337/shuvpi-coding-agent";
 
 const eventBus = createEventBus();
 const loader = new DefaultResourceLoader({
@@ -648,7 +648,7 @@ import {
   createAgentSession,
   DefaultResourceLoader,
   type Skill,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 const customSkill: Skill = {
   name: "my-skill",
@@ -674,7 +674,7 @@ const { session } = await createAgentSession({ resourceLoader: loader });
 ### Context Files
 
 ```typescript
-import { createAgentSession, DefaultResourceLoader } from "@shuv1337/pi-coding-agent";
+import { createAgentSession, DefaultResourceLoader } from "@shuv1337/shuvpi-coding-agent";
 
 const loader = new DefaultResourceLoader({
   agentsFilesOverride: (current) => ({
@@ -698,7 +698,7 @@ import {
   createAgentSession,
   DefaultResourceLoader,
   type PromptTemplate,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 const customCommand: PromptTemplate = {
   name: "deploy",
@@ -733,7 +733,7 @@ import {
   createAgentSessionServices,
   getAgentDir,
   SessionManager,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 // In-memory (no persistence)
 const { session } = await createAgentSession({
@@ -827,7 +827,7 @@ sm.createBranchedSession(leafId);       // Extract path to new file
 ### Settings Management
 
 ```typescript
-import { createAgentSession, SettingsManager, SessionManager } from "@shuv1337/pi-coding-agent";
+import { createAgentSession, SettingsManager, SessionManager } from "@shuv1337/shuvpi-coding-agent";
 
 // Default: loads from files (global + project merged)
 const { session } = await createAgentSession({
@@ -861,8 +861,8 @@ const { session } = await createAgentSession({
 **Project-specific settings:**
 
 Settings load from two locations and merge:
-1. Global: `~/.pi/agent/settings.json`
-2. Project: `<cwd>/.pi/settings.json`
+1. Global: `~/.shuvpi/agent/settings.json`
+2. Project: `<cwd>/.shuvpi/settings.json`
 
 Project overrides global. Nested objects merge keys. Setters modify global settings by default.
 
@@ -883,7 +883,7 @@ Use `DefaultResourceLoader` to discover extensions, skills, prompts, themes, and
 import {
   DefaultResourceLoader,
   getAgentDir,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 const loader = new DefaultResourceLoader({
   cwd,
@@ -924,7 +924,7 @@ interface LoadExtensionsResult {
 ## Complete Example
 
 ```typescript
-import { getModel } from "@shuv1337/pi-ai";
+import { getModel } from "@shuv1337/shuvpi-ai";
 import { Type } from "typebox";
 import {
   AuthStorage,
@@ -934,7 +934,7 @@ import {
   ModelRegistry,
   SessionManager,
   SettingsManager,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 // Set up auth storage (custom location)
 const authStorage = AuthStorage.create("/custom/agent/auth.json");
@@ -1019,7 +1019,7 @@ import {
   getAgentDir,
   InteractiveMode,
   SessionManager,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 const createRuntime: CreateAgentSessionRuntimeFactory = async ({ cwd, sessionManager, sessionStartEvent }) => {
   const services = await createAgentSessionServices({ cwd });
@@ -1059,7 +1059,7 @@ import {
   getAgentDir,
   runPrintMode,
   SessionManager,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 const createRuntime: CreateAgentSessionRuntimeFactory = async ({ cwd, sessionManager, sessionStartEvent }) => {
   const services = await createAgentSessionServices({ cwd });
@@ -1096,7 +1096,7 @@ import {
   getAgentDir,
   runRpcMode,
   SessionManager,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 
 const createRuntime: CreateAgentSessionRuntimeFactory = async ({ cwd, sessionManager, sessionStartEvent }) => {
   const services = await createAgentSessionServices({ cwd });
@@ -1122,7 +1122,7 @@ See [RPC documentation](rpc.md) for the JSON protocol.
 For subprocess-based integration without building with the SDK, use the CLI directly:
 
 ```bash
-pi --mode rpc --no-session
+shuvpi --mode rpc --no-session
 ```
 
 See [RPC documentation](rpc.md) for the JSON protocol.

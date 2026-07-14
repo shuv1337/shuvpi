@@ -456,7 +456,7 @@ export const githubCopilotOAuthProvider: OAuthProviderInterface = {
 		const creds = credentials as CopilotCredentials;
 		const domain = creds.enterpriseUrl ? (normalizeDomain(creds.enterpriseUrl) ?? undefined) : undefined;
 		const baseUrl = getGitHubCopilotBaseUrl(creds.access, domain);
-		// Older stored Pi auth entries do not have account-specific model IDs yet;
+		// Older stored Shuvpi auth entries do not have account-specific model IDs yet;
 		// keep their existing generated-catalog behavior until the next refresh/login.
 		const availableModelIds = "availableModelIds" in creds ? new Set(creds.availableModelIds) : undefined;
 

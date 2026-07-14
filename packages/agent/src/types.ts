@@ -11,7 +11,7 @@ import type {
 	TextContent,
 	Tool,
 	ToolResultMessage,
-} from "@shuv1337/pi-ai";
+} from "@shuv1337/shuvpi-ai";
 import type { Static, TSchema } from "typebox";
 
 /**
@@ -284,7 +284,7 @@ export interface AgentLoopConfig extends SimpleStreamOptions {
 /**
  * Thinking/reasoning level for models that support it.
  * Note: "xhigh" and "max" are only supported by selected model families. Use model
- * thinking-level metadata from @shuv1337/pi-ai to detect support for a concrete model.
+ * thinking-level metadata from @shuv1337/shuvpi-ai to detect support for a concrete model.
  */
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
@@ -294,7 +294,7 @@ export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhi
  *
  * @example
  * ```typescript
- * declare module "@shuv1337/pi-agent-core" {
+ * declare module "@shuv1337/shuvpi-agent-core" {
  *   interface CustomAgentMessages {
  *     artifact: ArtifactMessage;
  *     notification: NotificationMessage;

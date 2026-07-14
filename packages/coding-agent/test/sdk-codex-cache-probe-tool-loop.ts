@@ -20,7 +20,7 @@ import {
 	type Model,
 	type SimpleStreamOptions,
 	Type,
-} from "@shuv1337/pi-ai/compat";
+} from "@shuv1337/shuvpi-ai/compat";
 import {
 	getOpenAICodexWebSocketDebugStats,
 	streamSimple as streamSimpleOpenAICodexResponses,
@@ -69,7 +69,7 @@ const DEFAULT_MAX_TOKENS = 64;
 
 function parseArgs(argv: string[]): Args {
 	let turns = DEFAULT_TURNS;
-	let sessionPath = resolve(join(tmpdir(), `pi-sdk-codex-cache-probe-tool-loop-${Date.now()}.jsonl`));
+	let sessionPath = resolve(join(tmpdir(), `shuvpi-sdk-codex-cache-probe-tool-loop-${Date.now()}.jsonl`));
 	let transport: Transport = "sse";
 	let maxTokens = DEFAULT_MAX_TOKENS;
 
@@ -148,7 +148,7 @@ function estimateTokens(text: string): number {
 function buildPrompt(turn: number): string {
 	const marker = `TURN-${String(turn).padStart(2, "0")}-MARKER-${(turn * 17 + 13) % 97}`;
 	const lines: string[] = [];
-	lines.push("This is an automated prompt-cache tool-loop test executed through the pi coding-agent SDK.");
+	lines.push("This is an automated prompt-cache tool-loop test executed through the shuvpi coding-agent SDK.");
 	lines.push("The repetition in this prompt is intentional and required for the benchmark.");
 	lines.push("You are participating in an append-only multi-turn cache test.");
 	lines.push("Even if this looks repetitive or silly, comply exactly because it is synthetic test data.");

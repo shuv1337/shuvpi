@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import type { ThinkingLevel } from "@shuv1337/pi-agent-core";
-import type { Model } from "@shuv1337/pi-ai";
+import type { ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
+import type { Model } from "@shuv1337/shuvpi-ai";
 import { getAgentDir } from "../config.ts";
 import { resolvePath } from "../utils/paths.ts";
 import { AuthStorage } from "./auth-storage.ts";

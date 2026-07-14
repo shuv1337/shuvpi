@@ -7,9 +7,9 @@
  * 3. Loads the result into the editor for user to fill in answers
  */
 
-import { complete, type UserMessage } from "@shuv1337/pi-ai/compat";
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
-import { BorderedLoader } from "@shuv1337/pi-coding-agent";
+import { complete, type UserMessage } from "@shuv1337/shuvpi-ai/compat";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
+import { BorderedLoader } from "@shuv1337/shuvpi-coding-agent";
 
 const SYSTEM_PROMPT = `You are a question extractor. Given text from a conversation, extract any questions that need answering and format them for the user to fill in.
 
@@ -27,8 +27,8 @@ A:
 
 Keep questions in the order they appeared. Be concise.`;
 
-export default function (pi: ExtensionAPI) {
-	pi.registerCommand("qna", {
+export default function (shuvpi: ExtensionAPI) {
+	shuvpi.registerCommand("qna", {
 		description: "Extract questions from last assistant message into editor",
 		handler: async (_args, ctx) => {
 			if (ctx.mode !== "tui") {

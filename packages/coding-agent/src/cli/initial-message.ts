@@ -1,4 +1,4 @@
-import type { ImageContent } from "@shuv1337/pi-ai";
+import type { ImageContent } from "@shuv1337/shuvpi-ai";
 import type { Args } from "./args.ts";
 
 export interface InitialMessageInput {

@@ -5,9 +5,9 @@
  * and after compaction the session is reloaded.
  */
 
-import type { AgentMessage, StreamFn, ThinkingLevel } from "@shuv1337/pi-agent-core";
-import type { AssistantMessage, Context, Model, SimpleStreamOptions, Usage } from "@shuv1337/pi-ai/compat";
-import { completeSimple } from "@shuv1337/pi-ai/compat";
+import type { AgentMessage, StreamFn, ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
+import type { AssistantMessage, Context, Model, SimpleStreamOptions, Usage } from "@shuv1337/shuvpi-ai/compat";
+import { completeSimple } from "@shuv1337/shuvpi-ai/compat";
 import { convertToLlm } from "../messages.ts";
 import {
 	buildSessionContext,
@@ -45,7 +45,7 @@ function extractFileOperations(
 ): FileOperations {
 	const fileOps = createFileOps();
 
-	// Collect from previous compaction's details (if pi-generated)
+	// Collect from previous compaction's details (if shuvpi-generated)
 	if (prevCompactionIndex >= 0) {
 		const prevCompaction = entries[prevCompactionIndex] as CompactionEntry;
 		if (!prevCompaction.fromHook && prevCompaction.details) {

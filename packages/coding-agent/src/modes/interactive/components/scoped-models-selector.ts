@@ -1,4 +1,4 @@
-import type { Model } from "@shuv1337/pi-ai";
+import type { Model } from "@shuv1337/shuvpi-ai";
 import {
 	Container,
 	type Focusable,
@@ -9,7 +9,7 @@ import {
 	matchesKey,
 	Spacer,
 	Text,
-} from "@shuv1337/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import { getModelSearchText } from "../model-search.ts";
 import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";

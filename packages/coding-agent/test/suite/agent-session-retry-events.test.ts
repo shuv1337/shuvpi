@@ -1,5 +1,5 @@
-import type { AgentTool } from "@shuv1337/pi-agent-core";
-import { fauxAssistantMessage, fauxThinking, fauxToolCall } from "@shuv1337/pi-ai";
+import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
+import { fauxAssistantMessage, fauxThinking, fauxToolCall } from "@shuv1337/shuvpi-ai";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import { createHarness, type Harness } from "./harness.ts";
@@ -100,8 +100,8 @@ describe("AgentSession retry and event characterization", () => {
 		const harness = await createHarness({
 			settings: { retry: { enabled: true, maxRetries: 3, baseDelayMs: 1 } },
 			extensionFactories: [
-				(pi) => {
-					pi.on("message_end", async (event) => {
+				(shuvpi) => {
+					shuvpi.on("message_end", async (event) => {
 						if (event.message.role === "assistant") {
 							await new Promise((resolve) => setTimeout(resolve, 40));
 						}
@@ -204,11 +204,11 @@ describe("AgentSession retry and event characterization", () => {
 		const order: string[] = [];
 		const harness = await createHarness({
 			extensionFactories: [
-				(pi) => {
-					pi.on("message_start", async (event) => {
+				(shuvpi) => {
+					shuvpi.on("message_start", async (event) => {
 						order.push(`extension:${event.type}:${event.message.role}`);
 					});
-					pi.on("message_end", async (event) => {
+					shuvpi.on("message_end", async (event) => {
 						order.push(`extension:${event.type}:${event.message.role}`);
 					});
 				},

@@ -2,7 +2,7 @@
  * TUI session selector for --resume flag
  */
 
-import { setKeybindings } from "@shuv1337/pi-tui";
+import { setKeybindings } from "@shuv1337/shuvpi-tui";
 import { KeybindingsManager } from "../core/keybindings.ts";
 import type { SessionInfo, SessionListProgress } from "../core/session-manager.ts";
 import type { SettingsManager } from "../core/settings-manager.ts";

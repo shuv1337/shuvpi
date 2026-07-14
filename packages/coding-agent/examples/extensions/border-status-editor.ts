@@ -3,9 +3,9 @@ import {
 	type ExtensionAPI,
 	type ExtensionContext,
 	type KeybindingsManager,
-} from "@shuv1337/pi-coding-agent";
-import type { Component, EditorTheme, TUI } from "@shuv1337/pi-tui";
-import { truncateToWidth, visibleWidth } from "@shuv1337/pi-tui";
+} from "@shuv1337/shuvpi-coding-agent";
+import type { Component, EditorTheme, TUI } from "@shuv1337/shuvpi-tui";
+import { truncateToWidth, visibleWidth } from "@shuv1337/shuvpi-tui";
 
 function fitBorder(
 	left: string,
@@ -68,7 +68,7 @@ class EmptyFooter implements Component {
 	invalidate(): void {}
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (shuvpi: ExtensionAPI) {
 	let isWorking = false;
 	let spinnerIndex = 0;
 	let spinnerTimer: ReturnType<typeof setInterval> | undefined;
@@ -82,7 +82,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	};
 
-	pi.on("agent_start", () => {
+	shuvpi.on("agent_start", () => {
 		isWorking = true;
 		stopSpinner();
 		spinnerTimer = setInterval(() => {
@@ -92,25 +92,25 @@ export default function (pi: ExtensionAPI) {
 		activeTui?.requestRender();
 	});
 
-	pi.on("agent_end", () => {
+	shuvpi.on("agent_end", () => {
 		isWorking = false;
 		stopSpinner();
 		activeTui?.requestRender();
 	});
 
-	pi.on("session_shutdown", () => {
+	shuvpi.on("session_shutdown", () => {
 		stopSpinner();
 		activeTui = undefined;
 	});
 
-	pi.on("session_start", (_event, ctx) => {
+	shuvpi.on("session_start", (_event, ctx) => {
 		ctx.ui.setWorkingVisible(false);
 		ctx.ui.setFooter(() => new EmptyFooter());
 
 		let branch: string | undefined;
 
 		const refreshBranch = async () => {
-			const result = await pi.exec("git", ["branch", "--show-current"], { cwd: ctx.cwd }).catch(() => undefined);
+			const result = await shuvpi.exec("git", ["branch", "--show-current"], { cwd: ctx.cwd }).catch(() => undefined);
 			const stdout = result?.stdout.trim();
 			branch = stdout && stdout.length > 0 ? stdout : undefined;
 			activeTui?.requestRender();
@@ -129,7 +129,7 @@ export default function (pi: ExtensionAPI) {
 
 				const thm = ctx.ui.theme;
 				const model = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "no model";
-				const thinking = pi.getThinkingLevel();
+				const thinking = shuvpi.getThinkingLevel();
 				const topLeft = isWorking ? thm.fg("accent", ` ${spinnerFrames[spinnerIndex]} `) : "";
 				const topRight = "";
 				const bottomLeft = thm.fg("muted", ` ${model} · ${formatThinking(thinking)} `);

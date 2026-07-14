@@ -1,5 +1,5 @@
-import type { ThinkingLevel } from "@shuv1337/pi-agent-core";
-import type { Transport } from "@shuv1337/pi-ai";
+import type { ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
+import type { Transport } from "@shuv1337/shuvpi-ai";
 import {
 	type Component,
 	Container,
@@ -11,7 +11,7 @@ import {
 	SettingsList,
 	Spacer,
 	Text,
-} from "@shuv1337/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import { formatHttpIdleTimeoutMs, HTTP_IDLE_TIMEOUT_CHOICES } from "../../../core/http-dispatcher.ts";
 import type { DefaultProjectTrust, WarningSettings } from "../../../core/settings-manager.ts";
 import {

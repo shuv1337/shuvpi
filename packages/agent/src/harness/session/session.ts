@@ -1,4 +1,4 @@
-import type { ImageContent, TextContent } from "@shuv1337/pi-ai";
+import type { ImageContent, TextContent } from "@shuv1337/shuvpi-ai";
 import type { AgentMessage } from "../../types.ts";
 import { createBranchSummaryMessage, createCompactionSummaryMessage, createCustomMessage } from "../messages.ts";
 import type {

@@ -1,4 +1,4 @@
-import { setKeybindings } from "@shuv1337/pi-tui";
+import { setKeybindings } from "@shuv1337/shuvpi-tui";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { KeybindingsManager } from "../src/core/keybindings.ts";

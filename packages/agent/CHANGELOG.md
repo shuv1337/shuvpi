@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Renamed the package from `@shuv1337/pi-agent-core` to `@shuv1337/shuvpi-agent-core`.
+
 ## [0.80.6] - 2026-07-09
 
 ### Added

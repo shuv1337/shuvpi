@@ -1,4 +1,4 @@
-import { streamSimple, type ToolResultMessage, type Usage } from "@shuv1337/pi-ai/compat";
+import { streamSimple, type ToolResultMessage, type Usage } from "@shuv1337/shuvpi-ai/compat";
 import { html, LitElement } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { ModelSelector } from "../dialogs/ModelSelector.ts";
@@ -8,7 +8,7 @@ import "./MessageList.ts";
 import "./Messages.ts"; // Import for side effects to register the custom elements
 import { getAppStorage } from "../storage/app-storage.ts";
 import "./StreamingMessageContainer.ts";
-import type { Agent, AgentEvent } from "@shuv1337/pi-agent-core";
+import type { Agent, AgentEvent } from "@shuv1337/shuvpi-agent-core";
 import type { Attachment } from "../utils/attachment-utils.ts";
 import { formatUsage } from "../utils/format.ts";
 import { i18n } from "../utils/i18n.ts";

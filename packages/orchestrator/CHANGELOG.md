@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Renamed the package and product-facing configuration from `pi` to `shuvpi`.
+
 ## [0.80.6] - 2026-07-09
 
 ## [0.80.5] - 2026-07-09

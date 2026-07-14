@@ -5,7 +5,7 @@
  * when thinking blocks are hidden.
  *
  * Usage:
- *   pi --extension examples/extensions/hidden-thinking-label.ts
+ *   shuvpi --extension examples/extensions/hidden-thinking-label.ts
  *
  * Test:
  *   1. Load this extension
@@ -18,22 +18,22 @@
  *   /thinking-label          Reset to the default label
  */
 
-import type { ExtensionAPI, ExtensionContext } from "@shuv1337/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@shuv1337/shuvpi-coding-agent";
 
 const DEFAULT_LABEL = "Pondering...";
 
-export default function (pi: ExtensionAPI) {
+export default function (shuvpi: ExtensionAPI) {
 	let label = DEFAULT_LABEL;
 
 	const applyLabel = (ctx: ExtensionContext) => {
 		ctx.ui.setHiddenThinkingLabel(label);
 	};
 
-	pi.on("session_start", async (_event, ctx) => {
+	shuvpi.on("session_start", async (_event, ctx) => {
 		applyLabel(ctx);
 	});
 
-	pi.registerCommand("thinking-label", {
+	shuvpi.registerCommand("thinking-label", {
 		description: "Set the hidden thinking label. Use without args to reset.",
 		handler: async (args, ctx) => {
 			const nextLabel = args.trim();

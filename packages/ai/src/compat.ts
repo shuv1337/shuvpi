@@ -1,11 +1,11 @@
 /**
- * Temporary compatibility entrypoint preserving the old global pi-ai API
+ * Temporary compatibility entrypoint preserving the old global shuvpi-ai API
  * surface: api-dispatch `stream()`/`complete()` with env API key injection,
  * the api-registry, generated catalog reads (`getModel`/`getModels`/
  * `getProviders`), per-API lazy stream wrappers, and image generation.
  *
- * Existing apps switch imports from "@shuv1337/pi-ai" to
- * "@shuv1337/pi-ai/compat" unchanged; new code uses `createModels()`
+ * Existing apps switch imports from "@shuv1337/shuvpi-ai" to
+ * "@shuv1337/shuvpi-ai/compat" unchanged; new code uses `createModels()`
  * and the provider factories. This module is deleted with the coding-agent
  * ModelManager migration.
  */
@@ -72,13 +72,13 @@ export function registerModels<TApi extends Api>(models: Model<TApi>[]): void {
 	}
 }
 
-/** @deprecated Static catalog read. Use `getBuiltinModel` from "@shuv1337/pi-ai/providers/all" or `Models.getModel()`. */
+/** @deprecated Static catalog read. Use `getBuiltinModel` from "@shuv1337/shuvpi-ai/providers/all" or `Models.getModel()`. */
 export const getModel: typeof getBuiltinModel = (provider, modelId) => {
 	const registered = runtimeModelRegistry.get(provider)?.get(modelId as string);
 	return (registered ?? getBuiltinModel(provider, modelId)) as ReturnType<typeof getBuiltinModel>;
 };
 
-/** @deprecated Static catalog read. Use `getBuiltinModels` from "@shuv1337/pi-ai/providers/all" or `Models.getModels()`. */
+/** @deprecated Static catalog read. Use `getBuiltinModels` from "@shuv1337/shuvpi-ai/providers/all" or `Models.getModels()`. */
 export const getModels: typeof getBuiltinModels = (provider) => {
 	const builtin = getBuiltinModels(provider);
 	const registered = runtimeModelRegistry.get(provider);
@@ -90,7 +90,7 @@ export const getModels: typeof getBuiltinModels = (provider) => {
 	return Array.from(byId.values()) as ReturnType<typeof getBuiltinModels>;
 };
 
-/** @deprecated Static catalog read. Use `getBuiltinProviders` from "@shuv1337/pi-ai/providers/all" or `Models.getProviders()`. */
+/** @deprecated Static catalog read. Use `getBuiltinProviders` from "@shuv1337/shuvpi-ai/providers/all" or `Models.getProviders()`. */
 export const getProviders = getBuiltinProviders;
 
 export type ApiStreamFunction = (

@@ -1,8 +1,8 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { createModels } from "@shuv1337/pi-ai";
-import { cloudflareAIGatewayProvider } from "@shuv1337/pi-ai/providers/cloudflare-ai-gateway";
-import { openaiProvider } from "@shuv1337/pi-ai/providers/openai";
+import { createModels } from "@shuv1337/shuvpi-ai";
+import { cloudflareAIGatewayProvider } from "@shuv1337/shuvpi-ai/providers/cloudflare-ai-gateway";
+import { openaiProvider } from "@shuv1337/shuvpi-ai/providers/openai";
 import { NodeExecutionEnv } from "../../src/harness/env/nodejs.ts";
 import { InMemorySessionStorage } from "../../src/harness/session/memory-storage.ts";
 import {
@@ -25,15 +25,15 @@ const source = (type: Source["type"], dir: string) => ({ path: dir, source: { ty
 const { skills: sourcedSkills } = await loadSourcedSkills<Source, SourcedSkill>(
 	env,
 	[
-		source("project", join(env.cwd, ".pi/skills")),
-		source("user", join(homedir(), ".pi/agent/skills")),
-		source("path", join(env.cwd, "../../../pi-skills")),
+		source("project", join(env.cwd, ".shuvpi/skills")),
+		source("user", join(homedir(), ".shuvpi/agent/skills")),
+		source("path", join(env.cwd, "../../../shuvpi-skills")),
 	],
 	(skill, source) => ({ ...skill, source }),
 );
 const { promptTemplates: sourcedPromptTemplates } = await loadSourcedPromptTemplates<Source, SourcedPromptTemplate>(
 	env,
-	[source("project", join(env.cwd, ".pi/prompts")), source("user", join(homedir(), ".pi/agent/prompts"))],
+	[source("project", join(env.cwd, ".shuvpi/prompts")), source("user", join(homedir(), ".shuvpi/agent/prompts"))],
 	(promptTemplate, source) => ({ ...promptTemplate, source }),
 );
 

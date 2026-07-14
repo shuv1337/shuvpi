@@ -1,4 +1,4 @@
-import { fauxAssistantMessage } from "@shuv1337/pi-ai";
+import { fauxAssistantMessage } from "@shuv1337/shuvpi-ai";
 import { afterEach, describe, expect, it } from "vitest";
 import { createHarness, getAssistantTexts, type Harness } from "../harness.ts";
 

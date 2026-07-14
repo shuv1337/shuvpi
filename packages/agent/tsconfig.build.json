@@ -3,8 +3,8 @@
 	"compilerOptions": {
 		"outDir": "./dist",
 		"paths": {
-			"@shuv1337/pi-ai": ["../ai/dist/index.d.ts"],
-			"@shuv1337/pi-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"]
+			"@shuv1337/shuvpi-ai": ["../ai/dist/index.d.ts"],
+			"@shuv1337/shuvpi-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"]
 		},
 		"rootDir": "./src"
 	},

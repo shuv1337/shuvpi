@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { setKeybindings } from "@shuv1337/pi-tui";
+import { setKeybindings } from "@shuv1337/shuvpi-tui";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { KeybindingsManager } from "../src/core/keybindings.ts";
 import type { SessionInfo } from "../src/core/session-manager.ts";
@@ -55,7 +55,7 @@ function createSymlinkedSessionPaths(): {
 	parentAliasB: string;
 	childAliasB: string;
 } {
-	const baseDir = mkdtempSync(join(tmpdir(), "pi-session-selector-"));
+	const baseDir = mkdtempSync(join(tmpdir(), "shuvpi-session-selector-"));
 	const realDir = join(baseDir, "real");
 	const aliasADir = join(baseDir, "alias-a");
 	const aliasBDir = join(baseDir, "alias-b");

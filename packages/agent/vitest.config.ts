@@ -14,10 +14,8 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: [
-			{ find: /^@shuv1337\/pi-ai$/, replacement: aiSrcIndex },
-			{ find: /^@shuv1337\/pi-ai\/compat$/, replacement: aiSrcCompat },
-			{ find: /^@earendil-works\/pi-ai$/, replacement: aiSrcIndex },
-			{ find: /^@earendil-works\/pi-ai\/compat$/, replacement: aiSrcCompat },
+			{ find: /^@shuv1337\/shuvpi-ai$/, replacement: aiSrcIndex },
+			{ find: /^@shuv1337\/shuvpi-ai\/compat$/, replacement: aiSrcCompat },
 		],
 	},
 });

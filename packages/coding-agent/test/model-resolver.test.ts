@@ -1,4 +1,4 @@
-import type { Model } from "@shuv1337/pi-ai";
+import type { Model } from "@shuv1337/shuvpi-ai";
 import { describe, expect, test, vi } from "vitest";
 import {
 	defaultModelPerProvider,

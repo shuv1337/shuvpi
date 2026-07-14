@@ -1,4 +1,4 @@
-import type { AgentMessage } from "@shuv1337/pi-agent-core";
+import type { AgentMessage } from "@shuv1337/shuvpi-agent-core";
 import type { TemplateResult } from "lit";
 
 // Extract role type from AppMessage union

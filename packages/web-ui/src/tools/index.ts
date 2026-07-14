@@ -1,4 +1,4 @@
-import type { ToolResultMessage } from "@shuv1337/pi-ai";
+import type { ToolResultMessage } from "@shuv1337/shuvpi-ai";
 import "./javascript-repl.ts"; // Auto-registers the renderer
 import "./extract-document.ts"; // Auto-registers the renderer
 import { getToolRenderer, registerToolRenderer } from "./renderer-registry.ts";

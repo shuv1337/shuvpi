@@ -1,4 +1,4 @@
-import { resetCapabilitiesCache, setCapabilities } from "@shuv1337/pi-tui";
+import { resetCapabilitiesCache, setCapabilities } from "@shuv1337/shuvpi-tui";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { highlightCode, initTheme } from "../src/modes/interactive/theme/theme.ts";
 import { highlight, renderHighlightedHtml, supportsLanguage } from "../src/utils/syntax-highlight.ts";

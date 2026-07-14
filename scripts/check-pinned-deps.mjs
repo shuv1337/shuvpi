@@ -22,7 +22,7 @@ function collectPackageJsonFiles(directory) {
 }
 
 function isInternalWorkspaceDependency(name) {
-	return name.startsWith("@shuv1337/pi-");
+	return name.startsWith("@shuv1337/shuvpi-");
 }
 
 function isNonRegistrySpecifier(specifier) {

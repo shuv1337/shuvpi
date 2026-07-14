@@ -1,4 +1,4 @@
-import type { ToolResultMessage } from "@shuv1337/pi-ai/compat";
+import type { ToolResultMessage } from "@shuv1337/shuvpi-ai/compat";
 import { html } from "lit";
 import { Clock } from "lucide";
 import { i18n } from "../../utils/i18n.ts";

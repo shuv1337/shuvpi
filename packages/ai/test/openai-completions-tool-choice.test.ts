@@ -168,7 +168,7 @@ describe("openai-completions tool_choice", () => {
 						timestamp: Date.now(),
 					},
 				],
-				// no tools — mirrors pi's `--no-tools --mode json` extraction turn
+				// no tools — mirrors shuvpi's `--no-tools --mode json` extraction turn
 			},
 			{
 				apiKey: "test",

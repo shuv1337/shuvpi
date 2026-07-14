@@ -1,4 +1,4 @@
-import type { TUI } from "@shuv1337/pi-tui";
+import type { TUI } from "@shuv1337/shuvpi-tui";
 import type { SettingsManager } from "../../../core/settings-manager.ts";
 import {
 	detectTerminalBackgroundFromEnv,

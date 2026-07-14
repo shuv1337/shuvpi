@@ -23,8 +23,8 @@ FORK_OWNED=(
   packages/coding-agent/src/core/fast-mode.ts
   packages/coding-agent/test/fast-mode.test.ts
   packages/coding-agent/test/compaction-thinking-model.test.ts
-  .pi/extensions/diff.ts
-  .pi/extensions/files.ts
+  .shuvpi/extensions/diff.ts
+  .shuvpi/extensions/files.ts
 )
 
 git checkout HEAD -- "${FORK_OWNED[@]}"

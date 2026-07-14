@@ -9,7 +9,7 @@ import {
 	registerFauxProvider,
 	type ToolResultMessage,
 	type UserMessage,
-} from "@shuv1337/pi-ai/compat";
+} from "@shuv1337/shuvpi-ai/compat";
 import { afterEach, describe, expect, it } from "vitest";
 import { Agent, type AgentEvent } from "../src/index.ts";
 import { calculateTool } from "./utils/calculate.ts";

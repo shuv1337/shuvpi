@@ -1,8 +1,8 @@
-# @shuv1337/pi-orchestrator
+# @shuv1337/shuvpi-orchestrator
 
 Experimental. This package is under active development and may change or be removed without notice. Its CLI, APIs, and behavior are not yet stable.
 
-Orchestrator package for pi.
+Orchestrator package for shuvpi.
 
 ## CLI
 

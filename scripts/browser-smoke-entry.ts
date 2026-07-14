@@ -1,5 +1,5 @@
-import { createAssistantMessageEventStream, Type } from "@shuv1337/pi-ai";
-import { complete, getModel, getProviders } from "@shuv1337/pi-ai/compat";
+import { createAssistantMessageEventStream, Type } from "@shuv1337/shuvpi-ai";
+import { complete, getModel, getProviders } from "@shuv1337/shuvpi-ai/compat";
 import {
 	Agent,
 	bashExecutionToText,
@@ -16,7 +16,7 @@ import {
 	streamProxy,
 	toError,
 	truncateHead,
-} from "@shuv1337/pi-agent-core";
+} from "@shuv1337/shuvpi-agent-core";
 
 // Keep this entry browser-safe. It is bundled by scripts/check-browser-smoke.mjs
 // to catch accidental Node-only runtime imports in browser-facing package exports.

@@ -1,10 +1,10 @@
 {
-	"name": "@shuv1337/pi-coding-agent-install",
+	"name": "@shuv1337/shuvpi-coding-agent-install",
 	"version": "0.80.6",
 	"private": true,
-	"description": "Lockfile root used by the Pi installer and updater.",
+	"description": "Lockfile root used by the Shuvpi installer and updater.",
 	"dependencies": {
-		"@shuv1337/pi-coding-agent": "0.80.6"
+		"@shuv1337/shuvpi-coding-agent": "0.80.6"
 	},
 	"overrides": {
 		"rimraf": "6.1.2",

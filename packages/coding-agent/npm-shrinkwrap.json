@@ -1,17 +1,17 @@
 {
-	"name": "@shuv1337/pi-coding-agent",
+	"name": "@shuv1337/shuvpi-coding-agent",
 	"version": "0.80.6",
 	"lockfileVersion": 3,
 	"requires": true,
 	"packages": {
 		"": {
-			"name": "@shuv1337/pi-coding-agent",
+			"name": "@shuv1337/shuvpi-coding-agent",
 			"version": "0.80.6",
 			"license": "MIT",
 			"dependencies": {
-				"@shuv1337/pi-agent-core": "^0.80.6",
-				"@shuv1337/pi-ai": "^0.80.6",
-				"@shuv1337/pi-tui": "^0.80.6",
+				"@shuv1337/shuvpi-agent-core": "^0.80.6",
+				"@shuv1337/shuvpi-ai": "^0.80.6",
+				"@shuv1337/shuvpi-tui": "^0.80.6",
 				"@silvia-odwyer/photon-node": "0.3.4",
 				"chalk": "5.6.2",
 				"cross-spawn": "7.0.6",
@@ -32,8 +32,7 @@
 				"@mariozechner/clipboard": "0.3.9"
 			},
 			"bin": {
-				"pi": "dist/cli.js",
-				"shuvcode": "dist/cli.js"
+				"shuvpi": "dist/cli.js"
 			},
 			"engines": {
 				"node": ">=22.19.0"
@@ -605,9 +604,6 @@
 			"cpu": [
 				"arm64"
 			],
-			"libc": [
-				"glibc"
-			],
 			"optional": true
 		},
 		"node_modules/@mariozechner/clipboard-linux-arm64-musl": {
@@ -623,9 +619,6 @@
 			],
 			"cpu": [
 				"arm64"
-			],
-			"libc": [
-				"musl"
 			],
 			"optional": true
 		},
@@ -643,9 +636,6 @@
 			"cpu": [
 				"riscv64"
 			],
-			"libc": [
-				"glibc"
-			],
 			"optional": true
 		},
 		"node_modules/@mariozechner/clipboard-linux-x64-gnu": {
@@ -662,9 +652,6 @@
 			"cpu": [
 				"x64"
 			],
-			"libc": [
-				"glibc"
-			],
 			"optional": true
 		},
 		"node_modules/@mariozechner/clipboard-linux-x64-musl": {
@@ -680,9 +667,6 @@
 			],
 			"cpu": [
 				"x64"
-			],
-			"libc": [
-				"musl"
 			],
 			"optional": true
 		},
@@ -813,12 +797,12 @@
 			"integrity": "sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==",
 			"license": "BSD-3-Clause"
 		},
-		"node_modules/@shuv1337/pi-agent-core": {
+		"node_modules/@shuv1337/shuvpi-agent-core": {
 			"version": "0.80.6",
-			"resolved": "https://registry.npmjs.org/@shuv1337/pi-agent-core/-/pi-agent-core-0.80.6.tgz",
+			"resolved": "https://registry.npmjs.org/@shuv1337/shuvpi-agent-core/-/shuvpi-agent-core-0.80.6.tgz",
 			"license": "MIT",
 			"dependencies": {
-				"@shuv1337/pi-ai": "^0.80.6",
+				"@shuv1337/shuvpi-ai": "^0.80.6",
 				"ignore": "7.0.5",
 				"typebox": "1.1.38",
 				"yaml": "2.9.0"
@@ -827,9 +811,9 @@
 				"node": ">=22.19.0"
 			}
 		},
-		"node_modules/@shuv1337/pi-ai": {
+		"node_modules/@shuv1337/shuvpi-ai": {
 			"version": "0.80.6",
-			"resolved": "https://registry.npmjs.org/@shuv1337/pi-ai/-/pi-ai-0.80.6.tgz",
+			"resolved": "https://registry.npmjs.org/@shuv1337/shuvpi-ai/-/shuvpi-ai-0.80.6.tgz",
 			"license": "MIT",
 			"dependencies": {
 				"@anthropic-ai/sdk": "0.91.1",
@@ -845,15 +829,15 @@
 				"typebox": "1.1.38"
 			},
 			"bin": {
-				"pi-ai": "./dist/cli.js"
+				"shuvpi-ai": "./dist/cli.js"
 			},
 			"engines": {
 				"node": ">=22.19.0"
 			}
 		},
-		"node_modules/@shuv1337/pi-tui": {
+		"node_modules/@shuv1337/shuvpi-tui": {
 			"version": "0.80.6",
-			"resolved": "https://registry.npmjs.org/@shuv1337/pi-tui/-/pi-tui-0.80.6.tgz",
+			"resolved": "https://registry.npmjs.org/@shuv1337/shuvpi-tui/-/shuvpi-tui-0.80.6.tgz",
 			"license": "MIT",
 			"dependencies": {
 				"get-east-asian-width": "1.6.0",
@@ -863,7 +847,7 @@
 				"node": ">=22.19.0"
 			}
 		},
-		"node_modules/@shuv1337/pi-tui/node_modules/marked": {
+		"node_modules/@shuv1337/shuvpi-tui/node_modules/marked": {
 			"version": "18.0.5",
 			"resolved": "https://registry.npmjs.org/marked/-/marked-18.0.5.tgz",
 			"integrity": "sha512-S6GcvALHg6K4ohtu4E7x0a1AqhAjp6cV8KhLSyN9qVapnzJkusVBxZRcIU9AeYsbe6P1hKDusSbEOzGyyuce6w==",

@@ -1,6 +1,6 @@
-import type { TextContent } from "@shuv1337/pi-ai";
-import type { Component } from "@shuv1337/pi-tui";
-import { Box, Container, Markdown, type MarkdownTheme, Spacer, Text } from "@shuv1337/pi-tui";
+import type { TextContent } from "@shuv1337/shuvpi-ai";
+import type { Component } from "@shuv1337/shuvpi-tui";
+import { Box, Container, Markdown, type MarkdownTheme, Spacer, Text } from "@shuv1337/shuvpi-tui";
 import type { MessageRenderer } from "../../../core/extensions/types.ts";
 import type { CustomMessage } from "../../../core/messages.ts";
 import { getMarkdownTheme, theme } from "../theme/theme.ts";

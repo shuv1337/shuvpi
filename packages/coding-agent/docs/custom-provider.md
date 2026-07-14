@@ -1,6 +1,6 @@
 # Custom Providers
 
-Extensions can register custom model providers via `pi.registerProvider()`. This enables:
+Extensions can register custom model providers via `shuvpi.registerProvider()`. This enables:
 
 - **Proxies** - Route requests through corporate proxies or API gateways
 - **Custom endpoints** - Use self-hosted or private model deployments
@@ -31,16 +31,16 @@ See these complete provider examples:
 ## Quick Reference
 
 ```typescript
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
-export default function (pi: ExtensionAPI) {
+export default function (shuvpi: ExtensionAPI) {
   // Override baseUrl for existing provider
-  pi.registerProvider("anthropic", {
+  shuvpi.registerProvider("anthropic", {
     baseUrl: "https://proxy.example.com"
   });
 
   // Register new provider with models
-  pi.registerProvider("my-provider", {
+  shuvpi.registerProvider("my-provider", {
     name: "My Provider",
     baseUrl: "https://api.example.com",
     apiKey: "$MY_API_KEY",
@@ -60,7 +60,7 @@ export default function (pi: ExtensionAPI) {
 }
 ```
 
-The extension factory can also be `async`. For dynamic model discovery, fetch and register models in the factory instead of `session_start`. pi waits for the factory before startup continues, so the provider is available during interactive startup and to `pi --list-models`.
+The extension factory can also be `async`. For dynamic model discovery, fetch and register models in the factory instead of `session_start`. shuvpi waits for the factory before startup continues, so the provider is available during interactive startup and to `shuvpi --list-models`.
 
 ## Override Existing Provider
 
@@ -68,19 +68,19 @@ The simplest use case: redirect an existing provider through a proxy.
 
 ```typescript
 // All Anthropic requests now go through your proxy
-pi.registerProvider("anthropic", {
+shuvpi.registerProvider("anthropic", {
   baseUrl: "https://proxy.example.com"
 });
 
 // Add custom headers to OpenAI requests
-pi.registerProvider("openai", {
+shuvpi.registerProvider("openai", {
   headers: {
     "X-Custom-Header": "value"
   }
 });
 
 // Both baseUrl and headers
-pi.registerProvider("google", {
+shuvpi.registerProvider("google", {
   baseUrl: "https://ai-gateway.corp.com/google",
   headers: {
     "X-Corp-Auth": "$CORP_AUTH_TOKEN"  // env var or literal
@@ -97,9 +97,9 @@ To add a completely new provider, specify `models` along with the required confi
 If the model list comes from a remote endpoint, use an async extension factory:
 
 ```typescript
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
-export default async function (pi: ExtensionAPI) {
+export default async function (shuvpi: ExtensionAPI) {
   const response = await fetch("http://localhost:1234/v1/models");
   const payload = (await response.json()) as {
     data: Array<{
@@ -110,7 +110,7 @@ export default async function (pi: ExtensionAPI) {
     }>;
   };
 
-  pi.registerProvider("local-openai", {
+  shuvpi.registerProvider("local-openai", {
     baseUrl: "http://localhost:1234/v1",
     apiKey: "$LOCAL_OPENAI_API_KEY",
     api: "openai-completions",
@@ -130,7 +130,7 @@ export default async function (pi: ExtensionAPI) {
 This registers the fetched models before startup finishes.
 
 ```typescript
-pi.registerProvider("my-llm", {
+shuvpi.registerProvider("my-llm", {
   baseUrl: "https://api.my-llm.com/v1",
   apiKey: "$MY_LLM_API_KEY",  // env var reference
   api: "openai-completions",  // which streaming API to use
@@ -159,11 +159,11 @@ When `models` is provided, it **replaces** all existing models for that provider
 
 ## Unregister Provider
 
-Use `pi.unregisterProvider(name)` to remove a provider that was previously registered via `pi.registerProvider(name, ...)`:
+Use `shuvpi.unregisterProvider(name)` to remove a provider that was previously registered via `shuvpi.registerProvider(name, ...)`:
 
 ```typescript
 // Register
-pi.registerProvider("my-llm", {
+shuvpi.registerProvider("my-llm", {
   baseUrl: "https://api.my-llm.com/v1",
   apiKey: "$MY_LLM_API_KEY",
   api: "openai-completions",
@@ -181,7 +181,7 @@ pi.registerProvider("my-llm", {
 });
 
 // Later, remove it
-pi.unregisterProvider("my-llm");
+shuvpi.unregisterProvider("my-llm");
 ```
 
 Unregistering removes that provider's dynamic models, API key fallback, OAuth provider registration, and custom stream handler registrations. Any built-in models or provider behavior that were overridden are restored.
@@ -211,7 +211,7 @@ models: [{
   id: "custom-model",
   // ...
   reasoning: true,
-  thinkingLevelMap: {              // map pi levels to provider values; null hides unsupported levels
+  thinkingLevelMap: {              // map shuvpi levels to provider values; null hides unsupported levels
     minimal: null,
     low: null,
     medium: null,
@@ -244,7 +244,7 @@ For Anthropic-compatible providers using `api: "anthropic-messages"`, set `compa
 If your provider expects `Authorization: Bearer <key>` but doesn't use a standard API, set `authHeader: true`:
 
 ```typescript
-pi.registerProvider("custom-api", {
+shuvpi.registerProvider("custom-api", {
   baseUrl: "https://api.example.com",
   apiKey: "$MY_API_KEY",
   authHeader: true,  // adds Authorization: Bearer header
@@ -258,9 +258,9 @@ pi.registerProvider("custom-api", {
 Add OAuth/SSO authentication that integrates with `/login`:
 
 ```typescript
-import type { OAuthCredentials, OAuthLoginCallbacks } from "@shuv1337/pi-ai";
+import type { OAuthCredentials, OAuthLoginCallbacks } from "@shuv1337/shuvpi-ai";
 
-pi.registerProvider("corporate-ai", {
+shuvpi.registerProvider("corporate-ai", {
   baseUrl: "https://ai.corp.com/v1",
   api: "openai-responses",
   models: [...],
@@ -358,7 +358,7 @@ interface OAuthLoginCallbacks {
 
 ### OAuthCredentials
 
-Credentials are persisted in `~/.pi/agent/auth.json`:
+Credentials are persisted in `~/.shuvpi/agent/auth.json`:
 
 ```typescript
 interface OAuthCredentials {
@@ -393,7 +393,7 @@ import {
   type SimpleStreamOptions,
   calculateCost,
   createAssistantMessageEventStream,
-} from "@shuv1337/pi-ai";
+} from "@shuv1337/shuvpi-ai";
 
 function streamMyProvider(
   model: Model<any>,
@@ -536,22 +536,22 @@ calculateCost(model, output.usage);
 
 ### Context Overflow Errors
 
-When a request exceeds the model's context window, pi can recover automatically by compacting the conversation and retrying. This recovery only kicks in if pi recognizes the failure as an overflow.
+When a request exceeds the model's context window, shuvpi can recover automatically by compacting the conversation and retrying. This recovery only kicks in if shuvpi recognizes the failure as an overflow.
 
 Detection runs on the finalized assistant message:
 
 - `stopReason === "error"`
-- `errorMessage` matches one of pi's known overflow patterns (see [`packages/ai/src/utils/overflow.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/utils/overflow.ts))
+- `errorMessage` matches one of shuvpi's known overflow patterns (see [`packages/ai/src/utils/overflow.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/utils/overflow.ts))
 
-If your provider returns overflow errors with a message pi does not recognize, normalize the error from the same extension that registers the provider. Use a `message_end` handler to rewrite the assistant message so its `errorMessage` starts with a phrase pi recognizes. The generic fallback `context_length_exceeded` is the safest choice.
+If your provider returns overflow errors with a message shuvpi does not recognize, normalize the error from the same extension that registers the provider. Use a `message_end` handler to rewrite the assistant message so its `errorMessage` starts with a phrase shuvpi recognizes. The generic fallback `context_length_exceeded` is the safest choice.
 
 ```typescript
 const MY_PROVIDER_OVERFLOW_PATTERN = /your provider's overflow phrase/i;
 
-export default function (pi: ExtensionAPI) {
-  pi.registerProvider("my-provider", { /* ... */ });
+export default function (shuvpi: ExtensionAPI) {
+  shuvpi.registerProvider("my-provider", { /* ... */ });
 
-  pi.on("message_end", (event, ctx) => {
+  shuvpi.on("message_end", (event, ctx) => {
     const message = event.message;
     if (message.role !== "assistant") return;
     if (message.stopReason !== "error") return;
@@ -575,7 +575,7 @@ export default function (pi: ExtensionAPI) {
 }
 ```
 
-`message_end` runs before pi tracks the assistant message for auto-compaction, so the rewritten `errorMessage` is what pi checks. With this in place, pi will:
+`message_end` runs before shuvpi tracks the assistant message for auto-compaction, so the rewritten `errorMessage` is what shuvpi checks. With this in place, shuvpi will:
 
 1. Detect the overflow from `errorMessage`.
 2. Drop the failed assistant message from live context.
@@ -585,7 +585,7 @@ export default function (pi: ExtensionAPI) {
 Guard the rewrite carefully:
 
 - Scope it to your provider (`message.provider` and `ctx.model?.provider`) so unrelated errors from other providers are untouched.
-- Match a provider-specific pattern, not pi's generic overflow patterns. Rewriting rate-limit or throttling errors (`rate limit`, `too many requests`) would falsely trigger compaction instead of pi's normal retry-with-backoff path.
+- Match a provider-specific pattern, not shuvpi's generic overflow patterns. Rewriting rate-limit or throttling errors (`rate limit`, `too many requests`) would falsely trigger compaction instead of shuvpi's normal retry-with-backoff path.
 - Skip when `errorMessage` already includes `context_length_exceeded` so the handler is idempotent.
 
 ### Registration
@@ -593,7 +593,7 @@ Guard the rewrite carefully:
 Register your stream function:
 
 ```typescript
-pi.registerProvider("my-provider", {
+shuvpi.registerProvider("my-provider", {
   baseUrl: "https://api.example.com",
   apiKey: "$MY_API_KEY",
   api: "my-custom-api",
@@ -684,7 +684,7 @@ interface ProviderModelConfig {
   /** Whether the model supports extended thinking. */
   reasoning: boolean;
 
-  /** Maps pi thinking levels to provider/model-specific values; null marks a level unsupported. */
+  /** Maps shuvpi thinking levels to provider/model-specific values; null marks a level unsupported. */
   thinkingLevelMap?: Partial<Record<"off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max", string | null>>;
 
   /** Supported input types. */

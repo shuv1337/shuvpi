@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Renamed the package from `@shuv1337/pi-mom` to `@shuv1337/shuvpi-mom` and updated its Shuvpi package dependencies.
+
 ## [0.70.6] - 2026-04-28
 
 ## [0.70.5] - 2026-04-27

@@ -8,14 +8,14 @@
  * Token stats come from ctx.sessionManager/ctx.model (already accessible).
  */
 
-import type { AssistantMessage } from "@shuv1337/pi-ai";
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
-import { truncateToWidth, visibleWidth } from "@shuv1337/pi-tui";
+import type { AssistantMessage } from "@shuv1337/shuvpi-ai";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
+import { truncateToWidth, visibleWidth } from "@shuv1337/shuvpi-tui";
 
-export default function (pi: ExtensionAPI) {
+export default function (shuvpi: ExtensionAPI) {
 	let enabled = false;
 
-	pi.registerCommand("footer", {
+	shuvpi.registerCommand("footer", {
 		description: "Toggle custom footer",
 		handler: async (_args, ctx) => {
 			enabled = !enabled;

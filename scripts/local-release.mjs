@@ -6,10 +6,10 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const packages = [
-	{ directory: "packages/ai", name: "@shuv1337/pi-ai" },
-	{ directory: "packages/tui", name: "@shuv1337/pi-tui" },
-	{ directory: "packages/agent", name: "@shuv1337/pi-agent-core" },
-	{ directory: "packages/coding-agent", name: "@shuv1337/pi-coding-agent" },
+	{ directory: "packages/ai", name: "@shuv1337/shuvpi-ai" },
+	{ directory: "packages/tui", name: "@shuv1337/shuvpi-tui" },
+	{ directory: "packages/agent", name: "@shuv1337/shuvpi-agent-core" },
+	{ directory: "packages/coding-agent", name: "@shuv1337/shuvpi-coding-agent" },
 ];
 
 function printUsage() {
@@ -111,7 +111,7 @@ function isInsidePath(child, parent) {
 
 function prepareOutputDirectory(options, repoRoot) {
 	if (!options.outDir) {
-		return mkdtempSync(join(tmpdir(), "pi-local-release-"));
+		return mkdtempSync(join(tmpdir(), "shuvpi-local-release-"));
 	}
 
 	const outDir = resolve(options.outDir);
@@ -160,24 +160,24 @@ function buildBunBinaryRelease(targetDirectory, archiveDirectory) {
 	]);
 	rmSync(targetDirectory, { force: true, recursive: true });
 	cpSync(join(binaryBuildDirectory, platform), targetDirectory, { recursive: true });
-	const archiveName = platform.startsWith("windows-") ? `pi-${platform}.zip` : `pi-${platform}.tar.gz`;
+	const archiveName = platform.startsWith("windows-") ? `shuvpi-${platform}.zip` : `shuvpi-${platform}.tar.gz`;
 	cpSync(join(binaryBuildDirectory, archiveName), join(archiveDirectory, archiveName));
 	return platform;
 }
 
-function createPiShim(installDirectory) {
+function createShuvpiShim(installDirectory) {
 	const binDirectory = join(installDirectory, "node_modules", ".bin");
 	if (process.platform === "win32") {
-		if (existsSync(join(binDirectory, "pi.cmd"))) {
-			writeFileSync(join(installDirectory, "pi.cmd"), '@ECHO off\r\n"%~dp0node_modules\\.bin\\pi.cmd" %*\r\n');
-			writeFileSync(join(installDirectory, "pi.ps1"), '& "$PSScriptRoot/node_modules/.bin/pi.ps1" @args\n');
+		if (existsSync(join(binDirectory, "shuvpi.cmd"))) {
+			writeFileSync(join(installDirectory, "shuvpi.cmd"), '@ECHO off\r\n"%~dp0node_modules\\.bin\\shuvpi.cmd" %*\r\n');
+			writeFileSync(join(installDirectory, "shuvpi.ps1"), '& "$PSScriptRoot/node_modules/.bin/shuvpi.ps1" @args\n');
 			return;
 		}
-		writeFileSync(join(installDirectory, "pi.cmd"), '@ECHO off\r\n"%~dp0node_modules\\.bin\\pi.exe" %*\r\n');
-		writeFileSync(join(installDirectory, "pi.ps1"), '& "$PSScriptRoot/node_modules/.bin/pi.exe" @args\n');
+		writeFileSync(join(installDirectory, "shuvpi.cmd"), '@ECHO off\r\n"%~dp0node_modules\\.bin\\shuvpi.exe" %*\r\n');
+		writeFileSync(join(installDirectory, "shuvpi.ps1"), '& "$PSScriptRoot/node_modules/.bin/shuvpi.exe" @args\n');
 		return;
 	}
-	symlinkSync(join("node_modules", ".bin", "pi"), join(installDirectory, "pi"));
+	symlinkSync(join("node_modules", ".bin", "shuvpi"), join(installDirectory, "shuvpi"));
 }
 
 function packPackage(pkg, tarballDirectory) {
@@ -198,7 +198,7 @@ const options = parseArgs();
 const repoRoot = process.cwd();
 const rootPackageJson = readPackageJson(repoRoot);
 
-if (rootPackageJson.name !== "pi-monorepo") {
+if (rootPackageJson.name !== "shuvpi-monorepo") {
 	throw new Error("Run this script from the repository root");
 }
 
@@ -240,7 +240,7 @@ if (!options.skipInstall) {
 	writeFileSync(join(nodeInstallDirectory, "package.json"), installPackageJson);
 
 	run("npm", ["install", "--omit=dev", "--ignore-scripts"], { cwd: nodeInstallDirectory });
-	createPiShim(nodeInstallDirectory);
+	createShuvpiShim(nodeInstallDirectory);
 
 	if (!options.skipBunInstall) {
 		if (!commandExists("bun")) {
@@ -252,7 +252,7 @@ if (!options.skipInstall) {
 		);
 		writeFileSync(join(bunInstallDirectory, "package.json"), `${JSON.stringify({ private: true, dependencies: bunDependencies, overrides: bunDependencies }, undefined, "\t")}\n`);
 		run("bun", ["install", "--production", "--ignore-scripts"], { cwd: bunInstallDirectory });
-		createPiShim(bunInstallDirectory);
+		createShuvpiShim(bunInstallDirectory);
 	}
 }
 
@@ -266,19 +266,19 @@ for (const tarball of tarballs.values()) {
 if (!options.skipInstall) {
 	console.log("\nLocal Bun binary release:");
 	console.log(`  ${binaryDirectory}`);
-	console.log(`  ${join(outDir, `pi-${binaryPlatform}.${String(binaryPlatform).startsWith("windows-") ? "zip" : "tar.gz"}`)}`);
+	console.log(`  ${join(outDir, `shuvpi-${binaryPlatform}.${String(binaryPlatform).startsWith("windows-") ? "zip" : "tar.gz"}`)}`);
 	console.log("\nRun the local Bun binary release from outside the repository:");
-	console.log(`  ${join(binaryDirectory, String(binaryPlatform).startsWith("windows-") ? "pi.exe" : "pi")} --help`);
+	console.log(`  ${join(binaryDirectory, String(binaryPlatform).startsWith("windows-") ? "shuvpi.exe" : "shuvpi")} --help`);
 
 	console.log("\nIsolated npm install:");
 	console.log(`  ${nodeInstallDirectory}`);
 	console.log("\nRun the locally packed npm CLI from outside the repository:");
-	console.log(`  ${join(nodeInstallDirectory, process.platform === "win32" ? "pi.cmd" : "pi")} --help`);
+	console.log(`  ${join(nodeInstallDirectory, process.platform === "win32" ? "shuvpi.cmd" : "shuvpi")} --help`);
 
 	if (!options.skipBunInstall) {
 		console.log("\nIsolated Bun package install:");
 		console.log(`  ${bunInstallDirectory}`);
 		console.log("\nRun the locally packed Bun package CLI from outside the repository:");
-		console.log(`  ${join(bunInstallDirectory, process.platform === "win32" ? "pi.cmd" : "pi")} --help`);
+		console.log(`  ${join(bunInstallDirectory, process.platform === "win32" ? "shuvpi.cmd" : "shuvpi")} --help`);
 	}
 }

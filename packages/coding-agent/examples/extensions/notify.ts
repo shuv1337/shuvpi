@@ -1,14 +1,14 @@
 /**
- * Pi Notify Extension
+ * Shuvpi Notify Extension
  *
- * Sends a native terminal notification when Pi agent is done and waiting for input.
+ * Sends a native terminal notification when Shuvpi agent is done and waiting for input.
  * Supports multiple terminal protocols:
  * - OSC 777: Ghostty, iTerm2, WezTerm, rxvt-unicode
  * - OSC 99: Kitty
  * - Windows toast: Windows Terminal (WSL)
  */
 
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
 function windowsToastScript(title: string, body: string): string {
 	const type = "Windows.UI.Notifications";
@@ -48,8 +48,8 @@ function notify(title: string, body: string): void {
 	}
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("agent_end", async () => {
-		notify("Pi", "Ready for input");
+export default function (shuvpi: ExtensionAPI) {
+	shuvpi.on("agent_end", async () => {
+		notify("Shuvpi", "Ready for input");
 	});
 }

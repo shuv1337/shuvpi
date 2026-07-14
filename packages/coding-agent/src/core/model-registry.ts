@@ -17,8 +17,8 @@ import {
 	registerApiProvider,
 	resetApiProviders,
 	type SimpleStreamOptions,
-} from "@shuv1337/pi-ai/compat";
-import { registerOAuthProvider, resetOAuthProviders } from "@shuv1337/pi-ai/oauth";
+} from "@shuv1337/shuvpi-ai/compat";
+import { registerOAuthProvider, resetOAuthProviders } from "@shuv1337/shuvpi-ai/oauth";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { type Static, Type } from "typebox";

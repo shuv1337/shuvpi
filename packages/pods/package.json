@@ -1,10 +1,10 @@
 {
-	"name": "@shuv1337/pi",
-	"version": "0.70.6",
+	"name": "@shuv1337/shuvpi-pods",
+	"version": "0.80.6",
 	"description": "CLI tool for managing vLLM deployments on GPU pods",
 	"type": "module",
 	"bin": {
-		"pi-pods": "dist/cli.js"
+		"shuvpi-pods": "dist/cli.js"
 	},
 	"scripts": {
 		"clean": "shx rm -rf dist",
@@ -26,14 +26,14 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/badlogic/pi-mono.git",
+		"url": "git+https://github.com/shuv1337/pi-mono.git",
 		"directory": "packages/pods"
 	},
 	"engines": {
 		"node": ">=20.0.0"
 	},
 	"dependencies": {
-		"@shuv1337/pi-agent-core": "0.77.0",
+		"@shuv1337/shuvpi-agent-core": "^0.80.6",
 		"chalk": "5.6.2"
 	},
 	"devDependencies": {}

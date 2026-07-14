@@ -5,8 +5,8 @@ import {
 	fauxProvider,
 	fauxToolCall,
 	type RegisterFauxProviderOptions,
-} from "@shuv1337/pi-ai";
-import { getModel } from "@shuv1337/pi-ai/compat";
+} from "@shuv1337/shuvpi-ai";
+import { getModel } from "@shuv1337/shuvpi-ai/compat";
 import { describe, expect, it } from "vitest";
 import { AgentHarness } from "../../src/harness/agent-harness.ts";
 import { NodeExecutionEnv } from "../../src/harness/env/nodejs.ts";

@@ -2,8 +2,8 @@
  * List available models with optional fuzzy search
  */
 
-import type { Api, Model } from "@shuv1337/pi-ai";
-import { fuzzyFilter } from "@shuv1337/pi-tui";
+import type { Api, Model } from "@shuv1337/shuvpi-ai";
+import { fuzzyFilter } from "@shuv1337/shuvpi-tui";
 import chalk from "chalk";
 import { formatNoModelsAvailableMessage } from "../core/auth-guidance.ts";
 import type { ModelRegistry } from "../core/model-registry.ts";

@@ -1,4 +1,4 @@
-import type { AgentMessage } from "@shuv1337/pi-agent-core";
+import type { AgentMessage } from "@shuv1337/shuvpi-agent-core";
 import {
 	ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO,
 	ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,

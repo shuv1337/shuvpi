@@ -1,4 +1,4 @@
-import type { Model } from "@shuv1337/pi-ai";
+import type { Model } from "@shuv1337/shuvpi-ai";
 import { Store } from "../store.ts";
 import type { StoreConfig } from "../types.ts";
 

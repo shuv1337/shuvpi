@@ -1,7 +1,7 @@
 import { basename, dirname, isAbsolute, relative, resolve as resolvePath, sep } from "node:path";
-import type { AgentTool } from "@shuv1337/pi-agent-core";
-import type { Api, ImageContent, Model, TextContent } from "@shuv1337/pi-ai";
-import { Text } from "@shuv1337/pi-tui";
+import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
+import type { Api, ImageContent, Model, TextContent } from "@shuv1337/shuvpi-ai";
+import { Text } from "@shuv1337/shuvpi-tui";
 import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
 import { type Static, Type } from "typebox";
@@ -95,7 +95,7 @@ function toPosixPath(filePath: string): string {
 	return filePath.split(sep).join("/");
 }
 
-function getPiDocsClassification(absolutePath: string): CompactReadClassification | undefined {
+function getShuvpiDocsClassification(absolutePath: string): CompactReadClassification | undefined {
 	const packageRoot = dirname(getReadmePath());
 	const relativePath = relative(resolvePath(packageRoot), resolvePath(absolutePath));
 	if (
@@ -127,7 +127,7 @@ function getCompactReadClassification(
 		return { kind: "skill", label: basename(dirname(absolutePath)) || fileName };
 	}
 
-	const docsClassification = getPiDocsClassification(absolutePath);
+	const docsClassification = getShuvpiDocsClassification(absolutePath);
 	if (docsClassification) return docsClassification;
 
 	if (COMPACT_RESOURCE_FILE_NAMES.has(fileName)) {

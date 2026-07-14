@@ -2,10 +2,10 @@
  * Minimal SDK Usage
  *
  * Uses all defaults: discovers skills, extensions, tools, context files
- * from cwd and ~/.pi/agent. Model chosen from settings or first available.
+ * from cwd and ~/.shuvpi/agent. Model chosen from settings or first available.
  */
 
-import { createAgentSession } from "@shuv1337/pi-coding-agent";
+import { createAgentSession } from "@shuv1337/shuvpi-coding-agent";
 
 const { session } = await createAgentSession();
 

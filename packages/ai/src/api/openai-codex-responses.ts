@@ -1583,8 +1583,8 @@ function buildBaseCodexHeaders(
 	if (accountId) {
 		headers.set("chatgpt-account-id", accountId);
 	}
-	headers.set("originator", "pi");
-	const userAgent = _os ? `pi (${_os.platform()} ${_os.release()}; ${_os.arch()})` : "pi (browser)";
+	headers.set("originator", "shuvpi");
+	const userAgent = _os ? `shuvpi (${_os.platform()} ${_os.release()}; ${_os.arch()})` : "shuvpi (browser)";
 	headers.set("User-Agent", userAgent);
 	return headers;
 }

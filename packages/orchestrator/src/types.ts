@@ -21,5 +21,5 @@ export interface InstanceRecord {
 	label?: string;
 	sessionId?: string;
 	sessionFile?: string;
-	radiusPiId?: string;
+	radiusShuvpiId?: string;
 }

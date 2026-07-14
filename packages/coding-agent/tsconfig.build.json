@@ -3,12 +3,12 @@
 	"compilerOptions": {
 		"outDir": "./dist",
 		"paths": {
-			"@shuv1337/pi-agent-core": ["../agent/dist/index.d.ts"],
-			"@shuv1337/pi-agent-core/*": ["../agent/dist/*.d.ts"],
-			"@shuv1337/pi-ai": ["../ai/dist/index.d.ts"],
-			"@shuv1337/pi-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"],
-			"@shuv1337/pi-tui": ["../tui/dist/index.d.ts"],
-			"@shuv1337/pi-tui/*": ["../tui/dist/*.d.ts", "../tui/dist/components/*.d.ts"]
+			"@shuv1337/shuvpi-agent-core": ["../agent/dist/index.d.ts"],
+			"@shuv1337/shuvpi-agent-core/*": ["../agent/dist/*.d.ts"],
+			"@shuv1337/shuvpi-ai": ["../ai/dist/index.d.ts"],
+			"@shuv1337/shuvpi-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"],
+			"@shuv1337/shuvpi-tui": ["../tui/dist/index.d.ts"],
+			"@shuv1337/shuvpi-tui/*": ["../tui/dist/*.d.ts", "../tui/dist/components/*.d.ts"]
 		},
 		"rootDir": "./src"
 	},

@@ -7,29 +7,29 @@ vi.mock("../src/config.ts", async (importOriginal) => {
 	const actual = await importOriginal();
 	return {
 		...(actual as Record<string, unknown>),
-		PACKAGE_NAME: "@example/pi-coding-agent",
+		PACKAGE_NAME: "@example/shuvpi-coding-agent",
 	};
 });
 
 import { shouldRunFirstTimeSetup } from "../src/cli/startup-ui.ts";
 
 describe("shouldRunFirstTimeSetup in forked distributions", () => {
-	const originalPiExperimental = process.env.PI_EXPERIMENTAL;
+	const originalShuvpiExperimental = process.env.SHUVPI_EXPERIMENTAL;
 	let tempDir: string;
 	let settingsPath: string;
 
 	beforeEach(() => {
-		tempDir = mkdtempSync(join(tmpdir(), "pi-first-time-setup-fork-"));
+		tempDir = mkdtempSync(join(tmpdir(), "shuvpi-first-time-setup-fork-"));
 		settingsPath = join(tempDir, "settings.json");
-		process.env.PI_EXPERIMENTAL = "1";
+		process.env.SHUVPI_EXPERIMENTAL = "1";
 	});
 
 	afterEach(() => {
 		rmSync(tempDir, { recursive: true, force: true });
-		if (originalPiExperimental === undefined) {
-			delete process.env.PI_EXPERIMENTAL;
+		if (originalShuvpiExperimental === undefined) {
+			delete process.env.SHUVPI_EXPERIMENTAL;
 		} else {
-			process.env.PI_EXPERIMENTAL = originalPiExperimental;
+			process.env.SHUVPI_EXPERIMENTAL = originalShuvpiExperimental;
 		}
 	});
 

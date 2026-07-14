@@ -5,8 +5,8 @@
  * Multiple questions: tab bar navigation between questions
  */
 
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
-import { Editor, type EditorTheme, Key, matchesKey, Text, visibleWidth, wrapTextWithAnsi } from "@shuv1337/pi-tui";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
+import { Editor, type EditorTheme, Key, matchesKey, Text, visibleWidth, wrapTextWithAnsi } from "@shuv1337/shuvpi-tui";
 import { Type } from "typebox";
 
 // Types
@@ -73,8 +73,8 @@ function errorResult(
 	};
 }
 
-export default function questionnaire(pi: ExtensionAPI) {
-	pi.registerTool({
+export default function questionnaire(shuvpi: ExtensionAPI) {
+	shuvpi.registerTool({
 		name: "questionnaire",
 		label: "Questionnaire",
 		description:

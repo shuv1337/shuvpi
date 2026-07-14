@@ -8,7 +8,7 @@ import type {
 	RpcExtensionUIRequest,
 	RpcExtensionUIResponse,
 	RpcResponse,
-} from "@shuv1337/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 import { isBunBinary } from "./config.ts";
 
 interface PendingRequest {
@@ -50,13 +50,13 @@ export class RpcProcessInstance {
 	private getSpawnCommand(): { command: string; args: string[] } {
 		if (isBunBinary) {
 			return {
-				command: join(dirname(process.execPath), process.platform === "win32" ? "pi.exe" : "pi"),
+				command: join(dirname(process.execPath), process.platform === "win32" ? "shuvpi.exe" : "shuvpi"),
 				args: ["--mode", "rpc"],
 			};
 		}
 		return {
 			command: process.execPath,
-			args: [require.resolve("@shuv1337/pi-coding-agent/rpc-entry")],
+			args: [require.resolve("@shuv1337/shuvpi-coding-agent/rpc-entry")],
 		};
 	}
 

@@ -10,8 +10,8 @@
  * - createMomSettingsManager: Creates a SettingsManager backed by workspace settings.json
  */
 
-import type { UserMessage } from "@shuv1337/pi-ai";
-import { type SessionManager, type SessionMessageEntry, SettingsManager } from "@shuv1337/pi-coding-agent";
+import type { UserMessage } from "@shuv1337/shuvpi-ai";
+import { type SessionManager, type SessionMessageEntry, SettingsManager } from "@shuv1337/shuvpi-coding-agent";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 

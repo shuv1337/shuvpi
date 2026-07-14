@@ -1,4 +1,4 @@
-import type { Api, Model } from "@shuv1337/pi-ai";
+import type { Api, Model } from "@shuv1337/shuvpi-ai";
 
 const FAST_MODE_ELIGIBLE_MODEL_IDS = new Set([
 	"gpt-5.4",

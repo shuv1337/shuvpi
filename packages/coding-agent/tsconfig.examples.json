@@ -3,10 +3,10 @@
 	"compilerOptions": {
 		"noEmit": true,
 		"paths": {
-			"@shuv1337/pi-coding-agent": ["./src/index.ts"],
-			"@shuv1337/pi-coding-agent/hooks": ["./src/core/hooks/index.ts"],
-			"@shuv1337/pi-tui": ["../tui/src/index.ts"],
-			"@shuv1337/pi-ai": ["../ai/src/index.ts"],
+			"@shuv1337/shuvpi-coding-agent": ["./src/index.ts"],
+			"@shuv1337/shuvpi-coding-agent/hooks": ["./src/core/hooks/index.ts"],
+			"@shuv1337/shuvpi-tui": ["../tui/src/index.ts"],
+			"@shuv1337/shuvpi-ai": ["../ai/src/index.ts"],
 			"typebox": ["../../node_modules/typebox"]
 		},
 		"skipLibCheck": true

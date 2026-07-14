@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Rebranded the fork as `shuvpi`: renamed the package, CLI, config directories, manifest key, environment variables, and runtime identity surfaces. Existing `.pi` data is not migrated automatically.
+
 ### Changed
 
 - Default xAI model is now `grok-4.5` (flagship coding/agent model; 500k context).

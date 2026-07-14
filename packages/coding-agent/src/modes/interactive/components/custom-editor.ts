@@ -1,4 +1,4 @@
-import { Editor, type EditorOptions, type EditorTheme, type TUI } from "@shuv1337/pi-tui";
+import { Editor, type EditorOptions, type EditorTheme, type TUI } from "@shuv1337/shuvpi-tui";
 import type { AppKeybinding, KeybindingsManager } from "../../../core/keybindings.ts";
 
 /**

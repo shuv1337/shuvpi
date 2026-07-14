@@ -1,5 +1,5 @@
 import "@mariozechner/mini-lit/dist/CodeBlock.js";
-import type { ToolResultMessage } from "@shuv1337/pi-ai/compat";
+import type { ToolResultMessage } from "@shuv1337/shuvpi-ai/compat";
 import { createRef, ref } from "lit/directives/ref.js";
 import { FileCode2 } from "lucide";
 import "../../components/ConsoleBlock.ts";

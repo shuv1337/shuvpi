@@ -1,5 +1,5 @@
-import type { AgentTool } from "@shuv1337/pi-agent-core";
-import { fauxAssistantMessage, fauxToolCall } from "@shuv1337/pi-ai";
+import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
+import { fauxAssistantMessage, fauxToolCall } from "@shuv1337/shuvpi-ai";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import { createHarness, getUserTexts, type Harness } from "../harness.ts";
@@ -32,11 +32,11 @@ describe("regression #6363: agent settled event and idle waiting", () => {
 		const harness = await createHarness({
 			settings: { retry: { enabled: true, maxRetries: 3, baseDelayMs: 1 } },
 			extensionFactories: [
-				(pi) => {
-					pi.on("agent_end", () => {
+				(shuvpi) => {
+					shuvpi.on("agent_end", () => {
 						extensionEvents.push("agent_end");
 					});
-					pi.on("agent_settled", (_event, ctx) => {
+					shuvpi.on("agent_settled", (_event, ctx) => {
 						extensionEvents.push(`agent_settled:${ctx.isIdle()}`);
 					});
 				},
@@ -66,13 +66,13 @@ describe("regression #6363: agent settled event and idle waiting", () => {
 		const settledIdleStates: boolean[] = [];
 		const harness = await createHarness({
 			extensionFactories: [
-				(pi) => {
-					pi.on("agent_end", () => {
+				(shuvpi) => {
+					shuvpi.on("agent_end", () => {
 						if (queuedFollowUp) return;
 						queuedFollowUp = true;
-						pi.sendUserMessage("status follow-up", { deliverAs: "followUp" });
+						shuvpi.sendUserMessage("status follow-up", { deliverAs: "followUp" });
 					});
-					pi.on("agent_settled", (_event, ctx) => {
+					shuvpi.on("agent_settled", (_event, ctx) => {
 						settledIdleStates.push(ctx.isIdle());
 					});
 				},
@@ -102,8 +102,8 @@ describe("regression #6363: agent settled event and idle waiting", () => {
 		const harness = await createHarness({
 			tools: [createWaitTool(released)],
 			extensionFactories: [
-				(pi) => {
-					pi.registerCommand("after-idle", {
+				(shuvpi) => {
+					shuvpi.registerCommand("after-idle", {
 						description: "Wait for idle",
 						handler: async (_args, ctx) => {
 							markCommandStarted();

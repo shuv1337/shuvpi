@@ -1,5 +1,5 @@
-import type { AssistantMessage } from "@shuv1337/pi-ai";
-import { Container, Markdown, type MarkdownTheme, Spacer, Text } from "@shuv1337/pi-tui";
+import type { AssistantMessage } from "@shuv1337/shuvpi-ai";
+import { Container, Markdown, type MarkdownTheme, Spacer, Text } from "@shuv1337/shuvpi-tui";
 import { getMarkdownTheme, theme } from "../theme/theme.ts";
 
 const OSC133_ZONE_START = "\x1b]133;A\x07";

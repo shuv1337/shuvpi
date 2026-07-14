@@ -5,7 +5,7 @@
  * with full terminal access. The TUI suspends while they run.
  *
  * Usage:
- *   pi -e examples/extensions/interactive-shell.ts
+ *   shuvpi -e examples/extensions/interactive-shell.ts
  *
  *   !vim file.txt        # Auto-detected as interactive
  *   !i any-command       # Force interactive mode with !i prefix
@@ -21,7 +21,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import type { ExtensionAPI } from "@shuv1337/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
 // Default interactive commands - editors, pagers, git ops, TUIs
 const DEFAULT_INTERACTIVE_COMMANDS = [
@@ -128,8 +128,8 @@ function isInteractiveCommand(command: string): boolean {
 	return false;
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("user_bash", async (event, ctx) => {
+export default function (shuvpi: ExtensionAPI) {
+	shuvpi.on("user_bash", async (event, ctx) => {
 		let command = event.command;
 		let forceInteractive = false;
 

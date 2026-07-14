@@ -3,9 +3,9 @@ export { Type } from "typebox";
 
 // Core only, side-effect free: no generated catalogs, no provider factories,
 // no api-registry, no OAuth implementations, no compat. Provider factories
-// live under "@shuv1337/pi-ai/providers/*", API implementations under
-// "@shuv1337/pi-ai/api/*", the old global API under
-// "@shuv1337/pi-ai/compat".
+// live under "@shuv1337/shuvpi-ai/providers/*", API implementations under
+// "@shuv1337/shuvpi-ai/api/*", the old global API under
+// "@shuv1337/shuvpi-ai/compat".
 export type { AnthropicEffort, AnthropicOptions, AnthropicThinkingDisplay } from "./api/anthropic-messages.ts";
 export type { AzureOpenAIResponsesOptions } from "./api/azure-openai-responses.ts";
 export type { BedrockOptions, BedrockThinkingDisplay } from "./api/bedrock-converse-stream.ts";

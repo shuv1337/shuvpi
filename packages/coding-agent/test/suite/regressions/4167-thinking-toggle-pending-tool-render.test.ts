@@ -1,6 +1,6 @@
-import type { AgentMessage } from "@shuv1337/pi-agent-core";
-import type { AssistantMessage, ToolResultMessage, Usage } from "@shuv1337/pi-ai";
-import { Container, Text, type TUI } from "@shuv1337/pi-tui";
+import type { AgentMessage } from "@shuv1337/shuvpi-agent-core";
+import type { AssistantMessage, ToolResultMessage, Usage } from "@shuv1337/shuvpi-ai";
+import { Container, Text, type TUI } from "@shuv1337/shuvpi-tui";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import type { AgentSessionEvent } from "../../../src/core/agent-session.ts";
 import type { SessionEntry } from "../../../src/core/session-manager.ts";

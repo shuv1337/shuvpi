@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getModel } from "@shuv1337/pi-ai/compat";
+import { getModel } from "@shuv1337/shuvpi-ai/compat";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { ModelRegistry } from "../src/core/model-registry.ts";
@@ -36,7 +36,7 @@ async function createOpenAISession(options?: {
 	modelId?: "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.4-pro" | "gpt-5.5" | "gpt-5.6-luna" | "gpt-5.6-sol" | "gpt-5.6-terra";
 	resourceLoader?: ReturnType<typeof createTestResourceLoader>;
 }) {
-	const { tempDir, cleanup } = createTempDir("pi-fast-mode-test");
+	const { tempDir, cleanup } = createTempDir("shuvpi-fast-mode-test");
 	const provider = options?.provider ?? "openai";
 	const requestedModelId = options?.modelId ?? "gpt-5.4";
 	const model =
@@ -179,8 +179,8 @@ describe("fast mode payload mutation", () => {
 	it("runs extension before_provider_request handlers after fast-mode mutation", async () => {
 		const seenPayloads: unknown[] = [];
 		const extensionsResult = await createTestExtensionsResult([
-			(pi) => {
-				pi.on("before_provider_request", (event) => {
+			(shuvpi) => {
+				shuvpi.on("before_provider_request", (event) => {
 					seenPayloads.push(event.payload);
 					return {
 						...(event.payload as Record<string, unknown>),

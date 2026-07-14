@@ -1,5 +1,5 @@
-import type { Component } from "@shuv1337/pi-tui";
-import { Box, Container, Spacer, Text } from "@shuv1337/pi-tui";
+import type { Component } from "@shuv1337/shuvpi-tui";
+import { Box, Container, Spacer, Text } from "@shuv1337/shuvpi-tui";
 import type { EntryRenderer } from "../../../core/extensions/types.ts";
 import type { CustomEntry } from "../../../core/session-manager.ts";
 import { theme } from "../theme/theme.ts";
