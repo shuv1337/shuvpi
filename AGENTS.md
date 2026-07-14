@@ -1,5 +1,21 @@
 # Development Rules
 
+## Codex external-agent sidecar
+
+`packages/codex-runtime/` is the Bun/TypeScript sidecar for the first-class Pi subagent integration in the `shuv1337/codex` fork. It owns the versioned protobuf connection, Pi SDK session creation/resume, event translation, session supervision, and host-tool request bridge. It must use the Pi SDK directly; never replace it with Pi CLI execution, terminal scraping, an opaque job wrapper, or a basic MCP/JSON-RPC facade pretending to be a native child thread.
+
+Preserve these integration invariants across upstream Pi merges:
+
+- Create sessions with `noTools: "all"` and expose only Codex host-backed custom tools. Pi must not directly execute filesystem, process, network, or approval-sensitive built-ins.
+- Provider/model selection comes from the Codex role's `runtime_config`; both values are required together and must resolve through Pi's `ModelRegistry`.
+- Credentials stay in the normal ShuvPi auth surface (`~/.shuvpi/agent/auth.json` by default) or provider environment variables. Never copy credentials into the sidecar package, protocol, fixtures, or Codex history.
+- Persist stable Pi session locators and resume through the SDK session manager. Keep provider, model, thinking level, token usage, lifecycle events, errors, cancellation, and tool calls honest at the protocol boundary.
+- Keep `packages/codex-runtime/proto/pi_codex_runtime.proto` synchronized with `codex-rs/ext/pi-runtime/proto/pi_codex_runtime.proto` in the Codex fork. Intentional wire changes require a protocol-version bump, regenerated bindings, and compatibility tests on both sides.
+
+When merging upstream Pi, pay particular attention to package renames, `createAgentSessionServices` / `createAgentSessionRuntime` APIs, `AuthStorage`, `ModelRegistry`, `SessionManager`, `AgentSessionEvent`, thinking-level maps, and custom-tool signatures. Rebuild the prerequisite `tui`, `ai`, `agent`, and `coding-agent` workspaces before judging sidecar failures; stale ignored `dist/` output can make the source and workspace links disagree.
+
+The focused sidecar release gate generates bindings, builds `packages/codex-runtime`, and runs its seven test files (currently 21 tests). Tests must continue proving framing/negotiation, SDK-only session creation, built-in tool exclusion, host-tool round trips, event mapping, persistence/resume, cancellation, malformed input, concurrency, and clean shutdown.
+
 ## Conversational Style
 
 - Keep answers short and concise
