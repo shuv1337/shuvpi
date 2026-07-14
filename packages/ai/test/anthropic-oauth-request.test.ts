@@ -1,48 +1,30 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { stream as streamAnthropic } from "../src/api/anthropic-messages.ts";
 import { getModel } from "../src/compat.ts";
 import type { Context } from "../src/types.ts";
 
-const mockState = vi.hoisted(() => ({
-	constructorOptions: undefined as Record<string, unknown> | undefined,
-	requestParams: undefined as Record<string, unknown> | undefined,
-}));
-
-vi.mock("@anthropic-ai/sdk", () => {
-	class FakeAnthropic {
-		constructor(options: Record<string, unknown>) {
-			mockState.constructorOptions = options;
-		}
-
-		messages = {
-			create: (params: Record<string, unknown>) => {
-				mockState.requestParams = params;
-				return {
-					asResponse: async () =>
-						new Response("", {
-							status: 200,
-							headers: { "content-type": "text/event-stream" },
-						}),
-				};
-			},
-		};
-	}
-
-	return { default: FakeAnthropic };
-});
-
 describe("Anthropic OAuth request identity", () => {
 	const context: Context = {
-		systemPrompt: "Follow the project instructions.",
+		systemPrompt:
+			"You are an expert coding assistant operating inside shuvpi, a coding agent harness. Follow the project instructions and read Shuvpi documentation.",
 		messages: [{ role: "user", content: "ping", timestamp: 1 }],
 	};
 
-	beforeEach(() => {
-		mockState.constructorOptions = undefined;
-		mockState.requestParams = undefined;
+	afterEach(() => {
+		vi.unstubAllGlobals();
 	});
 
-	it("matches the official Claude Code OAuth request contract", async () => {
+	it("matches the official Claude Code OAuth request contract on the wire", async () => {
+		let request: Request | undefined;
+		const fetchMock: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			request = new Request(input, init);
+			return new Response("", {
+				status: 200,
+				headers: { "content-type": "text/event-stream" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
 		const model = getModel("anthropic", "claude-opus-4-8");
 		const oauthToken = "sk-ant-oat01-test-token";
 		const stream = streamAnthropic(model, context, {
@@ -51,26 +33,28 @@ describe("Anthropic OAuth request identity", () => {
 		});
 
 		for await (const _event of stream) {
-			// Consume the mocked stream so client construction and request creation run.
+			// Consume the mocked HTTP stream so request creation runs.
 		}
 
-		expect(mockState.constructorOptions).toMatchObject({
-			apiKey: null,
-			authToken: oauthToken,
-		});
-		const headers = mockState.constructorOptions?.defaultHeaders as Record<string, string>;
-		expect(headers).toMatchObject({
-			"anthropic-dangerous-direct-browser-access": "true",
-			"user-agent": "claude-cli/2.1.207 (external, cli)",
-			"x-app": "cli",
-			"X-Claude-Code-Session-Id": "session-test",
-		});
-		expect(headers["anthropic-beta"].split(",")).toEqual(
+		expect(fetchMock).toHaveBeenCalledOnce();
+		expect(request).toBeDefined();
+		const url = new URL(request!.url);
+		expect(url.pathname).toBe("/v1/messages");
+		expect(url.searchParams.get("beta")).toBe("true");
+		expect(request!.headers.get("authorization")).toBe(`Bearer ${oauthToken}`);
+		expect(request!.headers.get("x-api-key")).toBeNull();
+		expect(request!.headers.get("anthropic-dangerous-direct-browser-access")).toBe("true");
+		expect(request!.headers.get("user-agent")).toBe("claude-cli/2.1.207 (external, cli)");
+		expect(request!.headers.get("x-app")).toBe("cli");
+		expect(request!.headers.get("x-claude-code-session-id")).toBe("session-test");
+		expect(request!.headers.get("anthropic-beta")?.split(",")).toEqual(
 			expect.arrayContaining(["claude-code-20250219", "oauth-2025-04-20"]),
 		);
 
-		const system = mockState.requestParams?.system as Array<{ text: string }>;
-		expect(system[0]?.text).toBe("You are Claude Code, Anthropic's official CLI for Claude.");
-		expect(system[1]?.text).toBe(context.systemPrompt);
+		const body = (await request!.json()) as { system: Array<{ text: string }> };
+		expect(body.system[0]?.text).toBe("You are Claude Code, Anthropic's official CLI for Claude.");
+		expect(body.system[1]?.text).toBe(
+			"You are Claude Code, Anthropic's official CLI for Claude. Follow the project instructions and read Claude documentation.",
+		);
 	});
 });

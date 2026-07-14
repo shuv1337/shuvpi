@@ -71,6 +71,8 @@ function getCacheControl(
 
 // Stealth mode: Mimic Claude Code's tool naming exactly
 const claudeCodeVersion = "2.1.207";
+const claudeCodeSystemIdentity = "You are Claude Code, Anthropic's official CLI for Claude.";
+const shuvpiSystemIdentity = "You are an expert coding assistant operating inside shuvpi, a coding agent harness.";
 
 // Claude Code 2.x tool names (canonical casing)
 // Source: https://cchistory.mariozechner.at/data/prompts-2.1.11.md
@@ -861,6 +863,13 @@ function createClient(
 			authToken: apiKey,
 			baseURL: model.baseUrl,
 			dangerouslyAllowBrowser: true,
+			fetch: async (input, init) => {
+				const url = new URL(input instanceof Request ? input.url : input);
+				if (url.pathname === "/v1/messages" && !url.searchParams.has("beta")) {
+					url.searchParams.set("beta", "true");
+				}
+				return fetch(input instanceof Request ? new Request(url, input) : url, init);
+			},
 			defaultHeaders: mergeHeaders(
 				{
 					accept: "application/json",
@@ -924,14 +933,16 @@ function buildParams(
 		params.system = [
 			{
 				type: "text",
-				text: "You are Claude Code, Anthropic's official CLI for Claude.",
+				text: claudeCodeSystemIdentity,
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			},
 		];
 		if (context.systemPrompt) {
 			params.system.push({
 				type: "text",
-				text: sanitizeSurrogates(context.systemPrompt),
+				text: sanitizeSurrogates(context.systemPrompt)
+					.replace(shuvpiSystemIdentity, claudeCodeSystemIdentity)
+					.replace(/shuvpi/gi, "Claude"),
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			});
 		}

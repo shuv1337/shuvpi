@@ -16,7 +16,7 @@
 
 ### Fixed
 
-- Restored the current Claude Code user-agent and session identity headers for Anthropic OAuth requests.
+- Restored Anthropic OAuth subscription routing by matching Claude Code's request URL, headers, session identity, and outbound system-prompt identity.
 
 ## [0.80.6] - 2026-07-09
 
