@@ -14,6 +14,10 @@
 
 - Added prompt-cache write pricing and priority processing metadata for the OpenAI GPT-5.6 direct API variants.
 
+### Fixed
+
+- Restored the current Claude Code user-agent and session identity headers for Anthropic OAuth requests.
+
 ## [0.80.6] - 2026-07-09
 
 ### Added

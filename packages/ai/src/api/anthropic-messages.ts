@@ -70,7 +70,7 @@ function getCacheControl(
 }
 
 // Stealth mode: Mimic Claude Code's tool naming exactly
-const claudeCodeVersion = "2.1.75";
+const claudeCodeVersion = "2.1.207";
 
 // Claude Code 2.x tool names (canonical casing)
 // Source: https://cchistory.mariozechner.at/data/prompts-2.1.11.md
@@ -522,6 +522,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 					options?.headers,
 					copilotDynamicHeaders,
 					cacheSessionId,
+					options?.sessionId,
 				);
 				client = created.client;
 				isOAuth = created.isOAuthToken;
@@ -818,7 +819,8 @@ function createClient(
 	useFineGrainedToolStreamingBeta: boolean,
 	optionsHeaders?: ProviderHeaders,
 	dynamicHeaders?: Record<string, string>,
-	sessionId?: string,
+	cacheSessionId?: string,
+	clientSessionId?: string,
 ): { client: Anthropic; isOAuthToken: boolean } {
 	// Adaptive thinking models have interleaved thinking built in, so skip the beta header.
 	const needsInterleavedBeta = interleavedThinking && model.compat?.forceAdaptiveThinking !== true;
@@ -864,8 +866,9 @@ function createClient(
 					accept: "application/json",
 					"anthropic-dangerous-direct-browser-access": "true",
 					"anthropic-beta": ["claude-code-20250219", "oauth-2025-04-20", ...betaFeatures].join(","),
-					"user-agent": `claude-cli/${claudeCodeVersion}`,
+					"user-agent": `claude-cli/${claudeCodeVersion} (external, cli)`,
 					"x-app": "cli",
+					...(clientSessionId ? { "X-Claude-Code-Session-Id": clientSessionId } : {}),
 				},
 				model.headers,
 				optionsHeaders,
@@ -877,7 +880,9 @@ function createClient(
 
 	// API key or header-owned auth.
 	const sessionAffinityHeaders: ProviderHeaders =
-		sessionId && getAnthropicCompat(model).sendSessionAffinityHeaders ? { "x-session-affinity": sessionId } : {};
+		cacheSessionId && getAnthropicCompat(model).sendSessionAffinityHeaders
+			? { "x-session-affinity": cacheSessionId }
+			: {};
 	const defaultHeaders = mergeHeaders(
 		{
 			accept: "application/json",
