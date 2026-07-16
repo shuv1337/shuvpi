@@ -6,7 +6,7 @@ import {
 	RuntimeErrorSchema,
 } from "../gen/pi_codex_runtime_pb.ts";
 import { encodeFrame, FrameDecoder } from "./framing.ts";
-import { PI_CODEX_PROTOCOL_VERSION } from "./version.ts";
+import { SHUVPI_CODEX_PROTOCOL_VERSION } from "./version.ts";
 
 export interface ProtocolTransport {
 	write(frame: Uint8Array): void;
@@ -77,9 +77,9 @@ export class RuntimeProtocolConnection {
 			this.receiveHandshake(envelope);
 			return;
 		}
-		if (envelope.protocolVersion !== PI_CODEX_PROTOCOL_VERSION) {
+		if (envelope.protocolVersion !== SHUVPI_CODEX_PROTOCOL_VERSION) {
 			throw new ProtocolStateError(
-				`received protocol version ${envelope.protocolVersion} after negotiating ${PI_CODEX_PROTOCOL_VERSION}`,
+				`received protocol version ${envelope.protocolVersion} after negotiating ${SHUVPI_CODEX_PROTOCOL_VERSION}`,
 			);
 		}
 		if (envelope.payload.case === "handshakeRequest" || envelope.payload.case === "handshakeResponse") {
@@ -94,11 +94,14 @@ export class RuntimeProtocolConnection {
 		}
 
 		const request = envelope.payload.value;
-		if (request.minimumVersion > PI_CODEX_PROTOCOL_VERSION || request.maximumVersion < PI_CODEX_PROTOCOL_VERSION) {
+		if (
+			request.minimumVersion > SHUVPI_CODEX_PROTOCOL_VERSION ||
+			request.maximumVersion < SHUVPI_CODEX_PROTOCOL_VERSION
+		) {
 			this.options.transport.write(
 				encodeFrame(
 					create(EnvelopeSchema, {
-						protocolVersion: PI_CODEX_PROTOCOL_VERSION,
+						protocolVersion: SHUVPI_CODEX_PROTOCOL_VERSION,
 						payload: {
 							case: "handshakeResponse",
 							value: create(HandshakeResponseSchema, {
@@ -106,7 +109,7 @@ export class RuntimeProtocolConnection {
 								serverVersion: this.options.serverVersion,
 								error: create(RuntimeErrorSchema, {
 									code: "unsupported_protocol_version",
-									message: `server supports protocol ${PI_CODEX_PROTOCOL_VERSION}; client requested ${request.minimumVersion}-${request.maximumVersion}`,
+									message: `server supports protocol ${SHUVPI_CODEX_PROTOCOL_VERSION}; client requested ${request.minimumVersion}-${request.maximumVersion}`,
 								}),
 							}),
 						},
@@ -120,11 +123,11 @@ export class RuntimeProtocolConnection {
 		this.negotiated = true;
 		this.send(
 			create(EnvelopeSchema, {
-				protocolVersion: PI_CODEX_PROTOCOL_VERSION,
+				protocolVersion: SHUVPI_CODEX_PROTOCOL_VERSION,
 				payload: {
 					case: "handshakeResponse",
 					value: create(HandshakeResponseSchema, {
-						selectedVersion: PI_CODEX_PROTOCOL_VERSION,
+						selectedVersion: SHUVPI_CODEX_PROTOCOL_VERSION,
 						serverName: "pi-codex-runtime",
 						serverVersion: this.options.serverVersion,
 						capabilities: ["sessions", "streaming-events", "host-tools"],

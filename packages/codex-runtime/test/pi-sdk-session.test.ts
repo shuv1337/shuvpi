@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { create } from "@bufbuild/protobuf";
 import { fauxAssistantMessage, fauxToolCall, registerFauxProvider } from "@shuv1337/shuvpi-ai/compat";
-import { AuthStorage, ModelRegistry } from "@shuv1337/shuvpi-coding-agent";
+import { ModelRuntime } from "@shuv1337/shuvpi-coding-agent";
 import { afterEach, describe, expect, it } from "vitest";
 import { HostToolDefinitionSchema, type SessionEvent } from "../src/gen/pi_codex_runtime_pb.ts";
 import { PiSdkSessionFactory } from "../src/sdk/pi-sdk-session.ts";
@@ -52,10 +52,11 @@ describe("PiSdkSessionFactory", () => {
 				},
 			}),
 		);
-		const authStorage = AuthStorage.inMemory();
-		authStorage.setRuntimeApiKey(model.provider, "faux-key");
-		const modelRegistry = ModelRegistry.create(authStorage, join(agentDir, "models.json"));
-		const factory = new PiSdkSessionFactory({ authStorage, modelRegistry });
+		const modelRuntime = await ModelRuntime.create({
+			modelsPath: join(agentDir, "models.json"),
+			allowModelNetwork: false,
+		});
+		const factory = new PiSdkSessionFactory({ modelRuntime });
 		const firstEvents: SessionEvent[] = [];
 		const session = await factory.spawn({
 			sessionId: "codex-child-1",
@@ -154,12 +155,11 @@ describe("PiSdkSessionFactory", () => {
 				},
 			}),
 		);
-		const authStorage = AuthStorage.inMemory();
-		authStorage.setRuntimeApiKey(model.provider, "faux-key");
-		const factory = new PiSdkSessionFactory({
-			authStorage,
-			modelRegistry: ModelRegistry.create(authStorage, join(agentDir, "models.json")),
+		const modelRuntime = await ModelRuntime.create({
+			modelsPath: join(agentDir, "models.json"),
+			allowModelNetwork: false,
 		});
+		const factory = new PiSdkSessionFactory({ modelRuntime });
 		const calls: Array<{ id: string; name: string; argumentsValue: unknown }> = [];
 		const session = await factory.spawn({
 			sessionId: "codex-child-host-tools",

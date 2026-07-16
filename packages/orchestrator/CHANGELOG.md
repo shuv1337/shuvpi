@@ -6,6 +6,10 @@
 
 - Renamed the package and product-facing configuration from `pi` to `shuvpi`.
 
+## [0.80.9] - 2026-07-16
+
+## [0.80.8] - 2026-07-16
+
 ## [0.80.7] - 2026-07-14
 
 ## [0.80.6] - 2026-07-09

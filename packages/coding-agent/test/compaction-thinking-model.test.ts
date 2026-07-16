@@ -15,7 +15,7 @@ import { Agent, type ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
 import { getModel, type Model } from "@shuv1337/shuvpi-ai/compat";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
-import { ModelRegistry } from "../src/core/model-registry.ts";
+import { ModelRuntime } from "../src/core/model-runtime.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
 import { createCodingTools } from "../src/core/tools/index.ts";
@@ -56,7 +56,7 @@ describe.skipIf(!HAS_ANTIGRAVITY_AUTH)("Compaction with thinking models (Antigra
 		}
 	});
 
-	function createSession(
+	async function createSession(
 		modelId: "claude-opus-4-5-thinking" | "claude-sonnet-4-5",
 		thinkingLevel: ThinkingLevel = "high",
 	) {
@@ -85,14 +85,18 @@ describe.skipIf(!HAS_ANTIGRAVITY_AUTH)("Compaction with thinking models (Antigra
 		// settingsManager.applyOverrides({ compaction: { keepRecentTokens: 1 } });
 
 		const authStorage = getRealAuthStorage();
-		const modelRegistry = ModelRegistry.create(authStorage);
+		const modelRuntime = await ModelRuntime.create({
+			credentials: authStorage,
+			modelsPath: null,
+			allowModelNetwork: false,
+		});
 
 		session = new AgentSession({
 			agent,
 			sessionManager,
 			settingsManager,
 			cwd: tempDir,
-			modelRegistry,
+			modelRuntime,
 			resourceLoader: createTestResourceLoader(),
 		});
 
@@ -102,7 +106,7 @@ describe.skipIf(!HAS_ANTIGRAVITY_AUTH)("Compaction with thinking models (Antigra
 	}
 
 	it("should compact successfully with claude-opus-4-5-thinking and thinking level high", async () => {
-		createSession("claude-opus-4-5-thinking", "high");
+		await createSession("claude-opus-4-5-thinking", "high");
 
 		// Send a simple prompt
 		await session.prompt("Write down the first 10 prime numbers.");
@@ -129,7 +133,7 @@ describe.skipIf(!HAS_ANTIGRAVITY_AUTH)("Compaction with thinking models (Antigra
 	}, 180000);
 
 	it("should compact successfully with claude-sonnet-4-5 (non-thinking) for comparison", async () => {
-		createSession("claude-sonnet-4-5", "off");
+		await createSession("claude-sonnet-4-5", "off");
 
 		await session.prompt("Write down the first 10 prime numbers.");
 		await session.agent.waitForIdle();
@@ -166,7 +170,7 @@ describe.skipIf(!HAS_ANTHROPIC_AUTH)("Compaction with thinking models (Anthropic
 		}
 	});
 
-	function createSession(model: Model<any>, thinkingLevel: ThinkingLevel = "high") {
+	async function createSession(model: Model<any>, thinkingLevel: ThinkingLevel = "high") {
 		const agent = new Agent({
 			getApiKey: () => API_KEY,
 			initialState: {
@@ -181,14 +185,18 @@ describe.skipIf(!HAS_ANTHROPIC_AUTH)("Compaction with thinking models (Anthropic
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 
 		const authStorage = getRealAuthStorage();
-		const modelRegistry = ModelRegistry.create(authStorage);
+		const modelRuntime = await ModelRuntime.create({
+			credentials: authStorage,
+			modelsPath: null,
+			allowModelNetwork: false,
+		});
 
 		session = new AgentSession({
 			agent,
 			sessionManager,
 			settingsManager,
 			cwd: tempDir,
-			modelRegistry,
+			modelRuntime,
 			resourceLoader: createTestResourceLoader(),
 		});
 
@@ -199,7 +207,7 @@ describe.skipIf(!HAS_ANTHROPIC_AUTH)("Compaction with thinking models (Anthropic
 
 	it("should compact successfully with claude-sonnet-4-5 and thinking level high", async () => {
 		const model = getModel("anthropic", "claude-sonnet-4-5")!;
-		createSession(model, "high");
+		await createSession(model, "high");
 
 		// Send a simple prompt
 		await session.prompt("Write down the first 10 prime numbers.");

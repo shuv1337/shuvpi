@@ -1,5 +1,6 @@
 import { hostname, platform } from "node:os";
-import { AuthStorage, type OAuthCredential } from "@shuv1337/shuvpi-coding-agent";
+import type { OAuthCredential } from "@shuv1337/shuvpi-ai";
+import { readStoredCredential } from "@shuv1337/shuvpi-coding-agent";
 import { getOrchestratorDir, getSocketPath, VERSION } from "./config.ts";
 import { loadMachine, saveMachine } from "./storage.ts";
 import type { InstanceRecord, MachineRecord, RadiusRegistration } from "./types.ts";
@@ -116,15 +117,9 @@ export function getRadiusOrchestratorBaseUrl(): string {
 	return new URL(DEFAULT_ORCHESTRATOR_BASE_PATH, getRadiusUrl()).toString();
 }
 
-const radiusAuthStorage = AuthStorage.create();
-
 function getStoredRadiusCredential(): OAuthCredential | undefined {
-	radiusAuthStorage.reload();
-	const credential = radiusAuthStorage.get(RADIUS_PROVIDER);
-	if (!credential || credential.type !== "oauth") {
-		return undefined;
-	}
-	return credential;
+	const credential = readStoredCredential(RADIUS_PROVIDER);
+	return credential?.type === "oauth" ? credential : undefined;
 }
 
 export function getRadiusAccessToken(): string {
@@ -133,16 +128,16 @@ export function getRadiusAccessToken(): string {
 		return storedCredential.access;
 	}
 
-	const apiKey = process.env.SHUVPI_RADIUS_API_KEY;
+	const apiKey = process.env.RADIUS_API_KEY;
 	if (apiKey) {
 		return apiKey;
 	}
 
-	throw new Error("Radius credentials are required in ~/.shuvpi/agent/auth.json or SHUVPI_RADIUS_API_KEY");
+	throw new Error("Radius credentials are required in ~/.shuvpi/agent/auth.json or RADIUS_API_KEY");
 }
 
 export function isRadiusEnabled(): boolean {
-	return !!getStoredRadiusCredential()?.access || !!process.env.SHUVPI_RADIUS_API_KEY;
+	return !!getStoredRadiusCredential()?.access || !!process.env.RADIUS_API_KEY;
 }
 
 export class RadiusPresence {
@@ -197,7 +192,7 @@ export class RadiusPresence {
 		}
 		const machine = this.machine ?? loadMachine();
 		if (!machine) {
-			throw new Error("No registered machine available for Shuvpi registration");
+			throw new Error("No registered machine available for Pi registration");
 		}
 		const registered = await post<RegisterShuvpiResponse>("pis/register", {
 			machineId: machine.id,
@@ -301,7 +296,7 @@ export class RadiusPresence {
 			clearTimeout(state.timer);
 		}
 		state.timer = setTimeout(() => {
-			void this.heartbeatInstance(instanceId);
+			void this.heartbeatShuvpi(instanceId);
 		}, delayMs);
 	}
 
@@ -335,7 +330,7 @@ export class RadiusPresence {
 			}
 
 			try {
-				await this.reRegisterMachineAndInstances();
+				await this.reRegisterMachineAndPis();
 			} catch (recoveryError) {
 				this.machineTransientFailureCount += 1;
 				const delayMs = computeBackoffDelayMs(this.machineTransientFailureCount);
@@ -351,7 +346,7 @@ export class RadiusPresence {
 		}
 	}
 
-	private async heartbeatInstance(instanceId: string): Promise<void> {
+	private async heartbeatShuvpi(instanceId: string): Promise<void> {
 		if (!isRadiusEnabled()) {
 			return;
 		}
@@ -370,7 +365,7 @@ export class RadiusPresence {
 			if (!isNotFoundError(error)) {
 				state.transientFailureCount += 1;
 				const delayMs = computeBackoffDelayMs(state.transientFailureCount);
-				logRadiusRetry(`Radius Shuvpi ${instanceId}`, "heartbeat", delayMs, state.transientFailureCount, error);
+				logRadiusRetry(`Radius Pi ${instanceId}`, "heartbeat", delayMs, state.transientFailureCount, error);
 				this.scheduleShuvpiHeartbeat(instanceId, delayMs);
 				return;
 			}
@@ -383,17 +378,17 @@ export class RadiusPresence {
 			}
 
 			try {
-				const recovered = await this.reRegisterInstance(instanceId);
+				const recovered = await this.reRegisterShuvpi(instanceId);
 				if (!recovered) {
 					const delayMs = computeBackoffDelayMs(1);
-					console.error(`Radius Shuvpi ${instanceId} re-registration skipped; retrying in ${delayMs}ms`);
+					console.error(`Radius Pi ${instanceId} re-registration skipped; retrying in ${delayMs}ms`);
 					this.scheduleShuvpiHeartbeat(instanceId, delayMs);
 				}
 			} catch (recoveryError) {
 				state.transientFailureCount += 1;
 				const delayMs = computeBackoffDelayMs(state.transientFailureCount);
 				logRadiusRetry(
-					`Radius Shuvpi ${instanceId}`,
+					`Radius Pi ${instanceId}`,
 					"re-registration",
 					delayMs,
 					state.transientFailureCount,
@@ -404,21 +399,21 @@ export class RadiusPresence {
 		}
 	}
 
-	private async reRegisterMachineAndInstances(): Promise<void> {
+	private async reRegisterMachineAndPis(): Promise<void> {
 		const registered = await this.registerMachine(this.machine?.label);
 		this.startMachineHeartbeat(registered.heartbeatIntervalMs);
 
 		const instances = this.coordinator?.listLiveInstances() ?? [];
 		for (const instance of instances) {
 			try {
-				await this.reRegisterInstance(instance.id);
+				await this.reRegisterShuvpi(instance.id);
 			} catch (error) {
-				console.error(`Radius Shuvpi ${instance.id} re-registration failed: ${formatRadiusError(error)}`);
+				console.error(`Radius Pi ${instance.id} re-registration failed: ${formatRadiusError(error)}`);
 			}
 		}
 	}
 
-	private async reRegisterInstance(instanceId: string): Promise<boolean> {
+	private async reRegisterShuvpi(instanceId: string): Promise<boolean> {
 		const instance = this.coordinator?.getLiveInstance(instanceId);
 		if (!instance) {
 			const state = this.shuvpiHeartbeatStates.get(instanceId);
@@ -432,7 +427,7 @@ export class RadiusPresence {
 		}
 
 		if (!this.machine) {
-			await this.reRegisterMachineAndInstances();
+			await this.reRegisterMachineAndPis();
 			return true;
 		}
 

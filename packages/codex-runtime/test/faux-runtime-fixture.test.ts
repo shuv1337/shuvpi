@@ -3,7 +3,7 @@ import { createFauxRuntimeFixture } from "../src/sdk/faux-runtime-fixture.ts";
 
 describe("createFauxRuntimeFixture", () => {
 	it("creates a selectable in-memory model and cleans up registration", async () => {
-		const fixture = createFauxRuntimeFixture(["fixture reply"]);
+		const fixture = await createFauxRuntimeFixture(["fixture reply"]);
 		try {
 			expect(fixture.provider).toBe("faux");
 			expect(fixture.model).toBe("faux-1");
@@ -12,12 +12,12 @@ describe("createFauxRuntimeFixture", () => {
 		}
 	});
 
-	it("requires at least one scripted response", () => {
-		expect(() => createFauxRuntimeFixture([])).toThrow("at least one response");
+	it("requires at least one scripted response", async () => {
+		await expect(createFauxRuntimeFixture([])).rejects.toThrow("at least one response");
 	});
 
-	it("accepts deterministic host tool calls", () => {
-		const fixture = createFauxRuntimeFixture([
+	it("accepts deterministic host tool calls", async () => {
+		const fixture = await createFauxRuntimeFixture([
 			{ toolCall: { name: "exec_command", arguments: { cmd: "pwd" }, id: "call-1" } },
 			"done",
 		]);

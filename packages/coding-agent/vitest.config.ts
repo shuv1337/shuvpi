@@ -4,6 +4,7 @@ import { defineConfig } from "vitest/config";
 const aiSrcIndex = fileURLToPath(new URL("../ai/src/index.ts", import.meta.url));
 const aiSrcCompat = fileURLToPath(new URL("../ai/src/compat.ts", import.meta.url));
 const aiSrcOAuth = fileURLToPath(new URL("../ai/src/oauth.ts", import.meta.url));
+const aiSrcProviders = fileURLToPath(new URL("../ai/src/providers", import.meta.url));
 const agentSrcIndex = fileURLToPath(new URL("../agent/src/index.ts", import.meta.url));
 const tuiSrcIndex = fileURLToPath(new URL("../tui/src/index.ts", import.meta.url));
 
@@ -22,11 +23,16 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: [
-			{ find: /^@shuv1337\/shuvpi-ai$/, replacement: aiSrcIndex },
-			{ find: /^@shuv1337\/shuvpi-ai\/compat$/, replacement: aiSrcCompat },
-			{ find: /^@shuv1337\/shuvpi-ai\/oauth$/, replacement: aiSrcOAuth },
-			{ find: /^@shuv1337\/shuvpi-agent-core$/, replacement: agentSrcIndex },
-			{ find: /^@shuv1337\/shuvpi-tui$/, replacement: tuiSrcIndex },
+			{ find: /^@earendil-works\/pi-ai$/, replacement: aiSrcIndex },
+			{ find: /^@earendil-works\/pi-ai\/compat$/, replacement: aiSrcCompat },
+			{ find: /^@earendil-works\/pi-ai\/oauth$/, replacement: aiSrcOAuth },
+			{ find: /^@earendil-works\/pi-ai\/providers\/(.+)$/, replacement: `${aiSrcProviders}/$1.ts` },
+			{ find: /^@earendil-works\/pi-agent-core$/, replacement: agentSrcIndex },
+			{ find: /^@earendil-works\/pi-tui$/, replacement: tuiSrcIndex },
+			{ find: /^@mariozechner\/pi-ai$/, replacement: aiSrcIndex },
+			{ find: /^@mariozechner\/pi-ai\/oauth$/, replacement: aiSrcOAuth },
+			{ find: /^@mariozechner\/pi-agent-core$/, replacement: agentSrcIndex },
+			{ find: /^@mariozechner\/pi-tui$/, replacement: tuiSrcIndex },
 		],
 	},
 });

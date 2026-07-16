@@ -6,6 +6,10 @@
 
 - Renamed the package from `@shuv1337/pi-agent-core` to `@shuv1337/shuvpi-agent-core`.
 
+## [0.80.9] - 2026-07-16
+
+## [0.80.8] - 2026-07-16
+
 ## [0.80.7] - 2026-07-14
 
 ### Added
@@ -58,10 +62,10 @@
 
 ### Breaking Changes
 
-- `AgentHarnessOptions.models` is required and is the only auth path: the harness streams turns, compaction, and branch summarization through the provided `Models` instance (`models.streamSimple()`/`completeSimple()`), resolving auth through the providers. `AgentHarnessOptions.getApiKeyAndHeaders` is removed — apps that resolved keys per request now express that as provider auth (`ApiKeyAuth`/`OAuthAuth`) on the providers in the `Models` collection. Build one with `createModels()` + provider factories (or `builtinModels()` from `@shuv1337/pi-ai/providers/all`); tests use `fauxProvider()`.
+- `AgentHarnessOptions.models` is required and is the only auth path: the harness streams turns, compaction, and branch summarization through the provided `Models` instance (`models.streamSimple()`/`completeSimple()`), resolving auth through the providers. `AgentHarnessOptions.getApiKeyAndHeaders` is removed — apps that resolved keys per request now express that as provider auth (`ApiKeyAuth`/`OAuthAuth`) on the providers in the `Models` collection. Build one with `createModels()` + provider factories (or `builtinModels()` from `@earendil-works/pi-ai/providers/all`); tests use `fauxProvider()`.
 - `compact()`, `generateSummary()`, and `generateBranchSummary()` take a `Models` parameter and no longer accept explicit `apiKey`/`headers`.
 - `StreamFn` is defined structurally (`(model, context, options?) => AssistantMessageEventStream | Promise<...>`); `Models.streamSimple` satisfies it.
-- Removed the `@shuv1337/pi-agent-core/base` selective-provider entrypoint; use the root package with an explicit `Models` instance instead.
+- Removed the `@earendil-works/pi-agent-core/base` selective-provider entrypoint; use the root package with an explicit `Models` instance instead.
 
 ### Fixed
 
@@ -80,7 +84,7 @@
 
 ### Added
 
-- Added `@shuv1337/pi-agent-core/base` for bundlers that want to pair the agent core with selective `@shuv1337/pi-ai/base` provider registration ([#5348](https://github.com/earendil-works/pi/pull/5348) by [@FredKSchott](https://github.com/FredKSchott)).
+- Added `@earendil-works/pi-agent-core/base` for bundlers that want to pair the agent core with selective `@earendil-works/pi-ai/base` provider registration ([#5348](https://github.com/earendil-works/pi/pull/5348) by [@FredKSchott](https://github.com/FredKSchott)).
 
 ## [0.79.7] - 2026-06-18
 
@@ -107,10 +111,6 @@
 - Fixed the compaction summarization system prompt to use neutral AI assistant wording for non-coding agents ([#5401](https://github.com/earendil-works/pi/issues/5401)).
 
 ## [0.78.1] - 2026-06-04
-
-### Added
-
-- Added `shouldStopAfterTurn` to `AgentOptions` so `Agent` can forward graceful turn-stop hooks to the low-level agent loop.
 
 ## [0.78.0] - 2026-05-29
 

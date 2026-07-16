@@ -3,13 +3,12 @@ import {
 	type AgentSessionEvent,
 	type AgentSessionRuntime,
 	type AgentToolResult,
-	type AuthStorage,
 	type CreateAgentSessionRuntimeFactory,
 	createAgentSessionFromServices,
 	createAgentSessionRuntime,
 	createAgentSessionServices,
 	getAgentDir,
-	type ModelRegistry,
+	type ModelRuntime,
 	SessionManager,
 	type ToolDefinition,
 } from "@shuv1337/shuvpi-coding-agent";
@@ -40,8 +39,7 @@ type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "
 type SessionEventPayload = Exclude<SessionEvent["event"], { case: undefined }>;
 
 export interface PiSdkSessionFactoryOptions {
-	authStorage?: AuthStorage;
-	modelRegistry?: ModelRegistry;
+	modelRuntime?: ModelRuntime;
 }
 
 export interface SpawnPiSessionOptions {
@@ -127,10 +125,9 @@ export class PiSdkSessionFactory {
 			const services = await createAgentSessionServices({
 				cwd,
 				agentDir,
-				authStorage: this.options.authStorage,
-				modelRegistry: this.options.modelRegistry,
+				modelRuntime: this.options.modelRuntime,
 			});
-			const requestedModel = resolveRequestedModel(services.modelRegistry, options.provider, options.model);
+			const requestedModel = resolveRequestedModel(services.modelRuntime, options.provider, options.model);
 			const customTools = createHostToolDefinitions(options.hostTools ?? [], options.onHostToolCall);
 			return {
 				...(await createAgentSessionFromServices({
@@ -153,7 +150,7 @@ export class PiSdkSessionFactory {
 			sessionManager: options.sessionManager,
 		});
 		await runtime.session.bindExtensions({});
-		if (process.env.PI_CODEX_RUNTIME_DEBUG_HOST_TOOLS === "1") {
+		if (process.env.SHUVPI_CODEX_RUNTIME_DEBUG_HOST_TOOLS === "1") {
 			console.error(
 				JSON.stringify({
 					event: "pi-codex-runtime.host-tools",
@@ -185,7 +182,7 @@ function createHostToolDefinitions(
 			description: definition.description,
 			parameters: parameters as ToolDefinition["parameters"],
 			execute: async (toolCallId, args, signal): Promise<AgentToolResult<unknown>> => {
-				if (process.env.PI_CODEX_RUNTIME_DEBUG_HOST_TOOLS === "1") {
+				if (process.env.SHUVPI_CODEX_RUNTIME_DEBUG_HOST_TOOLS === "1") {
 					console.error(
 						JSON.stringify({
 							event: "pi-codex-runtime.host-tool-call",
@@ -531,14 +528,14 @@ class PiSessionEventMapper {
 	}
 }
 
-function resolveRequestedModel(modelRegistry: ModelRegistry, provider?: string, modelId?: string) {
+function resolveRequestedModel(modelRuntime: ModelRuntime, provider?: string, modelId?: string) {
 	if (!provider && !modelId) {
 		return undefined;
 	}
 	if (!provider || !modelId) {
 		throw new Error("Pi runtime model selection requires both provider and model");
 	}
-	const model = modelRegistry.find(provider, modelId);
+	const model = modelRuntime.getModel(provider, modelId);
 	if (!model) {
 		throw new Error(`Pi model not found: ${provider}/${modelId}`);
 	}

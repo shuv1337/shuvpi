@@ -13,7 +13,7 @@ import {
 	type SessionStatus,
 	SpawnedSessionSchema,
 } from "../gen/pi_codex_runtime_pb.ts";
-import { PI_CODEX_PROTOCOL_VERSION } from "../protocol/version.ts";
+import { SHUVPI_CODEX_PROTOCOL_VERSION } from "../protocol/version.ts";
 import { PiSdkSessionFactory, type ResumePiSessionOptions, type SpawnPiSessionOptions } from "../sdk/pi-sdk-session.ts";
 
 export interface RuntimeResponseSink {
@@ -238,7 +238,7 @@ export class RuntimeDispatcher {
 			try {
 				connection.send(
 					create(EnvelopeSchema, {
-						protocolVersion: PI_CODEX_PROTOCOL_VERSION,
+						protocolVersion: SHUVPI_CODEX_PROTOCOL_VERSION,
 						payload: {
 							case: "hostToolRequest",
 							value: create(HostToolRequestSchema, {
@@ -289,7 +289,7 @@ export class RuntimeDispatcher {
 		trySend(
 			managed.connection,
 			create(EnvelopeSchema, {
-				protocolVersion: PI_CODEX_PROTOCOL_VERSION,
+				protocolVersion: SHUVPI_CODEX_PROTOCOL_VERSION,
 				payload: { case: "event", value: event },
 			}),
 		);
@@ -340,7 +340,7 @@ export class RuntimeDispatcher {
 		trySend(
 			connection,
 			create(EnvelopeSchema, {
-				protocolVersion: PI_CODEX_PROTOCOL_VERSION,
+				protocolVersion: SHUVPI_CODEX_PROTOCOL_VERSION,
 				payload: {
 					case: "response",
 					value: create(RuntimeResponseSchema, { requestId, sessionId, result }),

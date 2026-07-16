@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { getModel } from "@shuv1337/shuvpi-ai/compat";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
-import { ModelRegistry } from "../src/core/model-registry.ts";
+import { ModelRuntime } from "../src/core/model-runtime.ts";
 import { createAgentSession } from "../src/core/sdk.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
@@ -47,9 +47,12 @@ async function createOpenAISession(options?: {
 		throw new Error(`${provider} model not found for test`);
 	}
 
-	const authStorage = AuthStorage.inMemory();
-	authStorage.setRuntimeApiKey(provider, "test-key");
-	const modelRegistry = ModelRegistry.inMemory(authStorage);
+	const authStorage = AuthStorage.inMemory({ [provider]: { type: "api_key", key: "test-key" } });
+	const modelRuntime = await ModelRuntime.create({
+		credentials: authStorage,
+		modelsPath: null,
+		allowModelNetwork: false,
+	});
 	const settingsManager = SettingsManager.inMemory();
 	const sessionManager = SessionManager.inMemory(tempDir);
 
@@ -57,8 +60,7 @@ async function createOpenAISession(options?: {
 		cwd: tempDir,
 		agentDir: tempDir,
 		model,
-		authStorage,
-		modelRegistry,
+		modelRuntime,
 		settingsManager,
 		sessionManager,
 		resourceLoader: options?.resourceLoader ?? createTestResourceLoader(),
@@ -323,7 +325,7 @@ describe("FooterComponent fast-mode indicator", () => {
 				getCwd: () => "/tmp/project",
 			},
 			getContextUsage: () => ({ contextWindow: 200_000, percent: 12.3 }),
-			modelRegistry: {
+			modelRuntime: {
 				isUsingOAuth: () => false,
 			},
 			isFastModeActiveForCurrentModel: () => true,

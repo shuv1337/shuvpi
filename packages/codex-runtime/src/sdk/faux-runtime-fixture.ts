@@ -1,8 +1,8 @@
 import { fauxAssistantMessage, fauxToolCall, registerFauxProvider } from "@shuv1337/shuvpi-ai/compat";
-import { AuthStorage, ModelRegistry } from "@shuv1337/shuvpi-coding-agent";
+import { ModelRuntime } from "@shuv1337/shuvpi-coding-agent";
 import { PiSdkSessionFactory } from "./pi-sdk-session.ts";
 
-export const PI_RUNTIME_FAUX_RESPONSES_ENV = "PI_CODEX_RUNTIME_FAUX_RESPONSES_JSON";
+export const SHUVPI_RUNTIME_FAUX_RESPONSES_ENV = "SHUVPI_CODEX_RUNTIME_FAUX_RESPONSES_JSON";
 
 export interface FauxRuntimeFixture {
 	factory: PiSdkSessionFactory;
@@ -21,7 +21,7 @@ export interface FauxHostToolResponse {
 
 export type FauxRuntimeResponse = string | FauxHostToolResponse;
 
-export function createFauxRuntimeFixture(responses: FauxRuntimeResponse[]): FauxRuntimeFixture {
+export async function createFauxRuntimeFixture(responses: FauxRuntimeResponse[]): Promise<FauxRuntimeFixture> {
 	if (responses.length === 0) {
 		throw new Error("the Pi runtime faux fixture requires at least one response");
 	}
@@ -37,10 +37,8 @@ export function createFauxRuntimeFixture(responses: FauxRuntimeResponse[]): Faux
 		),
 	);
 	const model = faux.getModel();
-	const authStorage = AuthStorage.inMemory();
-	authStorage.setRuntimeApiKey(model.provider, "faux-key");
-	const modelRegistry = ModelRegistry.inMemory(authStorage);
-	modelRegistry.registerProvider(model.provider, {
+	const modelRuntime = await ModelRuntime.create({ modelsPath: null, allowModelNetwork: false });
+	modelRuntime.registerProvider(model.provider, {
 		baseUrl: model.baseUrl,
 		apiKey: "faux-key",
 		api: model.api,
@@ -62,21 +60,21 @@ export function createFauxRuntimeFixture(responses: FauxRuntimeResponse[]): Faux
 		],
 	});
 	return {
-		factory: new PiSdkSessionFactory({ authStorage, modelRegistry }),
+		factory: new PiSdkSessionFactory({ modelRuntime }),
 		provider: model.provider,
 		model: model.id,
 		dispose: () => faux.unregister(),
 	};
 }
 
-export function fauxRuntimeFixtureFromEnvironment(): FauxRuntimeFixture | undefined {
-	const encoded = process.env[PI_RUNTIME_FAUX_RESPONSES_ENV];
+export async function fauxRuntimeFixtureFromEnvironment(): Promise<FauxRuntimeFixture | undefined> {
+	const encoded = process.env[SHUVPI_RUNTIME_FAUX_RESPONSES_ENV];
 	if (!encoded) {
 		return undefined;
 	}
 	const parsed: unknown = JSON.parse(encoded);
 	if (!Array.isArray(parsed) || !parsed.every(isFauxRuntimeResponse)) {
-		throw new Error(`${PI_RUNTIME_FAUX_RESPONSES_ENV} must be an array of strings or host tool responses`);
+		throw new Error(`${SHUVPI_RUNTIME_FAUX_RESPONSES_ENV} must be an array of strings or host tool responses`);
 	}
 	return createFauxRuntimeFixture(parsed);
 }

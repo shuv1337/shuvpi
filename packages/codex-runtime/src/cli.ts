@@ -5,7 +5,7 @@ import { fauxRuntimeFixtureFromEnvironment } from "./sdk/faux-runtime-fixture.ts
 import { RuntimeDispatcher } from "./server/runtime-dispatcher.ts";
 import { UnixRuntimeServer } from "./server/unix-runtime-server.ts";
 
-const SERVER_VERSION = process.env.PI_CODEX_RUNTIME_VERSION ?? "0.80.6";
+const SERVER_VERSION = process.env.SHUVPI_CODEX_RUNTIME_VERSION ?? "0.80.9";
 
 async function main(): Promise<void> {
 	const options = parseRuntimeArguments(process.argv.slice(2));
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
 		return;
 	}
 
-	const fauxFixture = fauxRuntimeFixtureFromEnvironment();
+	const fauxFixture = await fauxRuntimeFixtureFromEnvironment();
 	const dispatcher = new RuntimeDispatcher(fauxFixture?.factory);
 	const server = new UnixRuntimeServer({
 		socketPath: options.socketPath,

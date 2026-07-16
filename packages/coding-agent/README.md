@@ -1,4 +1,9 @@
 <p align="center">
+  <a href="https://pi.dev">
+    <img alt="pi logo" src="https://pi.dev/logo-auto.svg" width="128">
+  </a>
+</p>
+<p align="center">
   <a href="https://discord.com/invite/3cU7Bz4UPx"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
   <a href="https://www.npmjs.com/package/@shuv1337/shuvpi-coding-agent"><img alt="npm" src="https://img.shields.io/npm/v/@shuv1337/shuvpi-coding-agent?style=flat-square" /></a>
 </p>
@@ -7,15 +12,15 @@
 
 ---
 
-Shuvpi is a minimal terminal coding harness. Adapt shuvpi to your workflows, not the other way around, without having to fork and modify shuvpi internals. Extend it with TypeScript [Extensions](#extensions), [Skills](#skills), [Prompt Templates](#prompt-templates), and [Themes](#themes). Put your extensions, skills, prompt templates, and themes in [Shuvpi Packages](#shuvpi-packages) and share them with others via npm or git.
+Pi is a minimal terminal coding harness. Adapt pi to your workflows, not the other way around, without having to fork and modify pi internals. Extend it with TypeScript [Extensions](#extensions), [Skills](#skills), [Prompt Templates](#prompt-templates), and [Themes](#themes). Put your extensions, skills, prompt templates, and themes in [Pi Packages](#pi-packages) and share them with others via npm or git.
 
-Shuvpi ships with powerful defaults but skips features like sub agents and plan mode. Instead, you can ask shuvpi to build what you want or install a third party shuvpi package that matches your workflow.
+Pi ships with powerful defaults but skips features like sub agents and plan mode. Instead, you can ask pi to build what you want or install a third party pi package that matches your workflow.
 
-Shuvpi runs in four modes: interactive, print or JSON, RPC for process integration, and an SDK for embedding in your own apps. See [openclaw/openclaw](https://github.com/openclaw/openclaw) for a real-world SDK integration.
+Pi runs in four modes: interactive, print or JSON, RPC for process integration, and an SDK for embedding in your own apps. See [openclaw/openclaw](https://github.com/openclaw/openclaw) for a real-world SDK integration.
 
 ## Share your OSS coding agent sessions
 
-If you use shuvpi for open source work, please share your coding agent sessions.
+If you use pi for open source work, please share your coding agent sessions.
 
 Public OSS session data helps improve models, prompts, tools, and evaluations using real development workflows.
 
@@ -48,7 +53,7 @@ I regularly publish my own `pi-mono` work sessions here:
   - [Skills](#skills)
   - [Extensions](#extensions)
   - [Themes](#themes)
-  - [Shuvpi Packages](#shuvpi-packages)
+  - [Pi Packages](#pi-packages)
 - [Programmatic Usage](#programmatic-usage)
 - [Philosophy](#philosophy)
 - [CLI Reference](#cli-reference)
@@ -61,23 +66,29 @@ I regularly publish my own `pi-mono` work sessions here:
 npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
 ```
 
-`--ignore-scripts` disables dependency lifecycle scripts during install. Shuvpi does not require install scripts for normal npm installs.
+`--ignore-scripts` disables dependency lifecycle scripts during install. Pi does not require install scripts for normal npm installs.
+
+Installer alternative:
+
+```bash
+curl -fsSL https://pi.dev/install.sh | sh
+```
 
 Authenticate with an API key:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-shuvpi
+pi
 ```
 
 Or use your existing subscription:
 
 ```bash
-shuvpi
+pi
 /login  # Then select provider
 ```
 
-Then just talk to shuvpi. By default, shuvpi gives the model four tools: `read`, `write`, `edit`, and `bash`. The model uses these to fulfill your requests. Add capabilities via [skills](#skills), [prompt templates](#prompt-templates), [extensions](#extensions), or [shuvpi packages](#shuvpi-packages).
+Then just talk to pi. By default, pi gives the model four tools: `read`, `write`, `edit`, and `bash`. The model uses these to fulfill your requests. Add capabilities via [skills](#skills), [prompt templates](#prompt-templates), [extensions](#extensions), or [pi packages](#pi-packages).
 
 **Platform notes:** [Windows](docs/windows.md) | [Termux (Android)](docs/termux.md) | [tmux](docs/tmux.md) | [Terminal setup](docs/terminal-setup.md) | [Shell aliases](docs/shell-aliases.md)
 
@@ -85,7 +96,7 @@ Then just talk to shuvpi. By default, shuvpi gives the model four tools: `read`,
 
 ## Providers & Models
 
-For each built-in provider, shuvpi maintains a list of tool-capable models, updated with every release. Authenticate via subscription (`/login`) or API key, then select any model from that provider via `/model` (or Ctrl+L).
+For each built-in provider, pi maintains a list of tool-capable models. Configured provider catalogs refresh automatically; run `pi update --models` to force an immediate refresh. Authenticate via subscription (`/login`) or API key, then select any model from that provider via `/model` (or Ctrl+L).
 
 **Subscriptions:**
 - Anthropic Claude Pro/Max
@@ -182,7 +193,7 @@ Type `/` in the editor to trigger commands. [Extensions](#extensions) can regist
 | `/reload` | Reload keybindings, extensions, skills, prompts, themes, and context files |
 | `/hotkeys` | Show all keyboard shortcuts |
 | `/changelog` | Display version history |
-| `/quit` | Quit shuvpi |
+| `/quit` | Quit pi |
 
 ### Keyboard Shortcuts
 
@@ -212,7 +223,7 @@ Submit messages while the agent is working:
 - **Escape** aborts and restores queued messages to editor
 - **Alt+Up** retrieves queued messages back to editor
 
-On Windows Terminal, `Alt+Enter` is fullscreen by default. Remap it in [docs/terminal-setup.md](docs/terminal-setup.md) so shuvpi can receive the follow-up shortcut.
+On Windows Terminal, `Alt+Enter` is fullscreen by default. Remap it in [docs/terminal-setup.md](docs/terminal-setup.md) so pi can receive the follow-up shortcut.
 
 Configure delivery in [settings](docs/settings.md): `steeringMode` and `followUpMode` can be `"one-at-a-time"` (default, waits for response) or `"all"` (delivers all queued at once). `transport` selects provider transport preference (`"sse"`, `"websocket"`, or `"auto"`) for providers that support multiple transports.
 
@@ -227,12 +238,12 @@ Sessions are stored as JSONL files with a tree structure. Each entry has an `id`
 Sessions auto-save to `~/.shuvpi/agent/sessions/` organized by working directory.
 
 ```bash
-shuvpi -c                  # Continue most recent session
-shuvpi -r                  # Browse and select from past sessions
-shuvpi --no-session        # Ephemeral mode (don't save)
-shuvpi --name "my task"    # Set session display name at startup
-shuvpi --session <path|id> # Use specific session file or ID
-shuvpi --fork <path|id>    # Fork specific session file or ID into a new session
+pi -c                  # Continue most recent session
+pi -r                  # Browse and select from past sessions
+pi --no-session        # Ephemeral mode (don't save)
+pi --name "my task"    # Set session display name at startup
+pi --session <path|id> # Use specific session file or ID
+pi --fork <path|id>    # Fork specific session file or ID into a new session
 ```
 
 Use `/session` in interactive mode to see the current session ID before reusing it with `--session <id>` or `--fork <id>`.
@@ -279,24 +290,24 @@ See [docs/settings.md](docs/settings.md) for all options.
 
 ### Project Trust
 
-On interactive startup, shuvpi asks before trusting a project folder that contains project-local settings, resources, or project `.agents/skills` and has no saved decision for the folder or a parent folder in `~/.shuvpi/agent/trust.json`. Trusting a project allows shuvpi to load `.shuvpi/settings.json` and `.shuvpi` resources, install missing project packages, and execute project extensions.
+On interactive startup, pi asks before trusting a project folder that contains project-local settings, resources, or project `.agents/skills` and has no saved decision for the folder or a parent folder in `~/.shuvpi/agent/trust.json`. Trusting a project allows pi to load `.shuvpi/settings.json` and `.pi` resources, install missing project packages, and execute project extensions.
 
-Before the trust decision, shuvpi loads only context files, user/global extensions, and CLI `-e` extensions so they can handle the `project_trust` event. Project-local extensions, project package-managed extensions, and project settings are loaded only after the project is trusted. This split also applies when switching to a session from a different cwd whose trust has not been resolved in the current process.
+Before the trust decision, pi loads only context files, user/global extensions, and CLI `-e` extensions so they can handle the `project_trust` event. Project-local extensions, project package-managed extensions, and project settings are loaded only after the project is trusted. This split also applies when switching to a session from a different cwd whose trust has not been resolved in the current process.
 
 Non-interactive modes (`-p`, `--mode json`, and `--mode rpc`) do not show a trust prompt. Without an applicable saved trust decision, they use `defaultProjectTrust` from global settings: `ask` (default) and `never` ignore those project resources, while `always` trusts them. Pass `--approve`/`-a` or `--no-approve`/`-na` to override project trust for one run.
 
 If no extension or saved decision applies, `defaultProjectTrust` controls the fallback behavior. Set it to `"ask"`, `"always"`, or `"never"` in `~/.shuvpi/agent/settings.json`, or change it with `/settings`.
 
-`shuvpi config` and package commands use the same project trust flow, except `shuvpi update` never prompts. Pass `--approve` to trust project-local settings for one command or `--no-approve` to ignore them.
+`pi config` and package commands use the same project trust flow, except `pi update` never prompts. Pass `--approve` to trust project-local settings for one command or `--no-approve` to ignore them.
 
-Use `/trust` in interactive mode to save a project trust decision for future sessions, including trust for the immediate parent folder. It writes `~/.shuvpi/agent/trust.json` only; the current session is not reloaded, so restart shuvpi for changes to take effect.
+Use `/trust` in interactive mode to save a project trust decision for future sessions, including trust for the immediate parent folder. It writes `~/.shuvpi/agent/trust.json` only; the current session is not reloaded, so restart pi for changes to take effect.
 
 ### Telemetry and update checks
 
-Shuvpi has two separate startup features:
+Pi has two separate startup features:
 
-- **Update check:** fetches `https://pi.dev/api/latest-version` to check whether a newer Shuvpi version exists. Disable it with `SHUVPI_SKIP_VERSION_CHECK=1`. Disabling update checks only turns off this check.
-- **Install/update telemetry:** after first install or a changelog-detected update, sends an anonymous version ping to `https://pi.dev/api/report-install`. This setting also controls optional provider attribution headers for OpenRouter, Cloudflare, and direct NVIDIA NIM requests. Opt out by setting `enableInstallTelemetry` to `false` in `settings.json`, or by setting `SHUVPI_TELEMETRY=0`. This does not disable update checks; Shuvpi may still contact `pi.dev` for the latest version unless update checks are disabled or offline mode is enabled.
+- **Update check:** fetches `https://pi.dev/api/latest-version` to check whether a newer Pi version exists. Disable it with `SHUVPI_SKIP_VERSION_CHECK=1`. Disabling update checks only turns off this check.
+- **Install/update telemetry:** after first install or a changelog-detected update, sends an anonymous version ping to `https://pi.dev/api/report-install`. This setting also controls optional provider attribution headers for OpenRouter, Cloudflare, and direct NVIDIA NIM requests. Opt out by setting `enableInstallTelemetry` to `false` in `settings.json`, or by setting `SHUVPI_TELEMETRY=0`. This does not disable update checks; Pi may still contact `pi.dev` for the latest version unless update checks are disabled or offline mode is enabled.
 
 Use `--offline` or `SHUVPI_OFFLINE=1` to disable all startup network operations described here, including update checks, package update checks, and install/update telemetry.
 
@@ -304,7 +315,7 @@ Use `--offline` or `SHUVPI_OFFLINE=1` to disable all startup network operations 
 
 ## Context Files
 
-Shuvpi loads `AGENTS.md` (or `CLAUDE.md`) at startup from:
+Pi loads `AGENTS.md` (or `CLAUDE.md`) at startup from:
 - `~/.shuvpi/agent/AGENTS.md` (global)
 - Parent directories (walking up from cwd)
 - Current directory
@@ -331,7 +342,7 @@ Review this code for bugs, security issues, and performance problems.
 Focus on: {{focus}}
 ```
 
-Place in `~/.shuvpi/agent/prompts/`, `.shuvpi/prompts/`, or a [shuvpi package](#shuvpi-packages) to share with others. See [docs/prompt-templates.md](docs/prompt-templates.md).
+Place in `~/.shuvpi/agent/prompts/`, `.shuvpi/prompts/`, or a [pi package](#pi-packages) to share with others. See [docs/prompt-templates.md](docs/prompt-templates.md).
 
 ### Skills
 
@@ -347,23 +358,23 @@ Use this skill when the user asks about X.
 2. Then that
 ```
 
-Place in `~/.shuvpi/agent/skills/`, `~/.agents/skills/`, `.shuvpi/skills/`, or `.agents/skills/` (from `cwd` up through parent directories) or a [shuvpi package](#shuvpi-packages) to share with others. See [docs/skills.md](docs/skills.md).
+Place in `~/.shuvpi/agent/skills/`, `~/.agents/skills/`, `.shuvpi/skills/`, or `.agents/skills/` (from `cwd` up through parent directories) or a [pi package](#pi-packages) to share with others. See [docs/skills.md](docs/skills.md).
 
 ### Extensions
 
 <p align="center"><img src="docs/images/doom-extension.png" alt="Doom Extension" width="600"></p>
 
-TypeScript modules that extend shuvpi with custom tools, commands, keyboard shortcuts, event handlers, and UI components.
+TypeScript modules that extend pi with custom tools, commands, keyboard shortcuts, event handlers, and UI components.
 
 ```typescript
-export default function (shuvpi: ExtensionAPI) {
-  shuvpi.registerTool({ name: "deploy", ... });
-  shuvpi.registerCommand("stats", { ... });
-  shuvpi.on("tool_call", async (event, ctx) => { ... });
+export default function (pi: ExtensionAPI) {
+  pi.registerTool({ name: "deploy", ... });
+  pi.registerCommand("stats", { ... });
+  pi.on("tool_call", async (event, ctx) => { ... });
 }
 ```
 
-The default export can also be `async`. shuvpi waits for async extension factories before startup continues, which is useful for one-time initialization such as fetching remote model lists before calling `shuvpi.registerProvider()`.
+The default export can also be `async`. pi waits for async extension factories before startup continues, which is useful for one-time initialization such as fetching remote model lists before calling `pi.registerProvider()`.
 
 **What's possible:**
 - Custom tools (or replace built-in tools entirely)
@@ -375,56 +386,57 @@ The default export can also be `async`. shuvpi waits for async extension factori
 - Git checkpointing and auto-commit
 - SSH and sandbox execution
 - MCP server integration
-- Make shuvpi look like Claude Code
+- Make pi look like Claude Code
 - Games while waiting (yes, Doom runs)
 - ...anything you can dream up
 
-Place in `~/.shuvpi/agent/extensions/`, `.shuvpi/extensions/`, or a [shuvpi package](#shuvpi-packages) to share with others. See [docs/extensions.md](docs/extensions.md) and [examples/extensions/](examples/extensions/).
+Place in `~/.shuvpi/agent/extensions/`, `.shuvpi/extensions/`, or a [pi package](#pi-packages) to share with others. See [docs/extensions.md](docs/extensions.md) and [examples/extensions/](examples/extensions/).
 
 ### Themes
 
-Built-in: `dark`, `light`. Themes hot-reload: modify the active theme file and shuvpi immediately applies changes.
+Built-in: `dark`, `light`. Themes hot-reload: modify the active theme file and pi immediately applies changes.
 
-Place in `~/.shuvpi/agent/themes/`, `.shuvpi/themes/`, or a [shuvpi package](#shuvpi-packages) to share with others. See [docs/themes.md](docs/themes.md).
+Place in `~/.shuvpi/agent/themes/`, `.shuvpi/themes/`, or a [pi package](#pi-packages) to share with others. See [docs/themes.md](docs/themes.md).
 
-### Shuvpi Packages
+### Pi Packages
 
-Bundle and share extensions, skills, prompts, and themes via npm or git. Find packages on [npmjs.com](https://www.npmjs.com/search?q=keywords%3Ashuvpi-package) or [Discord](https://discord.com/channels/1456806362351669492/1457744485428629628).
+Bundle and share extensions, skills, prompts, and themes via npm or git. Find packages on [npmjs.com](https://www.npmjs.com/search?q=keywords%3Api-package) or [Discord](https://discord.com/channels/1456806362351669492/1457744485428629628).
 
-> **Security:** Shuvpi packages run with full system access. Extensions execute arbitrary code, and skills can instruct the model to perform any action including running executables. Review source code before installing third-party packages.
+> **Security:** Pi packages run with full system access. Extensions execute arbitrary code, and skills can instruct the model to perform any action including running executables. Review source code before installing third-party packages.
 
 ```bash
-shuvpi install npm:@foo/shuvpi-tools
-shuvpi install npm:@foo/shuvpi-tools@1.2.3      # pinned version
-shuvpi install git:github.com/user/repo
-shuvpi install git:github.com/user/repo@v1  # tag or commit
-shuvpi install git:git@github.com:user/repo
-shuvpi install git:git@github.com:user/repo@v1  # tag or commit
-shuvpi install https://github.com/user/repo
-shuvpi install https://github.com/user/repo@v1      # tag or commit
-shuvpi install ssh://git@github.com/user/repo
-shuvpi install ssh://git@github.com/user/repo@v1    # tag or commit
-shuvpi remove npm:@foo/shuvpi-tools
-shuvpi uninstall npm:@foo/shuvpi-tools          # alias for remove
-shuvpi list
-shuvpi update                               # update shuvpi only
-shuvpi update --all                         # update shuvpi and packages
-shuvpi update --extensions                  # update packages only
-shuvpi update --self                        # update shuvpi only
-shuvpi update --self --force                # reinstall shuvpi even if current
-shuvpi update npm:@foo/shuvpi-tools             # update one package
-shuvpi config                               # enable/disable extensions, skills, prompts, themes
+pi install npm:@foo/pi-tools
+pi install npm:@foo/pi-tools@1.2.3      # pinned version
+pi install git:github.com/user/repo
+pi install git:github.com/user/repo@v1  # tag or commit
+pi install git:git@github.com:user/repo
+pi install git:git@github.com:user/repo@v1  # tag or commit
+pi install https://github.com/user/repo
+pi install https://github.com/user/repo@v1      # tag or commit
+pi install ssh://git@github.com/user/repo
+pi install ssh://git@github.com/user/repo@v1    # tag or commit
+pi remove npm:@foo/pi-tools
+pi uninstall npm:@foo/pi-tools          # alias for remove
+pi list
+pi update                               # update pi only
+pi update --all                         # update pi and packages
+pi update --extensions                  # update packages only
+pi update --models                      # refresh model catalogs only
+pi update --self                        # update pi only
+pi update --self --force                # reinstall pi even if current
+pi update npm:@foo/pi-tools             # update one package
+pi config                               # enable/disable extensions, skills, prompts, themes
 ```
 
-Packages install to `~/.shuvpi/agent/git/` (git) or `~/.shuvpi/agent/npm/` (npm). Use `-l` for project-local installs (`.shuvpi/git/`, `.shuvpi/npm/`). Git `@ref` values are pinned tags or commits; pinned packages are skipped by `shuvpi update --extensions` and `shuvpi update --all`, so use `shuvpi install git:host/user/repo@new-ref` to move an existing package to a new ref. Git packages install dependencies with `npm install --omit=dev` by default, so runtime deps must be listed under `dependencies`; when `npmCommand` is configured, git packages use plain `install` for compatibility with wrappers. If you use a Node version manager and want package installs to reuse a stable npm context, set `npmCommand` in `settings.json`, for example `["mise", "exec", "node@20", "--", "npm"]`.
+Packages install to `~/.shuvpi/agent/git/` (git) or `~/.shuvpi/agent/npm/` (npm). Use `-l` for project-local installs (`.shuvpi/git/`, `.shuvpi/npm/`). Git `@ref` values are pinned tags or commits; pinned packages are skipped by `pi update --extensions` and `pi update --all`, so use `pi install git:host/user/repo@new-ref` to move an existing package to a new ref. Git packages install dependencies with `npm install --omit=dev` by default, so runtime deps must be listed under `dependencies`; when `npmCommand` is configured, git packages use plain `install` for compatibility with wrappers. If you use a Node version manager and want package installs to reuse a stable npm context, set `npmCommand` in `settings.json`, for example `["mise", "exec", "node@20", "--", "npm"]`.
 
-Create a package by adding a `shuvpi` key to `package.json`:
+Create a package by adding a `pi` key to `package.json`:
 
 ```json
 {
-  "name": "my-shuvpi-package",
-  "keywords": ["shuvpi-package"],
-  "shuvpi": {
+  "name": "my-pi-package",
+  "keywords": ["pi-package"],
+  "pi": {
     "extensions": ["./extensions"],
     "skills": ["./skills"],
     "prompts": ["./prompts"],
@@ -433,7 +445,7 @@ Create a package by adding a `shuvpi` key to `package.json`:
 }
 ```
 
-Without a `shuvpi` manifest, shuvpi auto-discovers from conventional directories (`extensions/`, `skills/`, `prompts/`, `themes/`).
+Without a `pi` manifest, pi auto-discovers from conventional directories (`extensions/`, `skills/`, `prompts/`, `themes/`).
 
 See [docs/packages.md](docs/packages.md).
 
@@ -444,14 +456,12 @@ See [docs/packages.md](docs/packages.md).
 ### SDK
 
 ```typescript
-import { AuthStorage, createAgentSession, ModelRegistry, SessionManager } from "@shuv1337/shuvpi-coding-agent";
+import { createAgentSession, ModelRuntime, SessionManager } from "@shuv1337/shuvpi-coding-agent";
 
-const authStorage = AuthStorage.create();
-const modelRegistry = ModelRegistry.create(authStorage);
+const modelRuntime = await ModelRuntime.create();
 const { session } = await createAgentSession({
   sessionManager: SessionManager.inMemory(),
-  authStorage,
-  modelRegistry,
+  modelRuntime,
 });
 
 await session.prompt("What files are in the current directory?");
@@ -466,7 +476,7 @@ See [docs/sdk.md](docs/sdk.md) and [examples/sdk/](examples/sdk/).
 For non-Node.js integrations, use RPC mode over stdin/stdout:
 
 ```bash
-shuvpi --mode rpc
+pi --mode rpc
 ```
 
 RPC mode uses strict LF-delimited JSONL framing. Clients must split records on `\n` only. Do not use generic line readers like Node `readline`, which also split on Unicode separators inside JSON payloads.
@@ -477,11 +487,11 @@ See [docs/rpc.md](docs/rpc.md) for the protocol.
 
 ## Philosophy
 
-Shuvpi is aggressively extensible so it doesn't have to dictate your workflow. Features that other tools bake in can be built with [extensions](#extensions), [skills](#skills), or installed from third-party [shuvpi packages](#shuvpi-packages). This keeps the core minimal while letting you shape shuvpi to fit how you work.
+Pi is aggressively extensible so it doesn't have to dictate your workflow. Features that other tools bake in can be built with [extensions](#extensions), [skills](#skills), or installed from third-party [pi packages](#pi-packages). This keeps the core minimal while letting you shape pi to fit how you work.
 
 **No MCP.** Build CLI tools with READMEs (see [Skills](#skills)), or build an extension that adds MCP support. [Why?](https://mariozechner.at/posts/2025-11-02-what-if-you-dont-need-mcp/)
 
-**No sub-agents.** There's many ways to do this. Spawn shuvpi instances via tmux, or build your own with [extensions](#extensions), or install a package that does it your way.
+**No sub-agents.** There's many ways to do this. Spawn pi instances via tmux, or build your own with [extensions](#extensions), or install a package that does it your way.
 
 **No permission popups.** Run in a container, or build your own confirmation flow with [extensions](#extensions) inline with your environment and security requirements.
 
@@ -498,26 +508,27 @@ Read the [blog post](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/) 
 ## CLI Reference
 
 ```bash
-shuvpi [options] [@files...] [messages...]
+pi [options] [@files...] [messages...]
 ```
 
 ### Package Commands
 
 ```bash
-shuvpi install <source> [-l]     # Install package, -l for project-local
-shuvpi remove <source> [-l]      # Remove package
-shuvpi uninstall <source> [-l]   # Alias for remove
-shuvpi update [source|self|shuvpi]   # Update shuvpi only, or one package source
-shuvpi update --all              # Update shuvpi and packages
-shuvpi update --extensions       # Update packages only
-shuvpi update --self             # Update shuvpi only
-shuvpi update --self --force     # Reinstall shuvpi even if current
-shuvpi update --extension <src>  # Update one package
-shuvpi list                      # List installed packages
-shuvpi config                    # Enable/disable package resources
+pi install <source> [-l]     # Install package, -l for project-local
+pi remove <source> [-l]      # Remove package
+pi uninstall <source> [-l]   # Alias for remove
+pi update [source|self|pi]   # Update pi only, or one package source
+pi update --all              # Update pi and packages
+pi update --extensions       # Update packages only
+pi update --models           # Refresh model catalogs only
+pi update --self             # Update pi only
+pi update --self --force     # Reinstall pi even if current
+pi update --extension <src>  # Update one package
+pi list                      # List installed packages
+pi config                    # Enable/disable package resources
 ```
 
-`shuvpi config` and project package commands accept `--approve`/`--no-approve` to trust or ignore project-local settings for one command. `shuvpi update` never prompts for project trust.
+`pi config` and project package commands accept `--approve`/`--no-approve` to trust or ignore project-local settings for one command. `pi update` never prompts for project trust.
 
 ### Modes
 
@@ -529,10 +540,10 @@ shuvpi config                    # Enable/disable package resources
 | `--mode rpc` | RPC mode for process integration (see [docs/rpc.md](docs/rpc.md)) |
 | `--export <in> [out]` | Export session to HTML |
 
-In print mode, shuvpi also reads piped stdin and merges it into the initial prompt:
+In print mode, pi also reads piped stdin and merges it into the initial prompt:
 
 ```bash
-cat README.md | shuvpi -p "Summarize this text"
+cat README.md | pi -p "Summarize this text"
 ```
 
 ### Model Options
@@ -602,46 +613,46 @@ Combine `--no-*` with explicit flags to load exactly what you need, ignoring set
 Prefix files with `@` to include in the message:
 
 ```bash
-shuvpi @prompt.md "Answer this"
-shuvpi -p @screenshot.png "What's in this image?"
-shuvpi @code.ts @test.ts "Review these files"
+pi @prompt.md "Answer this"
+pi -p @screenshot.png "What's in this image?"
+pi @code.ts @test.ts "Review these files"
 ```
 
 ### Examples
 
 ```bash
 # Interactive with initial prompt
-shuvpi "List all .ts files in src/"
+pi "List all .ts files in src/"
 
 # Non-interactive
-shuvpi -p "Summarize this codebase"
+pi -p "Summarize this codebase"
 
 # Non-interactive with piped stdin
-cat README.md | shuvpi -p "Summarize this text"
+cat README.md | pi -p "Summarize this text"
 
 # Named one-shot session
-shuvpi --name "release audit" -p "Audit this repository"
+pi --name "release audit" -p "Audit this repository"
 
 # Different model
-shuvpi --provider openai --model gpt-4o "Help me refactor"
+pi --provider openai --model gpt-4o "Help me refactor"
 
 # Model with provider prefix (no --provider needed)
-shuvpi --model openai/gpt-4o "Help me refactor"
+pi --model openai/gpt-4o "Help me refactor"
 
 # Model with thinking level shorthand
-shuvpi --model sonnet:high "Solve this complex problem"
+pi --model sonnet:high "Solve this complex problem"
 
 # Limit model cycling
-shuvpi --models "claude-*,gpt-4o"
+pi --models "claude-*,gpt-4o"
 
 # Read-only mode
-shuvpi --tools read,grep,find,ls -p "Review the code"
+pi --tools read,grep,find,ls -p "Review the code"
 
 # Disable one extension or built-in tool while keeping the rest available
-shuvpi --exclude-tools ask_question
+pi --exclude-tools ask_question
 
 # High thinking level
-shuvpi --thinking high "Solve this complex problem"
+pi --thinking high "Solve this complex problem"
 ```
 
 ### Environment Variables
@@ -652,7 +663,7 @@ shuvpi --thinking high "Solve this complex problem"
 | `SHUVPI_CODING_AGENT_SESSION_DIR` | Override session storage directory (overridden by `--session-dir`) |
 | `SHUVPI_PACKAGE_DIR` | Override package directory (useful for Nix/Guix where store paths tokenize poorly) |
 | `SHUVPI_OFFLINE` | Disable startup network operations, including update checks, package update checks, and install/update telemetry |
-| `SHUVPI_SKIP_VERSION_CHECK` | Skip the Shuvpi version update check at startup. This prevents the `pi.dev` latest-version request |
+| `SHUVPI_SKIP_VERSION_CHECK` | Skip the Pi version update check at startup. This prevents the `pi.dev` latest-version request |
 | `SHUVPI_TELEMETRY` | Override install/update telemetry and provider attribution headers. Use `1`/`true`/`yes` to enable or `0`/`false`/`no` to disable. This does not disable update checks |
 | `SHUVPI_CACHE_RETENTION` | Set to `long` for extended prompt cache (Anthropic: 1h, OpenAI: 24h) |
 | `VISUAL`, `EDITOR` | Fallback external editor for Ctrl+G when `externalEditor` is unset; defaults to Notepad on Windows and `nano` elsewhere |
@@ -672,3 +683,9 @@ MIT
 - [@shuv1337/shuvpi-ai](https://www.npmjs.com/package/@shuv1337/shuvpi-ai): Core LLM toolkit
 - [@shuv1337/shuvpi-agent-core](https://www.npmjs.com/package/@shuv1337/shuvpi-agent-core): Agent framework
 - [@shuv1337/shuvpi-tui](https://www.npmjs.com/package/@shuv1337/shuvpi-tui): Terminal UI components
+
+<p align="center">
+  <a href="https://pi.dev">pi.dev</a> domain graciously donated by
+  <br /><br />
+  <a href="https://exe.dev"><img src="docs/images/exy.png" alt="Exy mascot" width="48" /><br />exe.dev</a>
+</p>

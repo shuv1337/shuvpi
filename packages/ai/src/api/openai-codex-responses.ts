@@ -56,17 +56,9 @@ import { buildBaseOptions } from "./simple-options.ts";
 
 const DEFAULT_CODEX_BASE_URL = "https://chatgpt.com/backend-api";
 const JWT_CLAIM_PATH = "https://api.openai.com/auth" as const;
-// Non-xAI Codex defaults to no automatic retries; xAI uses a higher default at the call site.
 const DEFAULT_MAX_RETRIES = 0;
 const BASE_DELAY_MS = 1000;
 const DEFAULT_MAX_RETRY_DELAY_MS = 60_000;
-// Keep a bounded pre-header timeout so zero-event Codex SSE stalls fail instead of
-// leaving callers stuck on "Working..." indefinitely (see #4945). ChatGPT/OpenAI-Codex first-byte
-// is fast, so keep the original tight 20s bound there.
-const DEFAULT_SSE_HEADER_TIMEOUT_MS = 20_000;
-// xAI/grok-composer Responses-API first-byte latency is highly variable (measured 5–15s+ for
-// trivial calls; larger extraction contexts run slower), so give it more headroom before failing.
-const XAI_SSE_HEADER_TIMEOUT_MS = 60_000;
 const DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_MS = 15_000;
 // The Codex backend accepts zstd-compressed request bodies on the SSE responses
 // endpoint (the same endpoint the official Codex client compresses against).
@@ -74,25 +66,6 @@ const REQUEST_COMPRESSION_ZSTD_LEVEL = 3;
 const CODEX_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode"]);
 const WEBSOCKET_MESSAGE_TOO_BIG_CLOSE_CODE = 1009;
 const WEBSOCKET_CONNECTION_LIMIT_REACHED_CODE = "websocket_connection_limit_reached";
-
-/** xAI Grok Composer OAuth uses api.x.ai/v1/responses (not ChatGPT /codex/responses). */
-export function isXaiResponsesTarget(model: Pick<Model<"openai-codex-responses">, "provider" | "baseUrl">): boolean {
-	if (model.provider === "xai-oauth") return true;
-	const base = (model.baseUrl || "").trim().toLowerCase();
-	return base.includes("api.x.ai");
-}
-
-/** Models that accept `reasoning.effort` on xAI /v1/responses (Hermes model_metadata parity). */
-const GROK_EFFORT_CAPABLE_PREFIXES = ["grok-3-mini", "grok-4.20-multi-agent", "grok-4.3", "grok-4.5"] as const;
-
-export function grokSupportsReasoningEffort(modelId: string): boolean {
-	let name = (modelId || "").trim().toLowerCase();
-	if (!name) return false;
-	if (name.includes("/")) {
-		name = name.split("/").pop() ?? name;
-	}
-	return GROK_EFFORT_CAPABLE_PREFIXES.some((prefix) => name.startsWith(prefix));
-}
 
 const CODEX_RESPONSE_STATUSES = new Set<CodexResponseStatus>([
 	"completed",
@@ -279,30 +252,26 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 				throw new Error(`No API key for provider: ${model.provider}`);
 			}
 
-			const isXai = isXaiResponsesTarget(model);
-			const accountId = isXai ? tryExtractChatGptAccountId(apiKey) : extractAccountId(apiKey);
+			const accountId = extractAccountId(apiKey);
 			let body = buildRequestBody(model, context, options);
 			const nextBody = await options?.onPayload?.(body, model);
 			if (nextBody !== undefined) {
 				body = nextBody as RequestBody;
 			}
-			if (isXai) {
-				delete body.service_tier;
-			}
-			const codexSessionId = isXai ? options?.sessionId : clampOpenAIPromptCacheKey(options?.sessionId);
+			const codexSessionId = clampOpenAIPromptCacheKey(options?.sessionId);
 			const websocketRequestId = codexSessionId || createCodexRequestId();
-			const sseHeaders = buildSSEHeaders(model.headers, options?.headers, accountId, apiKey, codexSessionId, isXai);
+			const sseHeaders = buildSSEHeaders(model.headers, options?.headers, accountId, apiKey, codexSessionId);
 			const websocketHeaders = buildWebSocketHeaders(
 				model.headers,
 				options?.headers,
-				accountId ?? "",
+				accountId,
 				apiKey,
 				websocketRequestId,
 			);
 			const bodyJson = JSON.stringify(body);
 			const httpTimeoutMs = normalizeTimeoutMs(options?.timeoutMs);
 			const websocketConnectTimeoutMs = normalizeTimeoutMs(options?.websocketConnectTimeoutMs);
-			const transport = isXai ? "sse" : options?.transport || "auto";
+			const transport = options?.transport || "auto";
 			const websocketDisabledForSession = transport !== "sse" && isWebSocketSseFallbackActive(options?.sessionId);
 			if (websocketDisabledForSession) {
 				recordWebSocketSseFallback(options?.sessionId);
@@ -369,18 +338,19 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 				}
 			}
 
-			// Only the Codex backend accepts zstd-compressed SSE bodies. xAI's
-			// Responses endpoint parses the body as JSON directly.
-			const compressedBody = isXai ? null : compressRequestBodyZstd(bodyJson);
+			// Compress the request body once for the SSE path. The Codex backend
+			// decodes Content-Encoding: zstd; the WebSocket transport above sends the
+			// uncompressed JSON frame, matching the official Codex client.
+			const compressedBody = compressRequestBodyZstd(bodyJson);
 			if (compressedBody) {
 				sseHeaders.set("content-encoding", "zstd");
 			}
-			const sseBody = compressedBody ? new Uint8Array(compressedBody).buffer : bodyJson;
+			const sseBody = compressedBody ? Uint8Array.from(compressedBody) : bodyJson;
 
 			// Fetch with retry logic for rate limits and transient errors
 			let response: Response | undefined;
 			let lastError: Error | undefined;
-			const maxRetries = options?.maxRetries ?? (isXai ? 2 : DEFAULT_MAX_RETRIES);
+			const maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
 
 			for (let attempt = 0; attempt <= maxRetries; attempt++) {
 				if (options?.signal?.aborted) {
@@ -388,13 +358,8 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 				}
 
 				try {
-					const effectiveHeaderTimeoutMs = isXai
-						? XAI_SSE_HEADER_TIMEOUT_MS
-						: httpTimeoutMs !== undefined && httpTimeoutMs > 0
-							? httpTimeoutMs
-							: DEFAULT_SSE_HEADER_TIMEOUT_MS;
 					const headerTimeoutSignal =
-						effectiveHeaderTimeoutMs > 0 ? AbortSignal.timeout(effectiveHeaderTimeoutMs) : undefined;
+						httpTimeoutMs !== undefined && httpTimeoutMs > 0 ? AbortSignal.timeout(httpTimeoutMs) : undefined;
 					const combinedSignal = combineAbortSignals([options?.signal, headerTimeoutSignal]);
 					try {
 						response = await fetch(resolveCodexUrl(model.baseUrl), {
@@ -405,7 +370,7 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 						});
 					} catch (error) {
 						if (headerTimeoutSignal?.aborted && !options?.signal?.aborted) {
-							throw new Error(`Codex SSE response headers timed out after ${effectiveHeaderTimeoutMs}ms`);
+							throw new Error(`Codex SSE response headers timed out after ${httpTimeoutMs}ms`);
 						}
 						throw error;
 					} finally {
@@ -534,39 +499,32 @@ function buildRequestBody(
 		text: { verbosity: options?.textVerbosity || "low" },
 		include: ["reasoning.encrypted_content"],
 		prompt_cache_key: clampOpenAIPromptCacheKey(options?.sessionId),
+		tool_choice: options?.toolChoice ?? "auto",
+		parallel_tool_calls: true,
 	};
 
 	if (options?.temperature !== undefined) {
 		body.temperature = options.temperature;
 	}
 
-	if (options?.serviceTier !== undefined && !isXaiResponsesTarget(model)) {
+	if (options?.serviceTier !== undefined) {
 		body.service_tier = options.serviceTier;
 	}
 
-	// tool_choice / parallel_tool_calls are only valid alongside a non-empty tools array.
-	// xAI rejects tool_choice with no tools.
 	if (toolPlacement.immediate.length > 0) {
 		body.tools = convertResponsesTools(toolPlacement.immediate, { strict: null });
-		body.tool_choice = options?.toolChoice ?? "auto";
-		body.parallel_tool_calls = true;
 	}
 
 	if (options?.reasoningEffort !== undefined) {
-		const isXai = isXaiResponsesTarget(model);
-		if (isXai && !grokSupportsReasoningEffort(model.id)) {
-			// grok-composer-2.5-fast et al. reason natively but 400 on reasoning.effort
-		} else {
-			const effort =
-				options.reasoningEffort === "none"
-					? (model.thinkingLevelMap?.off ?? "none")
-					: (model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort);
-			if (effort !== null) {
-				body.reasoning = {
-					effort,
-					summary: options.reasoningSummary ?? "auto",
-				};
-			}
+		const effort =
+			options.reasoningEffort === "none"
+				? (model.thinkingLevelMap?.off ?? "none")
+				: (model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort);
+		if (effort !== null) {
+			body.reasoning = {
+				effort,
+				summary: options.reasoningSummary ?? "auto",
+			};
 		}
 	}
 
@@ -612,13 +570,9 @@ function resolveCodexServiceTier(
 	return responseServiceTier ?? requestServiceTier;
 }
 
-export function resolveCodexUrl(baseUrl?: string): string {
+function resolveCodexUrl(baseUrl?: string): string {
 	const raw = baseUrl && baseUrl.trim().length > 0 ? baseUrl : DEFAULT_CODEX_BASE_URL;
 	const normalized = raw.replace(/\/+$/, "");
-	if (normalized.includes("api.x.ai")) {
-		if (normalized.endsWith("/responses")) return normalized;
-		return `${normalized}/responses`;
-	}
 	if (normalized.endsWith("/codex/responses")) return normalized;
 	if (normalized.endsWith("/codex")) return `${normalized}/responses`;
 	return `${normalized}/codex/responses`;
@@ -1538,22 +1492,17 @@ async function parseErrorResponse(response: Response): Promise<{ message: string
 // Auth & Headers
 // ============================================================================
 
-function tryExtractChatGptAccountId(token: string): string | undefined {
+function extractAccountId(token: string): string {
 	try {
 		const parts = token.split(".");
-		if (parts.length !== 3) return undefined;
-		const payload = JSON.parse(atob(parts[1])) as Record<string, unknown>;
-		const accountId = (payload?.[JWT_CLAIM_PATH] as { chatgpt_account_id?: string } | undefined)?.chatgpt_account_id;
-		return accountId ? String(accountId) : undefined;
+		if (parts.length !== 3) throw new Error("Invalid token");
+		const payload = JSON.parse(atob(parts[1]));
+		const accountId = payload?.[JWT_CLAIM_PATH]?.chatgpt_account_id;
+		if (!accountId) throw new Error("No account ID in token");
+		return accountId;
 	} catch {
-		return undefined;
+		throw new Error("Failed to extract accountId from token");
 	}
-}
-
-function extractAccountId(token: string): string {
-	const accountId = tryExtractChatGptAccountId(token);
-	if (!accountId) throw new Error("Failed to extract accountId from token");
-	return accountId;
 }
 
 function createCodexRequestId(): string {
@@ -1566,7 +1515,7 @@ function createCodexRequestId(): string {
 function buildBaseCodexHeaders(
 	initHeaders: Record<string, string> | undefined,
 	additionalHeaders: ProviderHeaders | undefined,
-	accountId: string | undefined,
+	accountId: string,
 	token: string,
 ): Headers {
 	const headers = new Headers(initHeaders);
@@ -1578,9 +1527,7 @@ function buildBaseCodexHeaders(
 		}
 	}
 	headers.set("Authorization", `Bearer ${token}`);
-	if (accountId) {
-		headers.set("chatgpt-account-id", accountId);
-	}
+	headers.set("chatgpt-account-id", accountId);
 	headers.set("originator", "shuvpi");
 	const userAgent = _os ? `shuvpi (${_os.platform()} ${_os.release()}; ${_os.arch()})` : "shuvpi (browser)";
 	headers.set("User-Agent", userAgent);
@@ -1590,25 +1537,18 @@ function buildBaseCodexHeaders(
 function buildSSEHeaders(
 	initHeaders: Record<string, string> | undefined,
 	additionalHeaders: ProviderHeaders | undefined,
-	accountId: string | undefined,
+	accountId: string,
 	token: string,
 	sessionId?: string,
-	isXai?: boolean,
 ): Headers {
 	const headers = buildBaseCodexHeaders(initHeaders, additionalHeaders, accountId, token);
-	if (!isXai) {
-		headers.set("OpenAI-Beta", "responses=experimental");
-	}
+	headers.set("OpenAI-Beta", "responses=experimental");
 	headers.set("accept", "text/event-stream");
 	headers.set("content-type", "application/json");
 
 	if (sessionId) {
-		if (isXai) {
-			headers.set("x-grok-conv-id", sessionId);
-		} else {
-			headers.set("session-id", sessionId);
-			headers.set("x-client-request-id", sessionId);
-		}
+		headers.set("session-id", sessionId);
+		headers.set("x-client-request-id", sessionId);
 	}
 
 	return headers;

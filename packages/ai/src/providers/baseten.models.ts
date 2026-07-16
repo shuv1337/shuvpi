@@ -210,7 +210,7 @@ export const BASETEN_MODELS = {
 			cacheRead: 0.3,
 			cacheWrite: 0,
 		},
-		contextWindow: 202720,
-		maxTokens: 202720,
+		contextWindow: 256000,
+		maxTokens: 256000,
 	} satisfies Model<"openai-completions">,
 } as const;

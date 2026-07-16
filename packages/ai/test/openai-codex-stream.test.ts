@@ -40,11 +40,8 @@ function decodeCodexRequestBody(body: RequestInit["body"] | undefined): Record<s
 	if (typeof body === "string") {
 		return JSON.parse(body) as Record<string, unknown>;
 	}
-	if (body instanceof ArrayBuffer) {
-		return JSON.parse(Buffer.from(zstdDecompressSync(new Uint8Array(body))).toString("utf8")) as Record<
-			string,
-			unknown
-		>;
+	if (body instanceof Uint8Array) {
+		return JSON.parse(Buffer.from(zstdDecompressSync(body)).toString("utf8")) as Record<string, unknown>;
 	}
 	return null;
 }
@@ -98,7 +95,7 @@ function buildSSEPayload({
 
 describe("openai-codex streaming", () => {
 	it("streams SSE responses into AssistantMessageEventStream", async () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-codex-stream-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
 		const payload = Buffer.from(
@@ -209,7 +206,7 @@ describe("openai-codex streaming", () => {
 	});
 
 	it("completes after response.completed even when the SSE body stays open", async () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-codex-stream-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 		const token = mockToken();
 		const encoder = new TextEncoder();
@@ -269,7 +266,7 @@ describe("openai-codex streaming", () => {
 	});
 
 	it("maps response.incomplete to stopReason length even when the SSE body stays open", async () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-codex-stream-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 		const token = mockToken();
 		const encoder = new TextEncoder();
@@ -493,7 +490,7 @@ describe("openai-codex streaming", () => {
 	});
 
 	it("sets session-id/x-client-request-id headers and prompt_cache_key when sessionId is provided", async () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-codex-stream-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
 		const payload = Buffer.from(
@@ -692,7 +689,7 @@ describe("openai-codex streaming", () => {
 	});
 
 	it("preserves gpt-5.5 xhigh reasoning effort from simple options", async () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-codex-stream-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 		const token = mockToken();
 		const sse = buildSSEPayload({ status: "completed" });
@@ -808,7 +805,7 @@ describe("openai-codex streaming", () => {
 	});
 
 	it.each(["gpt-5.3-codex", "gpt-5.4", "gpt-5.5"])("clamps %s minimal reasoning effort to low", async (modelId) => {
-		const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-codex-stream-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
 		const payload = Buffer.from(
@@ -915,7 +912,7 @@ describe("openai-codex streaming", () => {
 	] as const)(
 		"uses the client-sent %s service tier for %s when Codex echoes default",
 		async (modelId, serviceTier, multiplier) => {
-			const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-codex-stream-"));
+			const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 			process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 			const token = mockToken();
 			const sse = `${[
@@ -1007,7 +1004,7 @@ describe("openai-codex streaming", () => {
 	);
 
 	it("does not set session-id/x-client-request-id headers when sessionId is not provided", async () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-codex-stream-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
 		const payload = Buffer.from(
@@ -1885,7 +1882,7 @@ describe("openai-codex streaming", () => {
 		const sse = buildSSEPayload({ status: "completed" });
 
 		let capturedEncoding: string | null = null;
-		let capturedBody: ArrayBuffer | string | undefined;
+		let capturedBody: Uint8Array | string | undefined;
 
 		const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
 			const url = typeof input === "string" ? input : input.toString();
@@ -1894,7 +1891,7 @@ describe("openai-codex streaming", () => {
 			}
 			const headers = init?.headers instanceof Headers ? init.headers : undefined;
 			capturedEncoding = headers?.get("content-encoding") ?? null;
-			capturedBody = init?.body as ArrayBuffer | string | undefined;
+			capturedBody = init?.body as Uint8Array | string | undefined;
 			return new Response(
 				new ReadableStream<Uint8Array>({
 					start(controller) {
@@ -1931,10 +1928,8 @@ describe("openai-codex streaming", () => {
 		).result();
 
 		expect(capturedEncoding).toBe("zstd");
-		expect(capturedBody).toBeInstanceOf(ArrayBuffer);
-		const decoded = JSON.parse(
-			Buffer.from(zstdDecompressSync(new Uint8Array(capturedBody as ArrayBuffer))).toString("utf8"),
-		) as {
+		expect(capturedBody).toBeInstanceOf(Uint8Array);
+		const decoded = JSON.parse(Buffer.from(zstdDecompressSync(capturedBody as Uint8Array)).toString("utf8")) as {
 			input: Array<{ content: Array<{ text: string }> }>;
 		};
 		expect(decoded.input[0].content[0].text).toBe(largeText);
@@ -1951,56 +1946,7 @@ describe("openai-codex streaming", () => {
 		).result();
 
 		expect(capturedEncoding).toBe("zstd");
-		expect(capturedBody).toBeInstanceOf(ArrayBuffer);
-	});
-
-	it("sends uncompressed JSON to xAI Responses", async () => {
-		const encoder = new TextEncoder();
-		const sse = buildSSEPayload({ status: "completed" });
-		let capturedEncoding: string | null = null;
-		let capturedBody: RequestInit["body"];
-
-		vi.stubGlobal(
-			"fetch",
-			vi.fn(async (input: string | URL, init?: RequestInit) => {
-				expect(input.toString()).toBe("https://api.x.ai/v1/responses");
-				const headers = init?.headers instanceof Headers ? init.headers : undefined;
-				capturedEncoding = headers?.get("content-encoding") ?? null;
-				capturedBody = init?.body;
-				return new Response(
-					new ReadableStream<Uint8Array>({
-						start(controller) {
-							controller.enqueue(encoder.encode(sse));
-							controller.close();
-						},
-					}),
-					{ status: 200, headers: { "content-type": "text/event-stream" } },
-				);
-			}),
-		);
-
-		const model: Model<"openai-codex-responses"> = {
-			id: "grok-4.5",
-			name: "Grok 4.5",
-			api: "openai-codex-responses",
-			provider: "xai-oauth",
-			baseUrl: "https://api.x.ai/v1",
-			reasoning: true,
-			input: ["text"],
-			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-			contextWindow: 500000,
-			maxTokens: 500000,
-		};
-
-		await streamOpenAICodexResponses(
-			model,
-			{ systemPrompt: "You are a helpful assistant.", messages: [{ role: "user", content: "ping", timestamp: 1 }] },
-			{ apiKey: "xai-access-token", transport: "sse" },
-		).result();
-
-		expect(capturedEncoding).toBeNull();
-		expect(typeof capturedBody).toBe("string");
-		expect(JSON.parse(capturedBody as string)).toMatchObject({ model: "grok-4.5" });
+		expect(capturedBody).toBeInstanceOf(Uint8Array);
 	});
 
 	it("uses exponential backoff across repeated SSE retries without retry headers", async () => {

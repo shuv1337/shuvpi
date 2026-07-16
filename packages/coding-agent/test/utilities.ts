@@ -1,3 +1,4 @@
+import { createModelRegistry, getModelRuntime } from "./model-runtime-test-utils.ts";
 /**
  * Shared test utilities for coding-agent tests.
  */
@@ -6,8 +7,9 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync }
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Agent } from "@shuv1337/shuvpi-agent-core";
-import { getModel, type OAuthCredentials, type OAuthProvider } from "@shuv1337/shuvpi-ai/compat";
-import { getOAuthApiKey } from "@shuv1337/shuvpi-ai/oauth";
+import type { OAuthCredentials } from "@shuv1337/shuvpi-ai";
+import { getModel } from "@shuv1337/shuvpi-ai/compat";
+import { builtinProviders } from "@shuv1337/shuvpi-ai/providers/all";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { createEventBus } from "../src/core/event-bus.ts";
@@ -18,7 +20,6 @@ import type {
 	LoadExtensionsResult,
 } from "../src/core/extensions/index.ts";
 import { createExtensionRuntime, loadExtensionFromFactory } from "../src/core/extensions/loader.ts";
-import { ModelRegistry } from "../src/core/model-registry.ts";
 import type { ResourceLoader } from "../src/core/resource-loader.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
@@ -88,23 +89,15 @@ export async function resolveApiKey(provider: string): Promise<string | undefine
 	}
 
 	if (entry.type === "oauth") {
-		// Build OAuthCredentials record for getOAuthApiKey
-		const oauthCredentials: Record<string, OAuthCredentials> = {};
-		for (const [key, value] of Object.entries(storage)) {
-			if (value.type === "oauth") {
-				const { type: _, ...creds } = value;
-				oauthCredentials[key] = creds;
-			}
+		const oauth = builtinProviders().find((candidate) => candidate.id === provider)?.auth.oauth;
+		if (!oauth) return undefined;
+		let credential = entry;
+		if (Date.now() >= credential.expires) {
+			credential = await oauth.refresh(credential);
+			storage[provider] = credential;
+			saveAuthStorage(storage);
 		}
-
-		const result = await getOAuthApiKey(provider as OAuthProvider, oauthCredentials);
-		if (!result) return undefined;
-
-		// Save refreshed credentials back to auth.json
-		storage[provider] = { type: "oauth", ...result.newCredentials };
-		saveAuthStorage(storage);
-
-		return result.apiKey;
+		return (await oauth.toAuth(credential)).apiKey;
 	}
 
 	return undefined;
@@ -118,7 +111,7 @@ export function hasAuthForProvider(provider: string): boolean {
 	return provider in storage;
 }
 
-/** Path to the real shuvpi agent config directory */
+/** Path to the real pi agent config directory */
 export const SHUVPI_AGENT_DIR = join(homedir(), ".shuvpi", "agent");
 
 /**
@@ -241,8 +234,8 @@ export function createTestResourceLoader(options: CreateTestResourceLoaderOption
  * Create an AgentSession for testing with proper setup and cleanup.
  * Use this for e2e tests that need real LLM calls.
  */
-export function createTestSession(options: TestSessionOptions = {}): TestSessionContext {
-	const tempDir = join(tmpdir(), `shuvpi-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+export async function createTestSession(options: TestSessionOptions = {}): Promise<TestSessionContext> {
+	const tempDir = join(tmpdir(), `pi-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 
 	const model = getModel("anthropic", "claude-sonnet-4-5")!;
@@ -263,14 +256,14 @@ export function createTestSession(options: TestSessionOptions = {}): TestSession
 	}
 
 	const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
-	const modelRegistry = ModelRegistry.create(authStorage, tempDir);
+	const modelRegistry = await createModelRegistry(authStorage, tempDir);
 
 	const session = new AgentSession({
 		agent,
 		sessionManager,
 		settingsManager,
 		cwd: tempDir,
-		modelRegistry,
+		modelRuntime: getModelRuntime(modelRegistry),
 		resourceLoader: createTestResourceLoader(),
 	});
 

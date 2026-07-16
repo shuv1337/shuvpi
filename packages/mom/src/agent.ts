@@ -2,12 +2,11 @@ import { Agent, type AgentEvent } from "@shuv1337/shuvpi-agent-core";
 import { getModel, type ImageContent } from "@shuv1337/shuvpi-ai/compat";
 import {
 	AgentSession,
-	AuthStorage,
 	convertToLlm,
 	createExtensionRuntime,
 	formatSkillsForPrompt,
 	loadSkillsFromDir,
-	ModelRegistry,
+	ModelRuntime,
 	type ResourceLoader,
 	SessionManager,
 	type Skill,
@@ -42,8 +41,8 @@ export interface AgentRunner {
 	abort(): void;
 }
 
-async function getAnthropicApiKey(authStorage: AuthStorage): Promise<string> {
-	const key = await authStorage.getApiKey("anthropic");
+async function getAnthropicApiKey(modelRuntime: ModelRuntime): Promise<string> {
+	const key = (await modelRuntime.getAuth("anthropic"))?.auth.apiKey;
 	if (!key) {
 		throw new Error(
 			"No API key found for anthropic.\n\n" +
@@ -399,7 +398,13 @@ export function getOrCreateRunner(sandboxConfig: SandboxConfig, channelId: strin
 	const existing = channelRunners.get(channelId);
 	if (existing) return existing;
 
-	const runner = createRunner(sandboxConfig, channelId, channelDir);
+	const runnerPromise = createRunner(sandboxConfig, channelId, channelDir);
+	const runner: AgentRunner = {
+		run: async (ctx, store, pendingMessages) => (await runnerPromise).run(ctx, store, pendingMessages),
+		abort: () => {
+			void runnerPromise.then((initialized) => initialized.abort());
+		},
+	};
 	channelRunners.set(channelId, runner);
 	return runner;
 }
@@ -408,7 +413,7 @@ export function getOrCreateRunner(sandboxConfig: SandboxConfig, channelId: strin
  * Create a new AgentRunner for a channel.
  * Sets up the session and subscribes to events once.
  */
-function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDir: string): AgentRunner {
+async function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDir: string): Promise<AgentRunner> {
 	const executor = createExecutor(sandboxConfig);
 	const workspacePath = executor.getWorkspacePath(channelDir.replace(`/${channelId}`, ""));
 
@@ -426,10 +431,12 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 	const sessionManager = SessionManager.open(contextFile, channelDir);
 	const settingsManager = createMomSettingsManager(join(channelDir, ".."));
 
-	// Create AuthStorage and ModelRegistry
+	// Create the canonical model/auth runtime.
 	// Auth stored outside workspace so agent can't access it
-	const authStorage = AuthStorage.create(join(homedir(), ".shuvpi", "mom", "auth.json"));
-	const modelRegistry = ModelRegistry.create(authStorage);
+	const modelRuntime = await ModelRuntime.create({
+		authPath: join(homedir(), ".shuvpi", "mom", "auth.json"),
+		modelsPath: null,
+	});
 
 	// Create agent
 	const agent = new Agent({
@@ -440,7 +447,7 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 			tools,
 		},
 		convertToLlm,
-		getApiKey: async () => getAnthropicApiKey(authStorage),
+		getApiKey: async () => getAnthropicApiKey(modelRuntime),
 	});
 
 	// Load existing messages
@@ -470,7 +477,7 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 		sessionManager,
 		settingsManager,
 		cwd: process.cwd(),
-		modelRegistry,
+		modelRuntime,
 		resourceLoader,
 		baseToolsOverride,
 	});
