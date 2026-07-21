@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 
+import runtimePackage from "../package.json" with { type: "json" };
 import { parseRuntimeArguments } from "./cli-args.ts";
+import { initializeStandaloneRuntime } from "./runtime-initialization.ts";
 import { fauxRuntimeFixtureFromEnvironment } from "./sdk/faux-runtime-fixture.ts";
 import { RuntimeDispatcher } from "./server/runtime-dispatcher.ts";
 import { UnixRuntimeServer } from "./server/unix-runtime-server.ts";
 
-const SERVER_VERSION = process.env.SHUVPI_CODEX_RUNTIME_VERSION ?? "0.80.9";
+// The sidecar owns the wire handshake, so its bundled manifest is the only
+// authoritative version. Reading the coding-agent dependency version here can
+// drift when package-manager ranges resolve a newer compatible SDK release.
+const SERVER_VERSION = process.env.SHUVPI_CODEX_RUNTIME_VERSION ?? runtimePackage.version;
+
+initializeStandaloneRuntime();
 
 async function main(): Promise<void> {
 	const options = parseRuntimeArguments(process.argv.slice(2));

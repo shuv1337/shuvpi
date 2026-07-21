@@ -7,14 +7,16 @@
 Preserve these integration invariants across upstream Pi merges:
 
 - Create sessions with `noTools: "all"` and expose only Codex host-backed custom tools. Pi must not directly execute filesystem, process, network, or approval-sensitive built-ins.
-- Provider/model selection comes from the Codex role's `runtime_config`; both values are required together and must resolve through Pi's `ModelRegistry`.
+- Provider/model selection comes from the Codex role's `runtime_config`; both values are required together and must resolve through Pi's `ModelRuntime`.
 - Credentials stay in the normal ShuvPi auth surface (`~/.shuvpi/agent/auth.json` by default) or provider environment variables. Never copy credentials into the sidecar package, protocol, fixtures, or Codex history.
 - Persist stable Pi session locators and resume through the SDK session manager. Keep provider, model, thinking level, token usage, lifecycle events, errors, cancellation, and tool calls honest at the protocol boundary.
 - Keep `packages/codex-runtime/proto/pi_codex_runtime.proto` synchronized with `codex-rs/ext/pi-runtime/proto/pi_codex_runtime.proto` in the Codex fork. Intentional wire changes require a protocol-version bump, regenerated bindings, and compatibility tests on both sides.
 
-When merging upstream Pi, pay particular attention to package renames, `createAgentSessionServices` / `createAgentSessionRuntime` APIs, `AuthStorage`, `ModelRegistry`, `SessionManager`, `AgentSessionEvent`, thinking-level maps, and custom-tool signatures. Rebuild the prerequisite `tui`, `ai`, `agent`, and `coding-agent` workspaces before judging sidecar failures; stale ignored `dist/` output can make the source and workspace links disagree.
+When merging upstream Pi, pay particular attention to package renames, `createAgentSessionServices` / `createAgentSessionRuntime` APIs, `ModelRuntime`, credential storage, `SessionManager`, `AgentSessionEvent`, thinking-level maps, and custom-tool signatures. Rebuild the prerequisite `tui`, `ai`, `agent`, and `coding-agent` workspaces before judging sidecar failures; stale ignored `dist/` output can make the source and workspace links disagree.
 
-The focused sidecar release gate generates bindings, builds `packages/codex-runtime`, and runs its seven test files (currently 21 tests). Tests must continue proving framing/negotiation, SDK-only session creation, built-in tool exclusion, host-tool round trips, event mapping, persistence/resume, cancellation, malformed input, concurrency, and clean shutdown.
+The sidecar handshake version comes from its statically bundled `packages/codex-runtime/package.json`; do not derive it from a dependency version or replace it with a manually bumped literal. `SHUVPI_CODEX_RUNTIME_VERSION` remains an explicit test/development override. Build release candidates with `npm run build:binary -w packages/codex-runtime` and verify `packages/codex-runtime/dist/pi-codex-runtime --version` before installation.
+
+The focused sidecar release gate generates bindings, builds `packages/codex-runtime`, and runs its eight test files (currently 24 tests). Tests must continue proving framing/negotiation, SDK-only session creation, bundled OAuth registration, built-in tool exclusion, host-tool round trips, event mapping, persistence/resume, cancellation, malformed input, concurrency, and clean shutdown.
 
 ## Conversational Style
 

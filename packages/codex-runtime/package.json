@@ -22,8 +22,9 @@
 	],
 	"scripts": {
 		"clean": "shx rm -rf dist",
-		"generate": "shx mkdir -p src/gen && protoc -I proto --es_out src/gen --es_opt target=ts,import_extension=js proto/pi_codex_runtime.proto && biome format --write src/gen/pi_codex_runtime_pb.ts",
+		"generate": "shx mkdir -p src/gen && protoc -I proto --es_out src/gen --es_opt target=ts,import_extension=js proto/pi_codex_runtime.proto && biome check --write src/gen/pi_codex_runtime_pb.ts",
 		"build": "npm run generate && tsgo -p tsconfig.build.json && shx chmod +x dist/cli.js",
+		"build:binary": "npm run build && bun build --compile ./dist/cli.js --outfile dist/pi-codex-runtime",
 		"test": "vitest --run",
 		"prepublishOnly": "npm run clean && npm run build"
 	},

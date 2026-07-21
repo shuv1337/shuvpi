@@ -127,19 +127,34 @@ export class PiSdkSessionFactory {
 				agentDir,
 				modelRuntime: this.options.modelRuntime,
 			});
-			const requestedModel = resolveRequestedModel(services.modelRuntime, options.provider, options.model);
+			const savedModel = sessionManager.buildSessionContext().model;
+			const migrateLegacyXaiModel =
+				options.provider === undefined &&
+				options.model === undefined &&
+				savedModel?.provider === "xai-oauth" &&
+				savedModel.modelId === "grok-4.5";
+			const requestedProvider = migrateLegacyXaiModel ? "xai" : options.provider;
+			const requestedModelId = migrateLegacyXaiModel ? "grok-4.5" : options.model;
+			const requestedModel = resolveRequestedModel(services.modelRuntime, requestedProvider, requestedModelId);
+			if (migrateLegacyXaiModel && !services.modelRuntime.hasConfiguredAuth("xai")) {
+				throw new Error("Pi legacy session model migration requires configured auth: xai/grok-4.5");
+			}
 			const customTools = createHostToolDefinitions(options.hostTools ?? [], options.onHostToolCall);
+			const created = await createAgentSessionFromServices({
+				services,
+				sessionManager,
+				sessionStartEvent,
+				model: requestedModel,
+				thinkingLevel: options.thinkingLevel,
+				noTools: "all",
+				customTools,
+				tools: customTools.map((tool) => tool.name),
+			});
+			if (migrateLegacyXaiModel) {
+				sessionManager.appendModelChange("xai", "grok-4.5");
+			}
 			return {
-				...(await createAgentSessionFromServices({
-					services,
-					sessionManager,
-					sessionStartEvent,
-					model: requestedModel,
-					thinkingLevel: options.thinkingLevel,
-					noTools: "all",
-					customTools,
-					tools: customTools.map((tool) => tool.name),
-				})),
+				...created,
 				services,
 				diagnostics: services.diagnostics,
 			};
