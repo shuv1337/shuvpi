@@ -2,66 +2,28 @@
 	"extends": "./tsconfig.base.json",
 	"compilerOptions": {
 		"noEmit": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 		"paths": {
-			"*": [
-				"./*"
-			],
-			"@shuv1337/shuvpi-ai": [
-				"./packages/ai/src/index.ts"
-			],
-			"@shuv1337/shuvpi-ai/oauth": [
-				"./packages/ai/src/oauth.ts"
-			],
-			"@shuv1337/shuvpi-ai/*": [
-				"./packages/ai/src/*.ts",
-				"./packages/ai/src/providers/*.ts"
-			],
-			"@shuv1337/shuvpi-ai/dist/*": [
-				"./packages/ai/src/*"
-			],
-			"@shuv1337/shuvpi-agent-core": [
-				"./packages/agent/src/index.ts"
-			],
-			"@shuv1337/shuvpi-agent-core/*": [
-				"./packages/agent/src/*"
-			],
-			"@shuv1337/shuvpi-coding-agent": [
-				"./packages/coding-agent/src/index.ts"
-			],
-			"@shuv1337/shuvpi-coding-agent/hooks": [
-				"./packages/coding-agent/src/core/hooks/index.ts"
-			],
-			"@shuv1337/shuvpi-coding-agent/*": [
-				"./packages/coding-agent/src/*"
-			],
-			"@shuv1337/shuvpi-orchestrator": [
-				"./packages/orchestrator/src/index.ts"
-			],
-			"@shuv1337/shuvpi-orchestrator/*": [
-				"./packages/orchestrator/src/*"
-			],
-			"typebox": [
-				"./node_modules/typebox"
-			],
-			"@shuv1337/shuvpi-tui": [
-				"./packages/tui/src/index.ts"
-			],
-			"@shuv1337/shuvpi-tui/*": [
-				"./packages/tui/src/*"
-			],
-			"@shuv1337/shuvpi-ai/compat": [
-				"./packages/ai/src/compat.ts"
-			]
+			"*": ["./*"],
+			"@shuv1337/shuvpi-ai": ["./packages/ai/src/index.ts"],
+			"@shuv1337/shuvpi-ai/oauth": ["./packages/ai/src/oauth.ts"],
+			"@shuv1337/shuvpi-ai/*": ["./packages/ai/src/*.ts", "./packages/ai/src/providers/*.ts"],
+			"@shuv1337/shuvpi-ai/dist/*": ["./packages/ai/src/*"],
+			"@shuv1337/shuvpi-agent-core": ["./packages/agent/src/index.ts"],
+			"@shuv1337/shuvpi-agent-core/*": ["./packages/agent/src/*"],
+			"@shuv1337/shuvpi-storage-sqlite-node": ["./packages/storage/sqlite-node/src/index.ts"],
+			"@shuv1337/shuvpi-coding-agent": ["./packages/coding-agent/src/index.ts"],
+			"@shuv1337/shuvpi-coding-agent/hooks": ["./packages/coding-agent/src/core/hooks/index.ts"],
+			"@shuv1337/shuvpi-coding-agent/*": ["./packages/coding-agent/src/*"],
+			"@shuv1337/shuvpi-server": ["./packages/server/src/index.ts"],
+			"@shuv1337/shuvpi-server/*": ["./packages/server/src/*"],
+			"typebox": ["./node_modules/typebox"],
+			"@shuv1337/shuvpi-tui": ["./packages/tui/src/index.ts"],
+			"@shuv1337/shuvpi-tui/*": ["./packages/tui/src/*"],
+			"@shuv1337/shuvpi-ai/compat": ["./packages/ai/src/compat.ts"]
 		}
 	},
-	"include": [
-		"packages/*/src/**/*",
-		"packages/*/test/**/*",
-		"packages/coding-agent/examples/**/*"
-	],
-	"exclude": [
-		"**/dist/**",
-		"packages/coding-agent/examples/extensions/gondolin/**",
-		"packages/mom/test/**"
-	]
+	"include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/storage/*/src/**/*", "packages/storage/*/test/**/*", "packages/coding-agent/examples/**/*"],
+	"exclude": ["**/dist/**", "packages/coding-agent/examples/extensions/gondolin/**"]
 }

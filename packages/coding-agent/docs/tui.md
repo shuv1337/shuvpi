@@ -1,10 +1,10 @@
-> shuvpi can create TUI components. Ask it to build one for your use case.
+> pi can create TUI components. Ask it to build one for your use case.
 
 # TUI Components
 
 Extensions and custom tools can render custom TUI components for interactive user interfaces. This page covers the component system and available building blocks.
 
-**Source:** [`@shuv1337/shuvpi-tui`](https://github.com/shuv1337/pi-mono/tree/main/packages/tui)
+**Source:** [`@shuv1337/shuvpi-tui`](https://github.com/earendil-works/pi-mono/tree/main/packages/tui)
 
 ## Component Interface
 
@@ -90,19 +90,32 @@ Without this propagation, typing with an IME (Chinese, Japanese, Korean, etc.) w
 
 ```typescript
 shuvpi.on("session_start", async (_event, ctx) => {
-  const handle = ctx.ui.custom(myComponent);
-  // handle.requestRender() - trigger re-render
-  // handle.close() - restore normal UI
+  const result = await ctx.ui.custom<string | null>((tui, theme, keybindings, done) =>
+    new MyComponent({
+      theme,
+      keybindings,
+      onChange: () => tui.requestRender(),
+      onSelect: (value) => done(value),
+      onCancel: () => done(null),
+    })
+  );
 });
 ```
 
-**In custom tools** via `shuvpi.ui.custom()`:
+**In custom tools** via `ctx.ui.custom()`:
 
 ```typescript
-async execute(toolCallId, params, onUpdate, ctx, signal) {
-  const handle = shuvpi.ui.custom(myComponent);
-  // ...
-  handle.close();
+async execute(toolCallId, params, signal, onUpdate, ctx) {
+  const result = await ctx.ui.custom<string | null>((tui, theme, keybindings, done) =>
+    new MyComponent({
+      theme,
+      keybindings,
+      onChange: () => tui.requestRender(),
+      onSelect: (value) => done(value),
+      onCancel: () => done(null),
+    })
+  );
+  // Use result...
 }
 ```
 
@@ -374,24 +387,26 @@ Usage in an extension:
 ```typescript
 shuvpi.registerCommand("pick", {
   description: "Pick an item",
-  handler: async (args, ctx) => {
+  handler: async (_args, ctx) => {
     const items = ["Option A", "Option B", "Option C"];
-    const selector = new MySelector(items);
-    
-    let handle: { close: () => void; requestRender: () => void };
-    
-    await new Promise<void>((resolve) => {
-      selector.onSelect = (item) => {
-        ctx.ui.notify(`Selected: ${item}`, "info");
-        handle.close();
-        resolve();
+    const selected = await ctx.ui.custom<string | null>((tui, _theme, _keybindings, done) => {
+      const selector = new MySelector(items);
+      selector.onSelect = done;
+      selector.onCancel = () => done(null);
+
+      return {
+        render: (width) => selector.render(width),
+        handleInput: (data) => {
+          selector.handleInput(data);
+          tui.requestRender();
+        },
+        invalidate: () => selector.invalidate(),
       };
-      selector.onCancel = () => {
-        handle.close();
-        resolve();
-      };
-      handle = ctx.ui.custom(selector);
     });
+
+    if (selected !== null) {
+      ctx.ui.notify(`Selected: ${selected}`, "info");
+    }
   }
 });
 ```
@@ -486,7 +501,7 @@ class CachedComponent {
 }
 ```
 
-Call `invalidate()` when state changes, then `handle.requestRender()` to trigger re-render.
+Call `invalidate()` when state changes, then use the injected `tui.requestRender()` to trigger re-render.
 
 ## Invalidation and Theme Changes
 
@@ -746,7 +761,7 @@ ctx.ui.setStatus("my-ext", undefined);
 
 ### Pattern 4b: Working Indicator Customization
 
-Customize the inline working indicator shown while shuvpi is streaming a response.
+Customize the inline working indicator shown while pi is streaming a response.
 
 ```typescript
 // Static indicator
@@ -766,7 +781,7 @@ ctx.ui.setWorkingIndicator({
 // Hide the indicator entirely
 ctx.ui.setWorkingIndicator({ frames: [] });
 
-// Restore shuvpi's default spinner
+// Restore pi's default spinner
 ctx.ui.setWorkingIndicator();
 ```
 
@@ -885,9 +900,9 @@ class VimEditor extends CustomEditor {
 
 export default function (shuvpi: ExtensionAPI) {
   shuvpi.on("session_start", (_event, ctx) => {
-    // Factory receives theme and keybindings from the app
+    // Factory receives the TUI, theme, and keybindings from the app
     ctx.ui.setEditorComponent((tui, theme, keybindings) =>
-      new VimEditor(theme, keybindings)
+      new VimEditor(tui, theme, keybindings)
     );
   });
 }

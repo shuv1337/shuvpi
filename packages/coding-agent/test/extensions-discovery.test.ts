@@ -57,8 +57,8 @@ describe("extensions discovery", () => {
 			`
 				import { getAgentDir } from "@shuv1337/shuvpi-coding-agent";
 				void getAgentDir;
-				export default function(pi) {
-					pi.registerCommand("test", { handler: async () => {} });
+				export default function(shuvpi) {
+					shuvpi.registerCommand("test", { handler: async () => {} });
 				}
 			`,
 		);
@@ -75,8 +75,8 @@ describe("extensions discovery", () => {
 			`
 				import * as oauth from "@shuv1337/shuvpi-ai/oauth";
 				void oauth;
-				export default function(pi) {
-					pi.registerCommand("test", { handler: async () => {} });
+				export default function(shuvpi) {
+					shuvpi.registerCommand("test", { handler: async () => {} });
 				}
 			`,
 		);

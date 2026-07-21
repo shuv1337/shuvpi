@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Agent, type ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
-import { getModel, type Model } from "@shuv1337/shuvpi-ai/compat";
+import { getModel, type Model, streamSimple } from "@shuv1337/shuvpi-ai/compat";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";
@@ -70,6 +70,7 @@ describe.skipIf(!HAS_ANTIGRAVITY_AUTH)("Compaction with thinking models (Antigra
 		}
 
 		const agent = new Agent({
+			streamFn: streamSimple,
 			getApiKey: () => apiKey,
 			initialState: {
 				model,
@@ -172,6 +173,7 @@ describe.skipIf(!HAS_ANTHROPIC_AUTH)("Compaction with thinking models (Anthropic
 
 	async function createSession(model: Model<any>, thinkingLevel: ThinkingLevel = "high") {
 		const agent = new Agent({
+			streamFn: streamSimple,
 			getApiKey: () => API_KEY,
 			initialState: {
 				model,

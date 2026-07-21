@@ -9,6 +9,7 @@ const packages = [
 	{ directory: "packages/ai", name: "@shuv1337/shuvpi-ai" },
 	{ directory: "packages/tui", name: "@shuv1337/shuvpi-tui" },
 	{ directory: "packages/agent", name: "@shuv1337/shuvpi-agent-core" },
+	{ directory: "packages/storage/sqlite-node", name: "@shuv1337/shuvpi-storage-sqlite-node" },
 	{ directory: "packages/coding-agent", name: "@shuv1337/shuvpi-coding-agent" },
 ];
 
@@ -209,17 +210,21 @@ const bunInstallDirectory = join(outDir, "bun-install");
 const binaryDirectory = join(outDir, "bun");
 mkdirSync(tarballDirectory, { recursive: true });
 
+// Release artifacts always use a freshly generated, strictly validated catalog,
+// including when checks or tests are explicitly skipped.
+run("npm", ["run", "generate:models"], { cwd: repoRoot });
+
 if (!options.skipCheck) {
 	run("npm", ["run", "check"], { cwd: repoRoot });
 }
 
-if (!options.skipTest) {
-	run("./test.sh", [], { cwd: repoRoot });
-}
-
 for (const pkg of packages) {
 	run("npm", ["run", "clean"], { cwd: pkg.directory });
-	run("npm", ["run", "build"], { cwd: pkg.directory });
+	run("npm", ["run", pkg.directory === "packages/ai" ? "build:offline" : "build"], { cwd: pkg.directory });
+}
+
+if (!options.skipTest) {
+	run("./test.sh", [], { cwd: repoRoot });
 }
 
 const tarballs = new Map();

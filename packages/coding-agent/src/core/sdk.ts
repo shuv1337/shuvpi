@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import { Agent, type AgentMessage, type ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
-import { clampThinkingLevel, type Message, type Model } from "@shuv1337/shuvpi-ai/compat";
+import { Agent, type AgentMessage, setDefaultStreamFn, type ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
+import { clampThinkingLevel, type Message, type Model, streamSimple } from "@shuv1337/shuvpi-ai/compat";
 import { getAgentDir } from "../config.ts";
 import { resolvePath } from "../utils/paths.ts";
 import { AgentSession } from "./agent-session.ts";
@@ -31,6 +31,11 @@ import {
 	withFileMutationQueue,
 } from "./tools/index.ts";
 
+// Preserve the pre-0.81 fallback for extensions that construct Agent instances
+// or invoke low-level agent loops without supplying streamFn. Agent core remains
+// provider-agnostic and does not import shuvpi-ai/compat itself.
+setDefaultStreamFn(streamSimple);
+
 export interface CreateAgentSessionOptions {
 	/** Working directory for project-local discovery. Default: process.cwd() */
 	cwd?: string;
@@ -58,7 +63,7 @@ export interface CreateAgentSessionOptions {
 	/**
 	 * Optional allowlist of tool names.
 	 *
-	 * When omitted, pi enables the default built-in tools (read, bash, edit, write)
+	 * When omitted, shuvpi enables the default built-in tools (read, bash, edit, write)
 	 * and leaves extension/custom tools enabled unless `noTools` changes that default.
 	 * When provided, only the listed tool names are enabled.
 	 */

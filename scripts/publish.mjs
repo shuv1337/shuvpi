@@ -7,6 +7,7 @@ import { join } from "node:path";
 const packages = [
 	{ directory: "packages/ai", name: "@shuv1337/shuvpi-ai" },
 	{ directory: "packages/agent", name: "@shuv1337/shuvpi-agent-core" },
+	{ directory: "packages/storage/sqlite-node", name: "@shuv1337/shuvpi-storage-sqlite-node" },
 	{ directory: "packages/tui", name: "@shuv1337/shuvpi-tui" },
 	{ directory: "packages/coding-agent", name: "@shuv1337/shuvpi-coding-agent" },
 ];
@@ -120,6 +121,6 @@ for (const pkg of packageStates) {
 		continue;
 	}
 
-	run("npm", ["publish", "--access", "public", "--ignore-scripts"], { cwd: pkg.directory });
+	run("npm", ["publish", "--access", "public", "--provenance", "--ignore-scripts"], { cwd: pkg.directory });
 	console.log();
 }

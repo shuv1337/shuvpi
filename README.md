@@ -10,7 +10,7 @@ Shuvpi is Shuv's maintained fork of the Pi agent harness. The distinct package n
 * **[@shuv1337/shuvpi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
 * **[@shuv1337/shuvpi-ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)
 
-The project remains derived from [upstream Pi](https://github.com/earendil-works/pi-mono). Upstream services such as the `pi.dev` session viewer remain external dependencies where explicitly documented.
+The project remains derived from [upstream Pi](https://github.com/earendil-works/pi). Upstream services such as the `pi.dev` session viewer remain external dependencies where explicitly documented.
 
 ## All Packages
 
@@ -20,6 +20,8 @@ The project remains derived from [upstream Pi](https://github.com/earendil-works
 | **[@shuv1337/shuvpi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
 | **[@shuv1337/shuvpi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
 | **[@shuv1337/shuvpi-tui](packages/tui)** | Terminal UI library with differential rendering |
+| **[@shuv1337/shuvpi-storage-sqlite-node](packages/storage/sqlite-node)** | SQLite session-storage backend for Node.js |
+| **[@shuv1337/shuvpi-server](packages/server)** | Experimental Shuvpi server package |
 
 For upstream Slack/chat automation and workflows, see [earendil-works/pi-chat](https://github.com/earendil-works/pi-chat).
 
@@ -41,7 +43,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [AGENTS.m
 
 ```bash
 npm install --ignore-scripts  # Install all dependencies without running lifecycle scripts
-npm run build        # Build all packages
+npm run build         # Refresh model data, then build all packages
+npm run build:offline # Rebuild using existing model data without network access
 npm run check        # Lint, format, and type check
 ./test.sh            # Run tests (skips LLM-dependent tests without API keys)
 ./shuvpi-test.sh  # Run shuvpi from sources (can be run from any directory)
@@ -58,6 +61,19 @@ cp -a .pi .shuvpi
 ```
 
 Use either command only when its source exists. A copy keeps the upstream installation intact.
+
+## Building standalone binaries from release source
+
+GitHub releases include a versioned source archive covered by the release's `SHA256SUMS` file. Extract it and run the same build script used for the official standalone binaries:
+
+```bash
+VERSION="<release-version>"
+tar -xzf "shuvpi-${VERSION}-source.tar.gz"
+cd "shuvpi-${VERSION}"
+./scripts/build-binaries.sh --platform linux-x64 --out "$PWD/out"
+```
+
+The script installs dependencies, builds the monorepo, compiles the Bun executable, and stages its runtime assets. Package maintainers who provide dependencies separately can pass `--skip-install --skip-deps`.
 
 ## Supply-chain hardening
 

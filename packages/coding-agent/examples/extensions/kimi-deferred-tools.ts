@@ -12,8 +12,8 @@ function calculate(_expr: string): string {
 	return "42";
 }
 
-export default function (pi: ExtensionAPI): void {
-	pi.registerTool({
+export default function (shuvpi: ExtensionAPI): void {
+	shuvpi.registerTool({
 		name: "Calculator",
 		label: "Calculator",
 		description: "Evaluate a simple arithmetic expression.",
@@ -28,7 +28,7 @@ export default function (pi: ExtensionAPI): void {
 		},
 	});
 
-	pi.registerTool({
+	shuvpi.registerTool({
 		name: "tool_search",
 		label: "Tool Search",
 		description: "Find and activate tools for a capability.",
@@ -44,9 +44,9 @@ export default function (pi: ExtensionAPI): void {
 				};
 			}
 
-			const active = pi.getActiveTools();
+			const active = shuvpi.getActiveTools();
 			const added = active.includes("Calculator") ? [] : ["Calculator"];
-			if (added.length > 0) pi.setActiveTools([...active, ...added]);
+			if (added.length > 0) shuvpi.setActiveTools([...active, ...added]);
 
 			return {
 				content: [{ type: "text", text: "Success. Found 1 matching tool(s)" }],
@@ -55,7 +55,7 @@ export default function (pi: ExtensionAPI): void {
 		},
 	});
 
-	pi.on("session_start", () => {
-		pi.setActiveTools(["tool_search"]);
+	shuvpi.on("session_start", () => {
+		shuvpi.setActiveTools(["tool_search"]);
 	});
 }

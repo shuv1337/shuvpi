@@ -1,5 +1,5 @@
 import { Agent, type AgentEvent } from "@shuv1337/shuvpi-agent-core";
-import { getModel, type ImageContent } from "@shuv1337/shuvpi-ai/compat";
+import { getModel, type ImageContent, streamSimple } from "@shuv1337/shuvpi-ai/compat";
 import {
 	AgentSession,
 	convertToLlm,
@@ -440,6 +440,7 @@ async function createRunner(sandboxConfig: SandboxConfig, channelId: string, cha
 
 	// Create agent
 	const agent = new Agent({
+		streamFn: streamSimple,
 		initialState: {
 			systemPrompt,
 			model,

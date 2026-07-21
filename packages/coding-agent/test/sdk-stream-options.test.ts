@@ -114,7 +114,7 @@ describe("createAgentSession stream options", () => {
 		});
 
 		try {
-			const stream = await session.agent.streamFn(model, { messages: [] }, requestOptions);
+			const stream = await session.agent.streamFunction(model, { messages: [] }, requestOptions);
 			await stream.result();
 			return capturedOptions;
 		} finally {
@@ -166,8 +166,8 @@ describe("createAgentSession stream options", () => {
 			"openai-completions",
 			{},
 			{ headers: { "x-explicit": "explicit" } },
-			`export default function (pi) {
-				pi.on("before_provider_headers", (event) => {
+			`export default function (shuvpi) {
+				shuvpi.on("before_provider_headers", (event) => {
 					event.headers["x-hook"] = [
 						event.headers["x-provider"],
 						event.headers["x-model"],

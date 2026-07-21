@@ -1,6 +1,6 @@
 import "@mariozechner/mini-lit/dist/ThemeToggle.js";
 import { Agent, type AgentMessage } from "@shuv1337/shuvpi-agent-core";
-import { getModel } from "@shuv1337/shuvpi-ai/compat";
+import { getModel, streamSimple } from "@shuv1337/shuvpi-ai/compat";
 import {
 	type AgentState,
 	ApiKeyPromptDialog,
@@ -161,6 +161,7 @@ const createAgent = async (initialState?: Partial<AgentState>) => {
 	}
 
 	agent = new Agent({
+		streamFn: streamSimple,
 		initialState: initialState || {
 			systemPrompt: `You are a helpful AI assistant with access to various tools.
 

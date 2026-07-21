@@ -68,14 +68,14 @@ describe("extension active tools next-turn refresh", () => {
 
 	it("records additive active tool changes on the current tool result", async () => {
 		const extensionFactories: ExtensionFactory[] = [
-			(pi) => {
-				pi.registerTool({
+			(shuvpi) => {
+				shuvpi.registerTool({
 					name: "load_more_tools",
 					label: "Load More Tools",
 					description: "Load more tools",
 					parameters: Type.Object({}),
 					execute: async () => {
-						pi.setActiveTools([...pi.getActiveTools(), "after_load"]);
+						shuvpi.setActiveTools([...shuvpi.getActiveTools(), "after_load"]);
 						return {
 							content: [{ type: "text", text: "loaded" }],
 							details: {},
@@ -83,7 +83,7 @@ describe("extension active tools next-turn refresh", () => {
 					},
 				});
 
-				pi.registerTool({
+				shuvpi.registerTool({
 					name: "after_load",
 					label: "After Load",
 					description: "Tool available after loading",

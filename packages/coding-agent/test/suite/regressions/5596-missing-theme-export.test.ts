@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Agent } from "@shuv1337/shuvpi-agent-core";
-import { fauxAssistantMessage, registerFauxProvider } from "@shuv1337/shuvpi-ai/compat";
+import { fauxAssistantMessage, registerFauxProvider, streamSimple } from "@shuv1337/shuvpi-ai/compat";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../../../src/core/agent-session.ts";
 import { AuthStorage } from "../../../src/core/auth-storage.ts";
@@ -24,7 +24,7 @@ describe("regression #5596: missing configured theme export", () => {
 	});
 
 	it("exports with the active fallback theme when the configured theme is missing", async () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "shuvpi-5596-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "pi-5596-"));
 		const faux = registerFauxProvider({
 			models: [{ id: "faux-1", reasoning: false }],
 		});
@@ -61,6 +61,7 @@ describe("regression #5596: missing configured theme export", () => {
 				tools: [],
 			},
 			convertToLlm,
+			streamFn: streamSimple,
 		});
 		const session = new AgentSession({
 			agent,

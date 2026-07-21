@@ -1,5 +1,5 @@
 import { createAssistantMessageEventStream, Type } from "@shuv1337/shuvpi-ai";
-import { complete, getModel, getProviders } from "@shuv1337/shuvpi-ai/compat";
+import { complete, getModel, getProviders, streamSimple } from "@shuv1337/shuvpi-ai/compat";
 import {
 	Agent,
 	bashExecutionToText,
@@ -24,7 +24,7 @@ const model = getModel("google", "gemini-2.5-flash");
 const schema = Type.Object({ prompt: Type.String() });
 const stream = createAssistantMessageEventStream();
 
-const agent = new Agent({ initialState: { model } });
+const agent = new Agent({ initialState: { model }, streamFn: streamSimple });
 agent.steer({ role: "user", content: [{ type: "text", text: "queued" }], timestamp: 0 });
 const repo = new InMemorySessionRepo();
 const result = getOrThrow(ok({ value: 1 }));

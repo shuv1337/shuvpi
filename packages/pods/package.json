@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-pods",
-	"version": "0.80.9",
+	"version": "0.81.1",
 	"description": "CLI tool for managing vLLM deployments on GPU pods",
 	"type": "module",
 	"bin": {
@@ -33,7 +33,7 @@
 		"node": ">=20.0.0"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-agent-core": "^0.80.9",
+		"@shuv1337/shuvpi-agent-core": "^0.81.1",
 		"chalk": "5.6.2"
 	},
 	"devDependencies": {}

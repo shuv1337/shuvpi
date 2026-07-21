@@ -30,10 +30,38 @@ See these complete provider examples:
 
 ## Quick Reference
 
+Extensions can register either a complete pi-ai `Provider` or use the legacy provider-config form. Prefer a complete provider when custom authentication, filtering, refresh, or streaming behavior is required. Pi composes `models.json` overrides above registered native providers.
+
 ```typescript
+import { createProvider, openAICompletionsApi } from "@shuv1337/shuvpi-ai";
 import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
 export default function (shuvpi: ExtensionAPI) {
+  shuvpi.registerProvider(createProvider({
+    id: "native-local",
+    name: "Native Local",
+    baseUrl: "http://localhost:8080/v1",
+    auth: {
+      apiKey: {
+        name: "Local server API key",
+        async login(interaction) {
+          return {
+            type: "api_key",
+            key: await interaction.prompt({ type: "secret", message: "API key" })
+          };
+        },
+        async resolve({ credential }) {
+          return credential?.key
+            ? { auth: { apiKey: credential.key }, source: "stored API key" }
+            : undefined;
+        }
+      }
+    },
+    models: [],
+    api: openAICompletionsApi()
+  }));
+
+  // Legacy provider-config form:
   // Override baseUrl for existing provider
   shuvpi.registerProvider("anthropic", {
     baseUrl: "https://proxy.example.com"
@@ -60,7 +88,7 @@ export default function (shuvpi: ExtensionAPI) {
 }
 ```
 
-The extension factory can also be `async`. For dynamic model discovery, fetch and register models in the factory instead of `session_start`. shuvpi waits for the factory before startup continues, so the provider is available during interactive startup and to `shuvpi --list-models`.
+The extension factory can also be `async`. For dynamic model discovery, fetch and register models in the factory instead of `session_start`. Shuvpi waits for the factory before startup continues, so the provider is available during interactive startup and to `pi --list-models`.
 
 ## Override Existing Provider
 
@@ -211,7 +239,7 @@ models: [{
   id: "custom-model",
   // ...
   reasoning: true,
-  thinkingLevelMap: {              // map shuvpi levels to provider values; null hides unsupported levels
+  thinkingLevelMap: {              // map pi levels to provider values; null hides unsupported levels
     minimal: null,
     low: null,
     medium: null,
@@ -532,14 +560,14 @@ calculateCost(model, output.usage);
 
 ### Context Overflow Errors
 
-When a request exceeds the model's context window, shuvpi can recover automatically by compacting the conversation and retrying. This recovery only kicks in if shuvpi recognizes the failure as an overflow.
+When a request exceeds the model's context window, pi can recover automatically by compacting the conversation and retrying. This recovery only kicks in if pi recognizes the failure as an overflow.
 
 Detection runs on the finalized assistant message:
 
 - `stopReason === "error"`
-- `errorMessage` matches one of shuvpi's known overflow patterns (see [`packages/ai/src/utils/overflow.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/utils/overflow.ts))
+- `errorMessage` matches one of pi's known overflow patterns (see [`packages/ai/src/utils/overflow.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/utils/overflow.ts))
 
-If your provider returns overflow errors with a message shuvpi does not recognize, normalize the error from the same extension that registers the provider. Use a `message_end` handler to rewrite the assistant message so its `errorMessage` starts with a phrase shuvpi recognizes. The generic fallback `context_length_exceeded` is the safest choice.
+If your provider returns overflow errors with a message pi does not recognize, normalize the error from the same extension that registers the provider. Use a `message_end` handler to rewrite the assistant message so its `errorMessage` starts with a phrase pi recognizes. The generic fallback `context_length_exceeded` is the safest choice.
 
 ```typescript
 const MY_PROVIDER_OVERFLOW_PATTERN = /your provider's overflow phrase/i;
@@ -571,7 +599,7 @@ export default function (shuvpi: ExtensionAPI) {
 }
 ```
 
-`message_end` runs before shuvpi tracks the assistant message for auto-compaction, so the rewritten `errorMessage` is what shuvpi checks. With this in place, shuvpi will:
+`message_end` runs before pi tracks the assistant message for auto-compaction, so the rewritten `errorMessage` is what pi checks. With this in place, pi will:
 
 1. Detect the overflow from `errorMessage`.
 2. Drop the failed assistant message from live context.
@@ -581,7 +609,7 @@ export default function (shuvpi: ExtensionAPI) {
 Guard the rewrite carefully:
 
 - Scope it to your provider (`message.provider` and `ctx.model?.provider`) so unrelated errors from other providers are untouched.
-- Match a provider-specific pattern, not shuvpi's generic overflow patterns. Rewriting rate-limit or throttling errors (`rate limit`, `too many requests`) would falsely trigger compaction instead of shuvpi's normal retry-with-backoff path.
+- Match a provider-specific pattern, not pi's generic overflow patterns. Rewriting rate-limit or throttling errors (`rate limit`, `too many requests`) would falsely trigger compaction instead of pi's normal retry-with-backoff path.
 - Skip when `errorMessage` already includes `context_length_exceeded` so the handler is idempotent.
 
 ### Registration
@@ -679,7 +707,7 @@ interface ProviderModelConfig {
   /** Whether the model supports extended thinking. */
   reasoning: boolean;
 
-  /** Maps shuvpi thinking levels to provider/model-specific values; null marks a level unsupported. */
+  /** Maps pi thinking levels to provider/model-specific values; null marks a level unsupported. */
   thinkingLevelMap?: Partial<Record<"off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max", string | null>>;
 
   /** Supported input types. */
