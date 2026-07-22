@@ -5,7 +5,7 @@ import { encodeFrame, FrameDecoder, FrameSizeError, MAX_FRAME_BYTES } from "../s
 
 function handshakeEnvelope(clientName: string): Envelope {
 	return create(EnvelopeSchema, {
-		protocolVersion: 1,
+		protocolVersion: 2,
 		payload: {
 			case: "handshakeRequest",
 			value: create(HandshakeRequestSchema, {

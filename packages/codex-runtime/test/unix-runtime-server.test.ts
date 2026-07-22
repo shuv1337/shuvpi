@@ -51,8 +51,8 @@ describe("UnixRuntimeServer", () => {
 					payload: {
 						case: "handshakeRequest",
 						value: create(HandshakeRequestSchema, {
-							minimumVersion: 1,
-							maximumVersion: 1,
+							minimumVersion: 2,
+							maximumVersion: 2,
 							clientName: "rust-provider-test",
 						}),
 					},
@@ -65,7 +65,7 @@ describe("UnixRuntimeServer", () => {
 		socket.write(
 			encodeFrame(
 				create(EnvelopeSchema, {
-					protocolVersion: 1,
+					protocolVersion: 2,
 					payload: {
 						case: "request",
 						value: create(RuntimeRequestSchema, {

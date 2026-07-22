@@ -4,9 +4,11 @@ import {
 	CloseRequestSchema,
 	type Envelope,
 	EnvelopeSchema,
+	FollowUpRequestSchema,
 	HostToolDefinitionSchema,
 	HostToolResultSchema,
 	PromptRequestSchema,
+	ResumeRequestSchema,
 	RuntimeRequestSchema,
 	type SessionEvent,
 	SessionEventSchema,
@@ -36,6 +38,7 @@ class FakeSession implements RuntimeSession {
 	readonly model = "faux-model";
 	readonly thinkingLevel = "high";
 	readonly prompts: string[] = [];
+	readonly followUps: string[] = [];
 	readonly errors: Array<{ code: string; message: string; retryable: boolean }> = [];
 	closed = false;
 	private promptCompletion: Promise<void> = Promise.resolve();
@@ -50,7 +53,9 @@ class FakeSession implements RuntimeSession {
 	}
 
 	async steer(): Promise<void> {}
-	async followUp(): Promise<void> {}
+	async followUp(text: string): Promise<void> {
+		this.followUps.push(text);
+	}
 	async interrupt(): Promise<void> {}
 
 	status() {
@@ -84,7 +89,7 @@ class FakeFactory implements RuntimeSessionFactory {
 
 function spawnRequest(requestId = "spawn-1"): Envelope {
 	return create(EnvelopeSchema, {
-		protocolVersion: 1,
+		protocolVersion: 2,
 		payload: {
 			case: "request",
 			value: create(RuntimeRequestSchema, {
@@ -118,14 +123,37 @@ function sessionRequest(
 	requestId: string,
 	command:
 		| { case: "prompt"; value: ReturnType<typeof create<typeof PromptRequestSchema>> }
+		| { case: "followUp"; value: ReturnType<typeof create<typeof FollowUpRequestSchema>> }
 		| { case: "status"; value: ReturnType<typeof create<typeof StatusRequestSchema>> }
 		| { case: "close"; value: ReturnType<typeof create<typeof CloseRequestSchema>> },
 ): Envelope {
 	return create(EnvelopeSchema, {
-		protocolVersion: 1,
+		protocolVersion: 2,
 		payload: {
 			case: "request",
 			value: create(RuntimeRequestSchema, { requestId, sessionId: "child-1", command }),
+		},
+	});
+}
+
+function resumeRequest(): Envelope {
+	return create(EnvelopeSchema, {
+		protocolVersion: 2,
+		payload: {
+			case: "request",
+			value: create(RuntimeRequestSchema, {
+				requestId: "resume-1",
+				sessionId: "child-1",
+				command: {
+					case: "resume",
+					value: create(ResumeRequestSchema, {
+						codexThreadId: "codex-thread-1",
+						sessionLocator: "/sessions/fake.jsonl",
+						cwdOverride: "/work",
+						agentDir: "/custom-agent",
+					}),
+				},
+			}),
 		},
 	});
 }
@@ -138,6 +166,28 @@ function responseResult(envelope: Envelope): string | undefined {
 }
 
 describe("RuntimeDispatcher", () => {
+	it("preserves agentDir on resume and dispatches plaintext follow-ups", async () => {
+		const factory = new FakeFactory();
+		const dispatcher = new RuntimeDispatcher(factory);
+		const sink = new RecordingSink();
+
+		await dispatcher.handleEnvelope(sink, resumeRequest());
+		expect(factory.resumeOptions).toMatchObject({
+			sessionId: "child-1",
+			sessionLocator: "/sessions/fake.jsonl",
+			cwdOverride: "/work",
+			agentDir: "/custom-agent",
+		});
+		await dispatcher.handleEnvelope(
+			sink,
+			sessionRequest("follow-up-1", {
+				case: "followUp",
+				value: create(FollowUpRequestSchema, { text: "continue" }),
+			}),
+		);
+		expect(factory.session.followUps).toEqual(["continue"]);
+	});
+
 	it("owns spawn, streaming events, non-blocking prompts, status, and close", async () => {
 		const factory = new FakeFactory();
 		const dispatcher = new RuntimeDispatcher(factory);
@@ -239,7 +289,7 @@ describe("RuntimeDispatcher", () => {
 		await dispatcher.handleEnvelope(
 			sink,
 			create(EnvelopeSchema, {
-				protocolVersion: 1,
+				protocolVersion: 2,
 				payload: {
 					case: "hostToolResult",
 					value: create(HostToolResultSchema, {

@@ -23,7 +23,7 @@ class RecordingTransport implements ProtocolTransport {
 	}
 }
 
-function handshake(minimumVersion = 1, maximumVersion = 1): Envelope {
+function handshake(minimumVersion = 2, maximumVersion = 2): Envelope {
 	return create(EnvelopeSchema, {
 		payload: {
 			case: "handshakeRequest",
@@ -39,7 +39,7 @@ function handshake(minimumVersion = 1, maximumVersion = 1): Envelope {
 
 function statusRequest(): Envelope {
 	return create(EnvelopeSchema, {
-		protocolVersion: 1,
+		protocolVersion: 2,
 		payload: {
 			case: "request",
 			value: create(RuntimeRequestSchema, {
@@ -58,7 +58,7 @@ function decodeWrite(transport: RecordingTransport): Envelope {
 }
 
 describe("runtime protocol negotiation", () => {
-	it("negotiates version 1 before delivering runtime traffic", () => {
+	it("negotiates version 2 before delivering runtime traffic", () => {
 		const transport = new RecordingTransport();
 		const received: Envelope[] = [];
 		const connection = new RuntimeProtocolConnection({
@@ -71,7 +71,7 @@ describe("runtime protocol negotiation", () => {
 		const response = decodeWrite(transport);
 		expect(response.payload.case).toBe("handshakeResponse");
 		if (response.payload.case === "handshakeResponse") {
-			expect(response.payload.value.selectedVersion).toBe(1);
+			expect(response.payload.value.selectedVersion).toBe(2);
 			expect(response.payload.value.capabilities).toContain("host-tools");
 		}
 
@@ -89,7 +89,7 @@ describe("runtime protocol negotiation", () => {
 			onEnvelope: () => undefined,
 		});
 
-		connection.receive(encodeFrame(handshake(2, 3)));
+		connection.receive(encodeFrame(handshake(1, 1)));
 		const response = decodeWrite(transport);
 		expect(response.payload.case).toBe("handshakeResponse");
 		if (response.payload.case === "handshakeResponse") {

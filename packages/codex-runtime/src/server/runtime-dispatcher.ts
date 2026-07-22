@@ -178,6 +178,7 @@ export class RuntimeDispatcher {
 				sessionId: request.sessionId,
 				sessionLocator: command.sessionLocator,
 				cwdOverride: command.cwdOverride || undefined,
+				agentDir: command.agentDir || undefined,
 				hostTools: command.hostTools,
 				onHostToolCall: (toolCallId, toolName, argumentsValue, signal) =>
 					this.requestHostTool(connection, request.sessionId, toolCallId, toolName, argumentsValue, signal),
