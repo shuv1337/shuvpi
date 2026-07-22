@@ -1,4 +1,5 @@
 import type { AgentMessage } from "@shuv1337/shuvpi-agent-core";
+import type { ArtifactMessage } from "../../artifact-message.ts";
 import {
 	ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO,
 	ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
@@ -33,6 +34,11 @@ export class ArtifactsRuntimeProvider implements SandboxRuntimeProvider {
 		this.artifactsPanel = artifactsPanel;
 		this.agent = agent;
 		this.readWrite = readWrite;
+	}
+
+	private appendArtifactMessage(message: ArtifactMessage): void {
+		if (!this.agent) return;
+		this.agent.state.messages = [...this.agent.state.messages, message];
 	}
 
 	getData(): Record<string, any> {
@@ -176,7 +182,7 @@ export class ArtifactsRuntimeProvider implements SandboxRuntimeProvider {
 							filename,
 							content,
 						});
-						this.agent?.state.messages.push({
+						this.appendArtifactMessage({
 							role: "artifact",
 							action,
 							filename,
@@ -197,7 +203,7 @@ export class ArtifactsRuntimeProvider implements SandboxRuntimeProvider {
 							command: "delete",
 							filename,
 						});
-						this.agent?.state.messages.push({
+						this.appendArtifactMessage({
 							role: "artifact",
 							action: "delete",
 							filename,

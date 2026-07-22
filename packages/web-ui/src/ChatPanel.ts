@@ -3,6 +3,9 @@ import { html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import "./components/AgentInterface.ts";
 import type { Agent, AgentTool } from "@shuv1337/shuvpi-agent-core";
+import type { AgentSession } from "./agent-session.ts";
+import { installManagedTools, selectAgentSession } from "./agent-session.ts";
+import { AgentTranscriptReconciler } from "./agent-transcript-reconciler.ts";
 import type { AgentInterface } from "./components/AgentInterface.ts";
 import { ArtifactsRuntimeProvider } from "./components/sandbox/ArtifactsRuntimeProvider.ts";
 import { AttachmentsRuntimeProvider } from "./components/sandbox/AttachmentsRuntimeProvider.ts";
@@ -14,15 +17,49 @@ import { i18n } from "./utils/i18n.ts";
 
 const BREAKPOINT = 800; // px - switch between overlay and side-by-side
 
+export interface ChatPanelSessionConfig {
+	onApiKeyRequired?: (provider: string) => Promise<boolean>;
+	onBeforeSend?: () => void | Promise<void>;
+	onCostClick?: () => void;
+	onModelSelect?: () => void;
+	sandboxUrlProvider?: () => string;
+}
+
+export interface ChatPanelAgentConfig extends ChatPanelSessionConfig {
+	manageTools?: boolean;
+	toolsFactory?: (
+		agent: Agent,
+		agentInterface: AgentInterface,
+		artifactsPanel: ArtifactsPanel,
+		runtimeProvidersFactory: () => SandboxRuntimeProvider[],
+	) => AgentTool<any>[];
+}
+
+interface ManagedToolsSetup {
+	enabled: boolean;
+	create: (
+		agentInterface: AgentInterface,
+		artifactsPanel: ArtifactsPanel,
+		runtimeProvidersFactory: () => SandboxRuntimeProvider[],
+	) => AgentTool[];
+}
+
 @customElement("shuvpi-chat-panel")
 export class ChatPanel extends LitElement {
 	@state() public agent?: Agent;
+	@state() public remoteSession?: AgentSession;
 	@state() public agentInterface?: AgentInterface;
 	@state() public artifactsPanel?: ArtifactsPanel;
 	@state() private hasArtifacts = false;
 	@state() private artifactCount = 0;
 	@state() private showArtifactsPanel = false;
 	@state() private windowWidth = 0;
+	private artifactReconciler?: AgentTranscriptReconciler;
+	private setAgentGeneration = 0;
+
+	private get activeSession(): AgentSession | undefined {
+		return selectAgentSession(this.agent, this.remoteSession)?.session;
+	}
 
 	private resizeHandler = () => {
 		this.windowWidth = window.innerWidth;
@@ -46,56 +83,104 @@ export class ChatPanel extends LitElement {
 			this.windowWidth = window.innerWidth;
 			this.requestUpdate();
 		});
+
+		if (this.artifactReconciler) {
+			void this.artifactReconciler.connect().catch((error: unknown) => {
+				console.error("Failed to reconstruct artifacts from the agent transcript", error);
+			});
+		} else if (this.activeSession && this.artifactsPanel) {
+			const reconciler = this.createArtifactReconciler(this.activeSession, this.artifactsPanel);
+			void reconciler.connect().catch((error: unknown) => {
+				console.error("Failed to reconstruct artifacts from the agent transcript", error);
+			});
+		}
 	}
 
 	override disconnectedCallback() {
 		super.disconnectedCallback();
 		window.removeEventListener("resize", this.resizeHandler);
+		this.artifactReconciler?.dispose();
+		this.artifactReconciler = undefined;
 	}
 
-	async setAgent(
-		agent: Agent,
-		config?: {
-			onApiKeyRequired?: (provider: string) => Promise<boolean>;
-			onBeforeSend?: () => void | Promise<void>;
-			onCostClick?: () => void;
-			onModelSelect?: () => void;
-			sandboxUrlProvider?: () => string;
-			toolsFactory?: (
-				agent: Agent,
-				agentInterface: AgentInterface,
-				artifactsPanel: ArtifactsPanel,
-				runtimeProvidersFactory: () => SandboxRuntimeProvider[],
-			) => AgentTool<any>[];
-		},
-	) {
-		this.agent = agent;
+	private createArtifactReconciler(agent: AgentSession, artifactsPanel: ArtifactsPanel): AgentTranscriptReconciler {
+		this.artifactReconciler?.dispose();
+		const reconciler = new AgentTranscriptReconciler(
+			agent,
+			(messages) => artifactsPanel.reconstructFromMessages(messages),
+			(error) => console.error("Failed to reconstruct artifacts from the agent transcript", error),
+		);
+		this.artifactReconciler = reconciler;
+		return reconciler;
+	}
+
+	async setAgent(agent: Agent, config?: ChatPanelAgentConfig): Promise<void> {
+		await this.setSession(
+			agent,
+			config,
+			{
+				enabled: config?.manageTools ?? true,
+				create: (agentInterface, artifactsPanel, runtimeProvidersFactory) => {
+					const additionalTools =
+						config?.toolsFactory?.(agent, agentInterface, artifactsPanel, runtimeProvidersFactory) ?? [];
+					return [artifactsPanel.tool, ...additionalTools];
+				},
+			},
+			agent,
+		);
+	}
+
+	async setRemoteSession(session: AgentSession, config?: ChatPanelSessionConfig): Promise<void> {
+		await this.setSession(session, config);
+	}
+
+	private async setSession(
+		session: AgentSession,
+		config?: ChatPanelSessionConfig,
+		managedTools?: ManagedToolsSetup,
+		localAgent?: Agent,
+	): Promise<void> {
+		const generation = ++this.setAgentGeneration;
+		this.artifactReconciler?.dispose();
+		this.artifactReconciler = undefined;
+		this.agent = localAgent;
+		this.remoteSession = localAgent ? undefined : session;
 
 		// Create AgentInterface
-		this.agentInterface = document.createElement("agent-interface") as AgentInterface;
-		this.agentInterface.session = agent;
-		this.agentInterface.enableAttachments = true;
-		this.agentInterface.enableModelSelector = true;
-		this.agentInterface.enableThinkingSelector = true;
-		this.agentInterface.showThemeToggle = false;
-		this.agentInterface.onApiKeyRequired = config?.onApiKeyRequired;
-		this.agentInterface.onModelSelect = config?.onModelSelect;
-		this.agentInterface.onBeforeSend = config?.onBeforeSend;
-		this.agentInterface.onCostClick = config?.onCostClick;
+		const agentInterface = document.createElement("agent-interface") as AgentInterface;
+		this.agentInterface = agentInterface;
+		if (localAgent) {
+			agentInterface.session = localAgent;
+		} else {
+			agentInterface.remoteSession = session;
+		}
+		agentInterface.enableAttachments = true;
+		agentInterface.enableModelSelector = true;
+		agentInterface.enableThinkingSelector = true;
+		agentInterface.showThemeToggle = false;
+		agentInterface.onApiKeyRequired = config?.onApiKeyRequired;
+		agentInterface.onModelSelect = config?.onModelSelect;
+		agentInterface.onBeforeSend = config?.onBeforeSend;
+		agentInterface.onCostClick = config?.onCostClick;
 
 		// Set up artifacts panel
-		this.artifactsPanel = new ArtifactsPanel();
-		this.artifactsPanel.agent = agent; // Pass agent for HTML artifact runtime providers
+		const artifactsPanel = new ArtifactsPanel();
+		this.artifactsPanel = artifactsPanel;
+		if (localAgent) {
+			artifactsPanel.agent = localAgent;
+		} else {
+			artifactsPanel.remoteSession = session;
+		}
 		if (config?.sandboxUrlProvider) {
-			this.artifactsPanel.sandboxUrlProvider = config.sandboxUrlProvider;
+			artifactsPanel.sandboxUrlProvider = config.sandboxUrlProvider;
 		}
 		// Register the standalone tool renderer (not the panel itself)
-		registerToolRenderer("artifacts", new ArtifactsToolRenderer(this.artifactsPanel));
+		registerToolRenderer("artifacts", new ArtifactsToolRenderer(artifactsPanel));
 
 		// Runtime providers factory for REPL tools (read-write access)
 		const runtimeProvidersFactory = () => {
 			const attachments: Attachment[] = [];
-			for (const message of this.agent!.state.messages) {
+			for (const message of session.state.messages) {
 				if (message.role === "user-with-attachments") {
 					message.attachments?.forEach((a) => {
 						attachments.push(a);
@@ -110,54 +195,69 @@ export class ChatPanel extends LitElement {
 			}
 
 			// Add artifacts provider with read-write access (for REPL)
-			providers.push(new ArtifactsRuntimeProvider(this.artifactsPanel!, this.agent!, true));
+			providers.push(new ArtifactsRuntimeProvider(artifactsPanel, session, true));
 
 			return providers;
 		};
 
-		this.artifactsPanel.onArtifactsChange = () => {
-			const count = this.artifactsPanel?.artifacts?.size ?? 0;
+		let initialReconstruction = true;
+		artifactsPanel.onArtifactsChange = () => {
+			if (this.artifactsPanel !== artifactsPanel) return;
+			const count = artifactsPanel.artifacts.size;
 			const created = count > this.artifactCount;
 			this.hasArtifacts = count > 0;
 			this.artifactCount = count;
-			if (this.hasArtifacts && created) {
+			if (this.hasArtifacts && created && !initialReconstruction) {
 				this.showArtifactsPanel = true;
 			}
 			this.requestUpdate();
 		};
 
-		this.artifactsPanel.onClose = () => {
+		artifactsPanel.onClose = () => {
+			if (this.artifactsPanel !== artifactsPanel) return;
 			this.showArtifactsPanel = false;
 			this.requestUpdate();
 		};
 
-		this.artifactsPanel.onOpen = () => {
+		artifactsPanel.onOpen = () => {
+			if (this.artifactsPanel !== artifactsPanel) return;
 			this.showArtifactsPanel = true;
 			this.requestUpdate();
 		};
 
-		// Set tools on the agent
-		// Pass runtimeProvidersFactory so consumers can configure their own REPL tools
-		const additionalTools =
-			config?.toolsFactory?.(agent, this.agentInterface, this.artifactsPanel, runtimeProvidersFactory) || [];
-		const tools = [this.artifactsPanel.tool, ...additionalTools];
-		this.agent.state.tools = tools;
+		// Install executable tools only for hosts that own this session's tool runtime.
+		// Pass runtimeProvidersFactory so local consumers can configure their own REPL tools.
+		if (managedTools) {
+			installManagedTools(session, managedTools.enabled, () =>
+				managedTools.create(agentInterface, artifactsPanel, runtimeProvidersFactory),
+			);
+		}
 
-		// Reconstruct artifacts from existing messages
-		// Temporarily disable the onArtifactsChange callback to prevent auto-opening on load
-		const originalCallback = this.artifactsPanel.onArtifactsChange;
-		this.artifactsPanel.onArtifactsChange = undefined;
-		await this.artifactsPanel.reconstructFromMessages(this.agent.state.messages);
-		this.artifactsPanel.onArtifactsChange = originalCallback;
+		const reconciler = this.createArtifactReconciler(session, artifactsPanel);
+		let reconciliationFailed = false;
+		let reconciliationError: unknown;
+		try {
+			if (this.isConnected) {
+				await reconciler.connect();
+			} else {
+				await reconciler.reconcile();
+			}
+		} catch (error: unknown) {
+			reconciliationFailed = true;
+			reconciliationError = error;
+		}
 
-		this.hasArtifacts = this.artifactsPanel.artifacts.size > 0;
-		this.artifactCount = this.artifactsPanel.artifacts.size;
+		if (generation !== this.setAgentGeneration || this.artifactsPanel !== artifactsPanel) return;
+		initialReconstruction = false;
+		this.hasArtifacts = artifactsPanel.artifacts.size > 0;
+		this.artifactCount = artifactsPanel.artifacts.size;
 
 		this.requestUpdate();
+		if (reconciliationFailed) throw reconciliationError;
 	}
 
 	render() {
-		if (!this.agent || !this.agentInterface) {
+		if (!this.activeSession || !this.agentInterface) {
 			return html`<div class="flex items-center justify-center h-full">
 				<div class="text-muted-foreground">No agent set</div>
 			</div>`;

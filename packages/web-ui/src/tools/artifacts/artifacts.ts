@@ -2,13 +2,15 @@ import { icon } from "@mariozechner/mini-lit";
 import "@mariozechner/mini-lit/dist/MarkdownBlock.js";
 import { Button } from "@mariozechner/mini-lit/dist/Button.js";
 import type { Agent, AgentMessage, AgentTool } from "@shuv1337/shuvpi-agent-core";
-import { StringEnum, type ToolCall } from "@shuv1337/shuvpi-ai/compat";
+import { StringEnum } from "@shuv1337/shuvpi-ai/compat";
 import { html, LitElement, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
 import { X } from "lucide";
 import { type Static, Type } from "typebox";
-import type { ArtifactMessage } from "../../components/Messages.ts";
+import type { AgentSession } from "../../agent-session.ts";
+import { selectAgentSession } from "../../agent-session.ts";
+import { isArtifactMessage } from "../../artifact-message.ts";
 import { ArtifactsRuntimeProvider } from "../../components/sandbox/ArtifactsRuntimeProvider.ts";
 import { AttachmentsRuntimeProvider } from "../../components/sandbox/AttachmentsRuntimeProvider.ts";
 import type { SandboxRuntimeProvider } from "../../components/sandbox/SandboxRuntimeProvider.ts";
@@ -20,6 +22,7 @@ import {
 import type { Attachment } from "../../utils/attachment-utils.ts";
 import { i18n } from "../../utils/i18n.ts";
 import type { ArtifactElement } from "./ArtifactElement.ts";
+import { reconstructArtifactContents } from "./artifact-transcript.ts";
 import { DocxArtifact } from "./DocxArtifact.ts";
 import { ExcelArtifact } from "./ExcelArtifact.ts";
 import { GenericArtifact } from "./GenericArtifact.ts";
@@ -61,6 +64,7 @@ export class ArtifactsPanel extends LitElement {
 
 	// Agent reference (needed to get attachments for HTML artifacts)
 	@property({ attribute: false }) agent?: Agent;
+	@property({ attribute: false }) remoteSession?: AgentSession;
 	// Sandbox URL provider for browser extensions (optional)
 	@property({ attribute: false }) sandboxUrlProvider?: () => string;
 	// Callbacks
@@ -82,9 +86,10 @@ export class ArtifactsPanel extends LitElement {
 		const providers: SandboxRuntimeProvider[] = [];
 
 		// Get attachments from agent messages
-		if (this.agent) {
+		const session = selectAgentSession(this.agent, this.remoteSession)?.session;
+		if (session) {
 			const attachments: Attachment[] = [];
-			for (const message of this.agent.state.messages) {
+			for (const message of session.state.messages) {
 				if (message.role === "user-with-attachments" && message.attachments) {
 					attachments.push(...message.attachments);
 				}
@@ -95,7 +100,7 @@ export class ArtifactsPanel extends LitElement {
 		}
 
 		// Add read-only artifacts provider
-		providers.push(new ArtifactsRuntimeProvider(this, this.agent, false));
+		providers.push(new ArtifactsRuntimeProvider(this, session, false));
 
 		return providers;
 	}
@@ -293,98 +298,19 @@ export class ArtifactsPanel extends LitElement {
 	// Re-apply artifacts by scanning a message list (optional utility)
 	public async reconstructFromMessages(
 		messages: Array<AgentMessage | { role: "aborted" } | { role: "artifact" }>,
+	): Promise<void>;
+	public async reconstructFromMessages(messages: readonly AgentMessage[]): Promise<void>;
+	public async reconstructFromMessages(
+		messages: readonly (AgentMessage | { role: "aborted" } | { role: "artifact" })[],
 	): Promise<void> {
-		const toolCalls = new Map<string, ToolCall>();
-		const artifactToolName = "artifacts";
+		const replayMessages = messages.filter((message): message is AgentMessage => {
+			if (message.role === "aborted") return false;
+			if (message.role === "artifact") return isArtifactMessage(message);
+			return true;
+		});
+		const finalArtifacts = reconstructArtifactContents(replayMessages);
 
-		// 1) Collect tool calls from assistant messages
-		for (const message of messages) {
-			if (message.role === "assistant") {
-				for (const block of message.content) {
-					if (block.type === "toolCall" && block.name === artifactToolName) {
-						toolCalls.set(block.id, block);
-					}
-				}
-			}
-		}
-
-		// 2) Build an ordered list of successful artifact operations
-		const operations: Array<ArtifactsParams> = [];
-		for (const m of messages) {
-			if ((m as any).role === "artifact") {
-				const artifactMsg = m as ArtifactMessage;
-				switch (artifactMsg.action) {
-					case "create":
-						operations.push({
-							command: "create",
-							filename: artifactMsg.filename,
-							content: artifactMsg.content,
-						});
-						break;
-					case "update":
-						operations.push({
-							command: "rewrite",
-							filename: artifactMsg.filename,
-							content: artifactMsg.content,
-						});
-						break;
-					case "delete":
-						operations.push({
-							command: "delete",
-							filename: artifactMsg.filename,
-						});
-						break;
-				}
-			}
-			// Handle tool result messages (from artifacts tool calls)
-			else if ((m as any).role === "toolResult" && (m as any).toolName === artifactToolName && !(m as any).isError) {
-				const toolCallId = (m as any).toolCallId as string;
-				const call = toolCalls.get(toolCallId);
-				if (!call) continue;
-				const params = call.arguments as ArtifactsParams;
-				if (params.command === "get" || params.command === "logs") continue; // no state change
-				operations.push(params);
-			}
-		}
-
-		// 3) Compute final state per filename by simulating operations in-memory
-		const finalArtifacts = new Map<string, string>();
-		for (const op of operations) {
-			const filename = op.filename;
-			switch (op.command) {
-				case "create": {
-					if (op.content) {
-						finalArtifacts.set(filename, op.content);
-					}
-					break;
-				}
-				case "rewrite": {
-					if (op.content) {
-						finalArtifacts.set(filename, op.content);
-					}
-					break;
-				}
-				case "update": {
-					let existing = finalArtifacts.get(filename);
-					if (!existing) break; // skip invalid update (shouldn't happen for successful results)
-					if (op.old_str !== undefined && op.new_str !== undefined) {
-						existing = existing.replace(op.old_str, op.new_str);
-						finalArtifacts.set(filename, existing);
-					}
-					break;
-				}
-				case "delete": {
-					finalArtifacts.delete(filename);
-					break;
-				}
-				case "get":
-				case "logs":
-					// Ignored above, just for completeness
-					break;
-			}
-		}
-
-		// 4) Reset current UI state before bulk create
+		// Reset current UI state before bulk create
 		this._artifacts.clear();
 		this.artifactElements.forEach((el) => {
 			el.remove();
@@ -393,17 +319,17 @@ export class ArtifactsPanel extends LitElement {
 		this._activeFilename = null;
 		this._artifacts = new Map(this._artifacts);
 
-		// 5) Create artifacts in a single pass without waiting for iframe execution or tab switching
+		// Create artifacts in one synchronous mutation pass. The returned promises
+		// only settle after those mutations, preventing overlapping snapshots from
+		// interleaving their artifact maps.
+		const reconstructions: Promise<string>[] = [];
 		for (const [filename, content] of finalArtifacts.entries()) {
 			const createParams: ArtifactsParams = { command: "create", filename, content } as const;
-			try {
-				await this.createArtifact(createParams, { skipWait: true, silent: true });
-			} catch {
-				// Ignore failures during reconstruction
-			}
+			reconstructions.push(this.createArtifact(createParams, { skipWait: true, silent: true }).catch(() => ""));
 		}
+		await Promise.all(reconstructions);
 
-		// 6) Show first artifact if any exist, and notify listeners once
+		// Show first artifact if any exist, and notify listeners once
 		if (!this._activeFilename && this._artifacts.size > 0) {
 			this.showArtifact(Array.from(this._artifacts.keys())[0]);
 		}
