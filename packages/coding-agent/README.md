@@ -662,6 +662,7 @@ pi --thinking high "Solve this complex problem"
 
 | Variable | Description |
 |----------|-------------|
+| `SHUVPI_CODING_AGENT` | Set to `true` by the CLI and RPC entry points so child processes can detect that they run inside Shuvpi |
 | `SHUVPI_CODING_AGENT_DIR` | Override config directory (default: `~/.shuvpi/agent`) |
 | `SHUVPI_CODING_AGENT_SESSION_DIR` | Override session storage directory (overridden by `--session-dir`) |
 | `SHUVPI_PACKAGE_DIR` | Override package directory (useful for Nix/Guix where store paths tokenize poorly) |
@@ -670,6 +671,18 @@ pi --thinking high "Solve this complex problem"
 | `SHUVPI_TELEMETRY` | Override install/update telemetry and provider attribution headers. Use `1`/`true`/`yes` to enable or `0`/`false`/`no` to disable. This does not disable update checks |
 | `SHUVPI_CACHE_RETENTION` | Set to `long` for extended prompt cache (Anthropic: 1h, OpenAI: 24h) |
 | `VISUAL`, `EDITOR` | Fallback external editor for Ctrl+G when `externalEditor` is unset; defaults to Notepad on Windows and `nano` elsewhere |
+
+Commands run by the LLM-callable bash tool also receive current session metadata:
+
+| Variable | Description |
+|----------|-------------|
+| `SHUVPI_SESSION_ID` | Current session ID |
+| `SHUVPI_SESSION_FILE` | Absolute session JSONL path; unset for ephemeral sessions |
+| `SHUVPI_PROVIDER` | Currently selected model provider |
+| `SHUVPI_MODEL` | Currently selected model ID |
+| `SHUVPI_REASONING_LEVEL` | Current effective reasoning level |
+
+These values are resolved when each command starts. See [Environment Variables](docs/environment-variables.md#bash-tool-session-environment) for semantics, examples, and custom-tool opt-out.
 
 ---
 

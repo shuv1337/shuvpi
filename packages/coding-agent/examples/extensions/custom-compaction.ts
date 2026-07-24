@@ -13,6 +13,7 @@
  *   shuvpi --extension examples/extensions/custom-compaction.ts
  */
 
+import { uuidv7 } from "@shuv1337/shuvpi-ai";
 import { complete } from "@shuv1337/shuvpi-ai/compat";
 import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 import { convertToLlm, serializeConversation } from "@shuv1337/shuvpi-coding-agent";
@@ -96,6 +97,8 @@ ${conversationText}
 					env: auth.env,
 					maxTokens: 8192,
 					signal,
+					cacheRetention: "none",
+					sessionId: uuidv7(),
 				},
 			);
 

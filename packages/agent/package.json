@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-agent-core",
-	"version": "0.81.1",
+	"version": "0.82.0",
 	"description": "General-purpose agent with transport abstraction, state management, and attachment support",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -29,7 +29,8 @@
 		"prepublishOnly": "npm run build"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-ai": "^0.81.1",
+		"@shuv1337/shuvpi-ai": "^0.82.0",
+		"diff": "8.0.4",
 		"ignore": "7.0.5",
 		"typebox": "1.1.38",
 		"yaml": "2.9.0"

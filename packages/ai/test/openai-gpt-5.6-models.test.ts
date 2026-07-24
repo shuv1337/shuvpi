@@ -31,17 +31,12 @@ describe("OpenAI GPT-5.6 models", () => {
 				},
 				contextWindow: 272_000,
 				maxTokens: 128_000,
-				thinkingLevelMap: { off: "none", xhigh: "xhigh", max: "max" },
+				// models.dev reports no `minimal` reasoning effort for the direct OpenAI
+				// responses API, so the generated catalog maps it to null. The Codex OAuth
+				// variant below still exposes it (mapped to "low").
+				thinkingLevelMap: { off: "none", minimal: null, xhigh: "xhigh", max: "max" },
 			});
-			expect(getSupportedThinkingLevels(model!)).toEqual([
-				"off",
-				"minimal",
-				"low",
-				"medium",
-				"high",
-				"xhigh",
-				"max",
-			]);
+			expect(getSupportedThinkingLevels(model!)).toEqual(["off", "low", "medium", "high", "xhigh", "max"]);
 		},
 	);
 

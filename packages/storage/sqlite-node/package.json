@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-storage-sqlite-node",
-	"version": "0.81.1",
+	"version": "0.82.0",
 	"description": "Node sqlite storage backend for @shuv1337/shuvpi-agent-core sessions",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -32,7 +32,7 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-ai": "^0.81.1",
-		"@shuv1337/shuvpi-agent-core": "^0.81.1"
+		"@shuv1337/shuvpi-ai": "^0.82.0",
+		"@shuv1337/shuvpi-agent-core": "^0.82.0"
 	}
 }

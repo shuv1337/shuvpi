@@ -1,12 +1,13 @@
 {
 	"name": "@shuv1337/shuvpi-coding-agent-install",
-	"version": "0.81.1",
+	"version": "0.82.0",
 	"private": true,
 	"description": "Lockfile root used by the Shuvpi installer and updater.",
 	"dependencies": {
-		"@shuv1337/shuvpi-coding-agent": "0.81.1"
+		"@shuv1337/shuvpi-coding-agent": "0.82.0"
 	},
 	"overrides": {
+		"protobufjs": "7.6.5",
 		"rimraf": "6.1.2",
 		"gaxios": {
 			"rimraf": "6.1.2"

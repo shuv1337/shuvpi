@@ -31,7 +31,7 @@ export async function getLatestShuvpiRelease(
 	currentVersion: string,
 	options: { timeoutMs?: number } = {},
 ): Promise<LatestShuvpiRelease | undefined> {
-	if (process.env.SHUVPI_SKIP_VERSION_CHECK || process.env.SHUVPI_OFFLINE) return undefined;
+	if (process.env.SHUVPI_OFFLINE) return undefined;
 
 	const response = await fetch(LATEST_VERSION_URL, {
 		headers: {
@@ -68,6 +68,8 @@ export async function getLatestShuvpiVersion(
 }
 
 export async function checkForNewShuvpiVersion(currentVersion: string): Promise<LatestShuvpiRelease | undefined> {
+	if (process.env.SHUVPI_SKIP_VERSION_CHECK) return undefined;
+
 	try {
 		const latestRelease = await getLatestShuvpiRelease(currentVersion);
 		if (latestRelease && isNewerPackageVersion(latestRelease.version, currentVersion)) {

@@ -13,6 +13,7 @@
  */
 
 import type { AgentMessage } from "@shuv1337/shuvpi-agent-core";
+import { uuidv7 } from "@shuv1337/shuvpi-ai";
 import { complete, type Message } from "@shuv1337/shuvpi-ai/compat";
 import type { ExtensionAPI, SessionEntry } from "@shuv1337/shuvpi-coding-agent";
 import { BorderedLoader, convertToLlm, serializeConversation } from "@shuv1337/shuvpi-coding-agent";
@@ -136,7 +137,14 @@ export default function (shuvpi: ExtensionAPI) {
 					const response = await complete(
 						ctx.model!,
 						{ systemPrompt: SYSTEM_PROMPT, messages: [userMessage] },
-						{ apiKey: auth.apiKey, headers: auth.headers, env: auth.env, signal: loader.signal },
+						{
+							apiKey: auth.apiKey,
+							headers: auth.headers,
+							env: auth.env,
+							signal: loader.signal,
+							cacheRetention: "none",
+							sessionId: uuidv7(),
+						},
 					);
 
 					if (response.stopReason === "aborted") {

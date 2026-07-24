@@ -2,59 +2,7 @@
 // Do not edit manually - run 'npm run generate-models' to update
 
 import values from "./data/baseten.json" with { type: "json" };
-import type { Model } from "../types.ts";
+import { flattenModelCatalog, type ModelCatalog } from "../model-catalog.ts";
 
-export const BASETEN_MODELS = values as {
-	"deepseek-ai/DeepSeek-V4-Pro": Model<"openai-completions"> & {
-		id: "deepseek-ai/DeepSeek-V4-Pro";
-		provider: "baseten";
-	};
-	"moonshotai/Kimi-K2.5": Model<"openai-completions"> & {
-		id: "moonshotai/Kimi-K2.5";
-		provider: "baseten";
-	};
-	"moonshotai/Kimi-K2.6": Model<"openai-completions"> & {
-		id: "moonshotai/Kimi-K2.6";
-		provider: "baseten";
-	};
-	"moonshotai/Kimi-K2.7-Code": Model<"openai-completions"> & {
-		id: "moonshotai/Kimi-K2.7-Code";
-		provider: "baseten";
-	};
-	"nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B": Model<"openai-completions"> & {
-		id: "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B";
-		provider: "baseten";
-	};
-	"nvidia/Nemotron-120B-A12B": Model<"openai-completions"> & {
-		id: "nvidia/Nemotron-120B-A12B";
-		provider: "baseten";
-	};
-	"openai/gpt-oss-120b": Model<"openai-completions"> & {
-		id: "openai/gpt-oss-120b";
-		provider: "baseten";
-	};
-	"thinkingmachines/inkling": Model<"openai-completions"> & {
-		id: "thinkingmachines/inkling";
-		provider: "baseten";
-	};
-	"zai-org/GLM-4.7": Model<"openai-completions"> & {
-		id: "zai-org/GLM-4.7";
-		provider: "baseten";
-	};
-	"zai-org/GLM-5": Model<"openai-completions"> & {
-		id: "zai-org/GLM-5";
-		provider: "baseten";
-	};
-	"zai-org/GLM-5.1": Model<"openai-completions"> & {
-		id: "zai-org/GLM-5.1";
-		provider: "baseten";
-	};
-	"zai-org/GLM-5.2": Model<"openai-completions"> & {
-		id: "zai-org/GLM-5.2";
-		provider: "baseten";
-	};
-	"zai-org/GLM-5.2-Fast": Model<"openai-completions"> & {
-		id: "zai-org/GLM-5.2-Fast";
-		provider: "baseten";
-	};
-};
+export const BASETEN_MODELS: ModelCatalog<typeof values, "baseten"> =
+	flattenModelCatalog("baseten", values);

@@ -1,3 +1,4 @@
+import { uuidv7 } from "@shuv1337/shuvpi-ai";
 import { complete, getModel } from "@shuv1337/shuvpi-ai/compat";
 import type { ExtensionAPI, ExtensionCommandContext } from "@shuv1337/shuvpi-coding-agent";
 import { DynamicBorder, getMarkdownTheme } from "@shuv1337/shuvpi-coding-agent";
@@ -193,6 +194,8 @@ export default function (shuvpi: ExtensionAPI) {
 					headers: auth.headers,
 					env: auth.env,
 					reasoningEffort: "high",
+					cacheRetention: "none",
+					sessionId: uuidv7(),
 				},
 			);
 

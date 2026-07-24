@@ -319,15 +319,18 @@ export class TUI extends Container {
 	private pendingOsc11BackgroundQueries: PendingOsc11BackgroundQuery[] = [];
 	private terminalColorSchemeListeners = new Set<(scheme: TerminalColorScheme) => void>();
 	private terminalColorSchemeNotificationsEnabled = false;
+	private readonly logDirectory: string;
 
 	// Overlay stack for modal components rendered on top of base content
 	private focusOrderCounter = 0;
 	private overlayStack: OverlayStackEntry[] = [];
 	private overlayFocusRestore: OverlayFocusRestoreState = { status: "inactive" };
 
-	constructor(terminal: Terminal, showHardwareCursor?: boolean) {
+	constructor(terminal: Terminal, showHardwareCursor?: boolean, logDirectory?: string) {
 		super();
 		this.terminal = terminal;
+		this.logDirectory =
+			logDirectory ?? process.env.SHUVPI_CODING_AGENT_DIR ?? path.join(os.homedir(), ".shuvpi", "agent");
 		if (showHardwareCursor !== undefined) {
 			this.showHardwareCursor = showHardwareCursor;
 		}
@@ -1329,8 +1332,9 @@ export class TUI extends Container {
 		const debugRedraw = process.env.SHUVPI_DEBUG_REDRAW === "1";
 		const logRedraw = (reason: string): void => {
 			if (!debugRedraw) return;
-			const logPath = path.join(os.homedir(), ".shuvpi", "agent", "shuvpi-debug.log");
+			const logPath = path.join(this.logDirectory, "shuvpi-debug.log");
 			const msg = `[${new Date().toISOString()}] fullRender: ${reason} (prev=${this.previousLines.length}, new=${newLines.length}, height=${height})\n`;
+			fs.mkdirSync(path.dirname(logPath), { recursive: true });
 			fs.appendFileSync(logPath, msg);
 		};
 
@@ -1521,7 +1525,7 @@ export class TUI extends Container {
 			buffer += "\x1b[2K"; // Clear current line
 			if (!isImage && visibleWidth(line) > width) {
 				// Log all lines to crash file for debugging
-				const crashLogPath = path.join(os.homedir(), ".shuvpi", "agent", "shuvpi-crash.log");
+				const crashLogPath = path.join(this.logDirectory, "shuvpi-crash.log");
 				const crashData = [
 					`Crash at ${new Date().toISOString()}`,
 					`Terminal width: ${width}`,
