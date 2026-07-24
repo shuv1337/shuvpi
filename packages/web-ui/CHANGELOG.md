@@ -6,6 +6,15 @@
 
 - Renamed the package from `@shuv1337/pi-web-ui` to `@shuv1337/shuvpi-web-ui` and renamed product-owned browser storage and custom-element keys.
 
+### Added
+
+- Added the structural `AgentSession` API and explicit `ChatPanel.setRemoteSession()` path for rendering remotely owned sessions without changing the existing `Agent`-typed component APIs or installing local runtime defaults. Local hosts can opt out of managed tool installation with `manageTools: false`.
+
+### Fixed
+
+- Kept artifact transcripts immutable and reconciled the artifacts panel as local or remote session events update the transcript, including safe reconnects and failed reconstructions.
+- Preserved artifact replay behavior for empty or malformed mutations and shared validation between transcript rendering and replay.
+
 ## [0.79.0] - 2026-06-09
 
 ### Changed

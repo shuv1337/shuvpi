@@ -2,7 +2,8 @@
 
 export type { Agent, AgentMessage, AgentState, ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
 export type { Model } from "@shuv1337/shuvpi-ai";
-export { ChatPanel } from "./ChatPanel.ts";
+export type { AgentSession, AgentSessionListener } from "./agent-session.ts";
+export { ChatPanel, type ChatPanelAgentConfig, type ChatPanelSessionConfig } from "./ChatPanel.ts";
 // Components
 export { AgentInterface } from "./components/AgentInterface.ts";
 export { AttachmentTile } from "./components/AttachmentTile.ts";

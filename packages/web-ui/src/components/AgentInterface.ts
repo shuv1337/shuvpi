@@ -9,6 +9,7 @@ import "./Messages.ts"; // Import for side effects to register the custom elemen
 import { getAppStorage } from "../storage/app-storage.ts";
 import "./StreamingMessageContainer.ts";
 import type { Agent, AgentEvent } from "@shuv1337/shuvpi-agent-core";
+import { type AgentSession, AgentSessionConnectionGuard, selectAgentSession } from "../agent-session.ts";
 import type { Attachment } from "../utils/attachment-utils.ts";
 import { formatUsage } from "../utils/format.ts";
 import { i18n } from "../utils/i18n.ts";
@@ -20,6 +21,8 @@ import type { StreamingMessageContainer } from "./StreamingMessageContainer.ts";
 export class AgentInterface extends LitElement {
 	// Optional external session: when provided, this component becomes a view over the session
 	@property({ attribute: false }) session?: Agent;
+	// Explicit remote ownership path; takes precedence and skips local runtime configuration.
+	@property({ attribute: false }) remoteSession?: AgentSession;
 	@property({ type: Boolean }) enableAttachments = true;
 	@property({ type: Boolean }) enableModelSelector = true;
 	@property({ type: Boolean }) enableThinkingSelector = true;
@@ -45,6 +48,11 @@ export class AgentInterface extends LitElement {
 	private _scrollContainer?: HTMLElement;
 	private _resizeObserver?: ResizeObserver;
 	private _unsubscribeSession?: () => void;
+	private readonly _connectionGuard = new AgentSessionConnectionGuard();
+
+	private get activeSession(): AgentSession | undefined {
+		return selectAgentSession(this.session, this.remoteSession)?.session;
+	}
 
 	public setInput(text: string, attachments?: Attachment[]) {
 		const update = () => {
@@ -69,13 +77,14 @@ export class AgentInterface extends LitElement {
 		super.willUpdate(changedProperties);
 
 		// Re-subscribe when session property changes
-		if (changedProperties.has("session")) {
+		if (this.isConnected && (changedProperties.has("session") || changedProperties.has("remoteSession"))) {
 			this.setupSessionSubscription();
 		}
 	}
 
 	override async connectedCallback() {
 		super.connectedCallback();
+		const connectionGeneration = this._connectionGuard.begin();
 
 		this.style.display = "flex";
 		this.style.flexDirection = "column";
@@ -84,6 +93,7 @@ export class AgentInterface extends LitElement {
 
 		// Wait for first render to get scroll container
 		await this.updateComplete;
+		if (!this._connectionGuard.isCurrent(connectionGeneration, this.isConnected)) return;
 		this._scrollContainer = this.querySelector(".overflow-y-auto") as HTMLElement;
 
 		if (this._scrollContainer) {
@@ -110,6 +120,7 @@ export class AgentInterface extends LitElement {
 
 	override disconnectedCallback() {
 		super.disconnectedCallback();
+		this._connectionGuard.disconnect();
 
 		// Clean up observers and listeners
 		if (this._resizeObserver) {
@@ -132,25 +143,31 @@ export class AgentInterface extends LitElement {
 			this._unsubscribeSession();
 			this._unsubscribeSession = undefined;
 		}
-		if (!this.session) return;
+		const selection = selectAgentSession(this.session, this.remoteSession);
+		if (!selection) return;
+		const { session } = selection;
 
-		// Set default streamFn with proxy support if not already set
-		if (this.session.streamFunction === streamSimple) {
-			this.session.streamFunction = createStreamFn(async () => {
-				const enabled = await getAppStorage().settings.get<boolean>("proxy.enabled");
-				return enabled ? (await getAppStorage().settings.get<string>("proxy.url")) || undefined : undefined;
-			});
+		if (selection.ownership === "local") {
+			const localAgent = selection.session;
+			// Set default streamFn with proxy support if not already set
+			if (localAgent.streamFunction === streamSimple) {
+				localAgent.streamFunction = createStreamFn(async () => {
+					const enabled = await getAppStorage().settings.get<boolean>("proxy.enabled");
+					return enabled ? (await getAppStorage().settings.get<string>("proxy.url")) || undefined : undefined;
+				});
+			}
+
+			// Set default getApiKey if not already set
+			if (!localAgent.getApiKey) {
+				localAgent.getApiKey = async (provider: string) => {
+					const key = await getAppStorage().providerKeys.get(provider);
+					return key ?? undefined;
+				};
+			}
 		}
 
-		// Set default getApiKey if not already set
-		if (!this.session.getApiKey) {
-			this.session.getApiKey = async (provider: string) => {
-				const key = await getAppStorage().providerKeys.get(provider);
-				return key ?? undefined;
-			};
-		}
-
-		this._unsubscribeSession = this.session.subscribe(async (ev: AgentEvent) => {
+		this._unsubscribeSession = session.subscribe(async (ev: AgentEvent) => {
+			if (this.activeSession !== session) return;
 			switch (ev.type) {
 				case "message_start":
 				case "turn_start":
@@ -176,7 +193,7 @@ export class AgentInterface extends LitElement {
 					break;
 				case "message_update":
 					if (this._streamingContainer) {
-						const isStreaming = this.session?.state.isStreaming || false;
+						const isStreaming = session.state.isStreaming;
 						this._streamingContainer.isStreaming = isStreaming;
 						this._streamingContainer.setMessage(ev.message, !isStreaming);
 					}
@@ -213,8 +230,8 @@ export class AgentInterface extends LitElement {
 	};
 
 	public async sendMessage(input: string, attachments?: Attachment[]) {
-		if ((!input.trim() && attachments?.length === 0) || this.session?.state.isStreaming) return;
-		const session = this.session;
+		const session = this.activeSession;
+		if ((!input.trim() && attachments?.length === 0) || session?.state.isStreaming) return;
 		if (!session) throw new Error("No session set on AgentInterface");
 		if (!session.state.model) throw new Error("No model set on AgentInterface");
 
@@ -227,7 +244,7 @@ export class AgentInterface extends LitElement {
 			if (!success) {
 				return;
 			}
-		} else {
+		} else if (!this.remoteSession) {
 			const apiKey = await getAppStorage().providerKeys.get(provider);
 			if (!apiKey) {
 				console.error("No API key configured and no onApiKeyRequired handler set");
@@ -253,16 +270,17 @@ export class AgentInterface extends LitElement {
 				attachments,
 				timestamp: Date.now(),
 			};
-			await this.session?.prompt(message);
+			await session.prompt(message);
 		} else {
-			await this.session?.prompt(input);
+			await session.prompt(input);
 		}
 	}
 
 	private renderMessages() {
-		if (!this.session)
+		const session = this.activeSession;
+		if (!session)
 			return html`<div class="p-4 text-center text-muted-foreground">${i18n("No session available")}</div>`;
-		const state = this.session.state;
+		const state = session.state;
 		// Build a map of tool results to allow inline rendering in assistant messages
 		const toolResultsById = new Map<string, ToolResultMessage<any>>();
 		for (const message of state.messages) {
@@ -274,9 +292,9 @@ export class AgentInterface extends LitElement {
 			<div class="flex flex-col gap-3">
 				<!-- Stable messages list - won't re-render during streaming -->
 				<message-list
-					.messages=${this.session.state.messages}
+					.messages=${state.messages}
 					.tools=${state.tools}
-					.pendingToolCalls=${this.session ? this.session.state.pendingToolCalls : new Set<string>()}
+					.pendingToolCalls=${state.pendingToolCalls}
 					.isStreaming=${state.isStreaming}
 					.onCostClick=${this.onCostClick}
 				></message-list>
@@ -295,9 +313,10 @@ export class AgentInterface extends LitElement {
 	}
 
 	private renderStats() {
-		if (!this.session) return html`<div class="text-xs h-5"></div>`;
+		const session = this.activeSession;
+		if (!session) return html`<div class="text-xs h-5"></div>`;
 
-		const state = this.session.state;
+		const state = session.state;
 		const totals = state.messages
 			.filter((m) => m.role === "assistant")
 			.reduce(
@@ -344,11 +363,10 @@ export class AgentInterface extends LitElement {
 	}
 
 	override render() {
-		if (!this.session)
-			return html`<div class="p-4 text-center text-muted-foreground">${i18n("No session set")}</div>`;
+		const session = this.activeSession;
+		if (!session) return html`<div class="p-4 text-center text-muted-foreground">${i18n("No session set")}</div>`;
 
-		const session = this.session;
-		const state = this.session.state;
+		const state = session.state;
 		return html`
 			<div class="flex flex-col h-full bg-background text-foreground">
 				<!-- Messages Area -->

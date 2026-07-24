@@ -8,6 +8,7 @@ import type {
 } from "@shuv1337/shuvpi-ai";
 import { html, LitElement, type TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { isArtifactMessage } from "../artifact-message.ts";
 import { renderTool } from "../tools/index.ts";
 import type { Attachment } from "../utils/attachment-utils.ts";
 import { formatUsage } from "../utils/format.ts";
@@ -22,22 +23,14 @@ export type UserMessageWithAttachments = {
 	attachments?: Attachment[];
 };
 
-// Artifact message type for session persistence
-export interface ArtifactMessage {
-	role: "artifact";
-	action: "create" | "update" | "delete";
-	filename: string;
-	content?: string;
-	title?: string;
-	timestamp: string;
-}
-
 declare module "@shuv1337/shuvpi-agent-core" {
 	interface CustomAgentMessages {
 		"user-with-attachments": UserMessageWithAttachments;
-		artifact: ArtifactMessage;
 	}
 }
+
+export type { ArtifactMessage } from "../artifact-message.ts";
+export { isArtifactMessage } from "../artifact-message.ts";
 
 @customElement("user-message")
 export class UserMessage extends LitElement {
@@ -328,13 +321,6 @@ export function convertAttachments(attachments: Attachment[]): (TextContent | Im
  */
 export function isUserMessageWithAttachments(msg: AgentMessage): msg is UserMessageWithAttachments {
 	return (msg as UserMessageWithAttachments).role === "user-with-attachments";
-}
-
-/**
- * Check if a message is an ArtifactMessage.
- */
-export function isArtifactMessage(msg: AgentMessage): msg is ArtifactMessage {
-	return (msg as ArtifactMessage).role === "artifact";
 }
 
 /**
