@@ -161,6 +161,14 @@ export const VERCEL_AI_GATEWAY_MODELS = values as {
 		id: "anthropic/claude-opus-4.8-fast";
 		provider: "vercel-ai-gateway";
 	};
+	"anthropic/claude-opus-5": Model<"anthropic-messages"> & {
+		id: "anthropic/claude-opus-5";
+		provider: "vercel-ai-gateway";
+	};
+	"anthropic/claude-opus-5-fast": Model<"anthropic-messages"> & {
+		id: "anthropic/claude-opus-5-fast";
+		provider: "vercel-ai-gateway";
+	};
 	"anthropic/claude-sonnet-4": Model<"anthropic-messages"> & {
 		id: "anthropic/claude-sonnet-4";
 		provider: "vercel-ai-gateway";
@@ -287,6 +295,10 @@ export const VERCEL_AI_GATEWAY_MODELS = values as {
 	};
 	"inception/mercury-coder-small": Model<"anthropic-messages"> & {
 		id: "inception/mercury-coder-small";
+		provider: "vercel-ai-gateway";
+	};
+	"inclusionai/ling-3.0-flash-free": Model<"anthropic-messages"> & {
+		id: "inclusionai/ling-3.0-flash-free";
 		provider: "vercel-ai-gateway";
 	};
 	"interfaze/interfaze-beta": Model<"anthropic-messages"> & {

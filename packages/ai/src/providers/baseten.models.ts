@@ -53,4 +53,8 @@ export const BASETEN_MODELS = values as {
 		id: "zai-org/GLM-5.2";
 		provider: "baseten";
 	};
+	"zai-org/GLM-5.2-Fast": Model<"openai-completions"> & {
+		id: "zai-org/GLM-5.2-Fast";
+		provider: "baseten";
+	};
 };

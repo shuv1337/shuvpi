@@ -600,8 +600,8 @@ describe("default model selection", () => {
 		expect(defaultModelPerProvider["ant-ling"]).toBe("Ring-2.6-1T");
 	});
 
-	test("ai-gateway default is opus 4.8", () => {
-		expect(defaultModelPerProvider["vercel-ai-gateway"]).toBe("anthropic/claude-opus-4.8");
+	test("ai-gateway default is opus 5", () => {
+		expect(defaultModelPerProvider["vercel-ai-gateway"]).toBe("anthropic/claude-opus-5");
 	});
 
 	test("baseten default tracks current models", () => {
@@ -627,8 +627,8 @@ describe("default model selection", () => {
 
 	test("findInitialModel selects ai-gateway default when available", async () => {
 		const aiGatewayModel: Model<"anthropic-messages"> = {
-			id: "anthropic/claude-opus-4.8",
-			name: "Claude Opus 4.8",
+			id: "anthropic/claude-opus-5",
+			name: "Claude Opus 5",
 			api: "anthropic-messages",
 			provider: "vercel-ai-gateway",
 			baseUrl: "https://ai-gateway.vercel.sh",
@@ -650,7 +650,7 @@ describe("default model selection", () => {
 		});
 
 		expect(result.model?.provider).toBe("vercel-ai-gateway");
-		expect(result.model?.id).toBe("anthropic/claude-opus-4.8");
+		expect(result.model?.id).toBe("anthropic/claude-opus-5");
 	});
 
 	test("findInitialModel ignores an unauthenticated saved default", async () => {

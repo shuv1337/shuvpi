@@ -12,9 +12,9 @@ import type { ModelRuntime } from "./model-runtime.ts";
 
 /** Default model IDs for each known provider */
 export const defaultModelPerProvider: Record<KnownProvider, string> = {
-	"amazon-bedrock": "us.anthropic.claude-opus-4-6-v1",
+	"amazon-bedrock": "us.anthropic.claude-opus-5",
 	"ant-ling": "Ring-2.6-1T",
-	anthropic: "claude-opus-4-8",
+	anthropic: "claude-opus-5",
 	openai: "gpt-5.5",
 	"azure-openai-responses": "gpt-5.4",
 	"openai-codex": "gpt-5.5",
@@ -25,7 +25,7 @@ export const defaultModelPerProvider: Record<KnownProvider, string> = {
 	"google-vertex": "gemini-3.1-pro-preview",
 	"github-copilot": "gpt-5.4",
 	openrouter: "moonshotai/kimi-k2.6",
-	"vercel-ai-gateway": "anthropic/claude-opus-4.8",
+	"vercel-ai-gateway": "anthropic/claude-opus-5",
 	xai: "grok-4.5",
 	groq: "openai/gpt-oss-120b",
 	cerebras: "zai-glm-4.7",
