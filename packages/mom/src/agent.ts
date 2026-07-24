@@ -23,7 +23,7 @@ import type { ChannelStore } from "./store.ts";
 import { createMomTools, setUploadFunction } from "./tools/index.ts";
 
 // Hardcoded model for now - TODO: make configurable (issue #63)
-const model = getModel("anthropic", "claude-sonnet-4-5");
+const model = getModel("anthropic", "claude-sonnet-5");
 
 export interface PendingMessage {
 	userName: string;
