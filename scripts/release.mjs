@@ -15,9 +15,8 @@
  * 6. Commit and tag the release
  * 7. Add new [Unreleased] section to changelogs
  * 8. Commit next-cycle changelog updates
- * 9. Publish packages to npm (local; this fork has no CI publish job)
- * 10. Push main and the tag
- * 11. Announce the release on Discord (DISCORD_RELEASE_WEBHOOK_URL)
+ * 9. Push main and the tag (CI publish-npm uses trusted publishing OIDC)
+ * 10. Announce the release on Discord (DISCORD_RELEASE_WEBHOOK_URL)
  */
 
 import { execSync } from "node:child_process";
@@ -241,21 +240,15 @@ stageChangedFiles();
 run(`git commit -m "Add [Unreleased] section for next cycle"`);
 console.log();
 
-// 9. Publish to npm (local; this fork removed .github, so there is no CI publish job).
-//    Done before pushing so a publish failure aborts the release with the tag still
-//    only local — fix the cause, re-run `npm run publish` (it skips already-published
-//    packages), then `git push origin main && git push origin v${version}`.
-console.log("Publishing packages to npm...");
-run("npm run publish");
-console.log();
-
-// 10. Push
+// 9. Push main + tag. CI (build-binaries.yml publish-npm) publishes to npm via
+//    trusted publishing (OIDC, environment npm-publish) and creates the GitHub release.
 console.log("Pushing to remote...");
 run("git push origin main");
 run(`git push origin v${version}`);
 console.log();
 
-// 11. Discord announcement (non-fatal if webhook is unset or the post fails)
+// 10. Discord announcement (non-fatal if webhook is unset or the post fails).
+//     Fired after push; npm/GitHub release may still be in progress in CI.
 console.log("Announcing release on Discord...");
 try {
 	const result = await notifyDiscordRelease({ version });
@@ -270,4 +263,4 @@ try {
 }
 console.log();
 
-console.log(`=== Released v${version}: published to npm and pushed main + tag v${version} ===`);
+console.log(`=== Released v${version}: pushed main + tag v${version}; CI will publish npm and GitHub release ===`);

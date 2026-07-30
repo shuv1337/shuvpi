@@ -57,5 +57,10 @@
 		"mini-lit"
 	],
 	"author": "Mario Zechner",
-	"license": "MIT"
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/shuv1337/shuvpi.git",
+		"directory": "packages/web-ui"
+	}
 }
