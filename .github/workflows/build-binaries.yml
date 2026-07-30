@@ -113,6 +113,9 @@ jobs:
             --repo "${GH_REPO}" \
             --out "${notes_file}"
 
+          # Prefer the resolved commit SHA; tags are invalid for target_commitish.
+          target_sha="$(git rev-parse HEAD)"
+
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release edit "${RELEASE_TAG}" \
               --title "${RELEASE_TAG}" \
@@ -122,5 +125,5 @@ jobs:
             gh release create "${RELEASE_TAG}" \
               --title "${RELEASE_TAG}" \
               --notes-file "${notes_file}" \
-              --target "${SOURCE_REF}"
+              --target "${target_sha}"
           fi
