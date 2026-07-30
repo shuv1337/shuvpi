@@ -17,11 +17,13 @@
  * 8. Commit next-cycle changelog updates
  * 9. Publish packages to npm (local; this fork has no CI publish job)
  * 10. Push main and the tag
+ * 11. Announce the release on Discord (DISCORD_RELEASE_WEBHOOK_URL)
  */
 
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { notifyDiscordRelease } from "./notify-discord-release.mjs";
 import { findPackageDirectories } from "./package-workspaces.mjs";
 
 const RELEASE_TARGET = process.argv[2];
@@ -251,6 +253,21 @@ console.log();
 console.log("Pushing to remote...");
 run("git push origin main");
 run(`git push origin v${version}`);
+console.log();
+
+// 11. Discord announcement (non-fatal if webhook is unset or the post fails)
+console.log("Announcing release on Discord...");
+try {
+	const result = await notifyDiscordRelease({ version });
+	if (result.skipped) {
+		console.log(`  Skipped: ${result.reason}`);
+	} else {
+		console.log("  Posted:");
+		console.log(result.content);
+	}
+} catch (error) {
+	console.error(`  Failed: ${error instanceof Error ? error.message : error}`);
+}
 console.log();
 
 console.log(`=== Released v${version}: published to npm and pushed main + tag v${version} ===`);
