@@ -10,6 +10,7 @@ import { ProjectTrustStore } from "../src/core/trust-manager.ts";
 import { main } from "../src/main.ts";
 import { ConfigSelectorComponent } from "../src/modes/interactive/components/config-selector.ts";
 import { handlePackageCommand } from "../src/package-manager-cli.ts";
+import { allowNetwork } from "./test-network-env.ts";
 
 describe("package commands", () => {
 	let tempDir: string;
@@ -51,6 +52,7 @@ describe("package commands", () => {
 	}
 
 	beforeEach(() => {
+		allowNetwork();
 		tempDir = join(tmpdir(), `shuvpi-package-commands-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		agentDir = join(tempDir, "agent");
 		projectDir = join(tempDir, "project");
@@ -471,8 +473,8 @@ describe("package commands", () => {
 	});
 
 	it("allows explicit self-update checks when automatic version checks are disabled", async () => {
-		const previousSkipVersionCheck = process.env.PI_SKIP_VERSION_CHECK;
-		process.env.PI_SKIP_VERSION_CHECK = "1";
+		const previousSkipVersionCheck = process.env.SHUVPI_SKIP_VERSION_CHECK;
+		process.env.SHUVPI_SKIP_VERSION_CHECK = "1";
 		const fetchMock = vi.fn(async () => Response.json({ version: VERSION }));
 		vi.stubGlobal("fetch", fetchMock);
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -489,9 +491,9 @@ describe("package commands", () => {
 			expect(process.exitCode).toBeUndefined();
 		} finally {
 			if (previousSkipVersionCheck === undefined) {
-				delete process.env.PI_SKIP_VERSION_CHECK;
+				delete process.env.SHUVPI_SKIP_VERSION_CHECK;
 			} else {
-				process.env.PI_SKIP_VERSION_CHECK = previousSkipVersionCheck;
+				process.env.SHUVPI_SKIP_VERSION_CHECK = previousSkipVersionCheck;
 			}
 		}
 	});

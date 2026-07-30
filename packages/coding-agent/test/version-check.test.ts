@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	checkForNewShuvpiVersion,
 	comparePackageVersions,
@@ -6,9 +6,14 @@ import {
 	getLatestShuvpiVersion,
 	isNewerPackageVersion,
 } from "../src/utils/version-check.ts";
+import { allowNetwork } from "./test-network-env.ts";
 
 const originalSkipVersionCheck = process.env.SHUVPI_SKIP_VERSION_CHECK;
 const originalOffline = process.env.SHUVPI_OFFLINE;
+
+beforeEach(() => {
+	allowNetwork();
+});
 
 afterEach(() => {
 	vi.unstubAllGlobals();

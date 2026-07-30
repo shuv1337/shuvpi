@@ -43,7 +43,7 @@ function toShuvpiModel(model: LlamaModelInfo, serverUrl: string): Model<"openai-
 			supportsStore: false,
 			supportsDeveloperRole: false,
 			supportsReasoningEffort: false,
-			supportsUsageInStreaming: false,
+			supportsUsageInStreaming: true,
 			supportsStrictMode: false,
 			maxTokensField: "max_tokens",
 		},

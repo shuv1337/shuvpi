@@ -508,7 +508,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 				totalTokens: 0,
 				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 			},
-			stopReason: "stop",
+			stopReason: "pending",
 			timestamp: Date.now(),
 		};
 
@@ -541,6 +541,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 					options?.interleavedThinking ?? true,
 					shouldUseFineGrainedToolStreamingBeta(model, context),
 					options?.headers,
+					options?.fetch,
 					copilotDynamicHeaders,
 					cacheSessionId,
 					options?.sessionId,
@@ -708,6 +709,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 					}
 				} else if (event.type === "message_delta") {
 					if (event.delta.stop_reason) {
+						output.rawStopReason = event.delta.stop_reason;
 						const stopReasonResult = mapStopReason(event.delta.stop_reason, event.delta.stop_details);
 						output.stopReason = stopReasonResult.stopReason;
 						if (stopReasonResult.errorMessage) {
@@ -749,6 +751,9 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 				throw new Error("Request was aborted");
 			}
 
+			if (output.stopReason === "pending") {
+				throw new Error("Anthropic stream ended without a stop reason");
+			}
 			if (output.stopReason === "aborted" || output.stopReason === "error") {
 				throw new Error(output.errorMessage || "An unknown error occurred");
 			}
@@ -848,6 +853,7 @@ function createClient(
 	interleavedThinking: boolean,
 	useFineGrainedToolStreamingBeta: boolean,
 	optionsHeaders?: ProviderHeaders,
+	fetch?: typeof globalThis.fetch,
 	dynamicHeaders?: Record<string, string>,
 	cacheSessionId?: string,
 	clientSessionId?: string,
@@ -869,6 +875,7 @@ function createClient(
 			authToken: apiKey ?? null,
 			baseURL: model.baseUrl,
 			dangerouslyAllowBrowser: true,
+			fetch,
 			defaultHeaders: mergeHeaders(
 				{
 					accept: "application/json",
@@ -896,7 +903,8 @@ function createClient(
 				if (url.pathname === "/v1/messages" && !url.searchParams.has("beta")) {
 					url.searchParams.set("beta", "true");
 				}
-				return fetch(input instanceof Request ? new Request(url, input) : url, init);
+				const nextFetch = fetch ?? globalThis.fetch;
+				return nextFetch(input instanceof Request ? new Request(url, input) : url, init);
 			},
 			defaultHeaders: mergeHeaders(
 				{
@@ -935,6 +943,7 @@ function createClient(
 		authToken: null,
 		baseURL: model.baseUrl,
 		dangerouslyAllowBrowser: true,
+		fetch,
 		defaultHeaders,
 	});
 
@@ -1350,7 +1359,7 @@ function mapStopReason(
 		case "stop_sequence":
 			return { stopReason: "stop" }; // We don't supply stop sequences, so this should never happen
 		case "sensitive": // Content flagged by safety filters (not yet in SDK types)
-			return { stopReason: "error" };
+			return { stopReason: "error", errorMessage: "Provider stopped with: sensitive" };
 		default:
 			// Handle unknown stop reasons gracefully (API may add new values)
 			throw new Error(`Unhandled stop reason: ${reason}`);

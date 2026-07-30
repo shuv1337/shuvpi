@@ -14,6 +14,15 @@ export const workspaceSourcePaths = {
 export default defineConfig({
 	resolve: {
 		alias: [
+			{ find: /^@shuv1337\/shuvpi-ai$/, replacement: workspaceSourcePaths.aiIndex },
+			{ find: /^@shuv1337\/shuvpi-ai\/compat$/, replacement: workspaceSourcePaths.aiCompat },
+			{ find: /^@shuv1337\/shuvpi-ai\/oauth$/, replacement: workspaceSourcePaths.aiOAuth },
+			{
+				find: /^@shuv1337\/shuvpi-ai\/providers\/(.+)$/,
+				replacement: `${workspaceSourcePaths.aiProviders}/$1.ts`,
+			},
+			{ find: /^@shuv1337\/shuvpi-agent-core$/, replacement: workspaceSourcePaths.agentIndex },
+			{ find: /^@shuv1337\/shuvpi-tui$/, replacement: workspaceSourcePaths.tuiIndex },
 			{ find: /^@earendil-works\/pi-ai$/, replacement: workspaceSourcePaths.aiIndex },
 			{ find: /^@earendil-works\/pi-ai\/compat$/, replacement: workspaceSourcePaths.aiCompat },
 			{ find: /^@earendil-works\/pi-ai\/oauth$/, replacement: workspaceSourcePaths.aiOAuth },
