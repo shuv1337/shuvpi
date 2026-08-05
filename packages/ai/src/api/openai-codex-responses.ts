@@ -273,7 +273,7 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 				throw new Error(`No API key for provider: ${model.provider}`);
 			}
 
-			const accountId = extractAccountId(apiKey);
+			const accountId = resolveCodexAccountId(apiKey, model.headers, options?.headers);
 			const grammarToolInputProperties = createGrammarToolInputProperties(
 				context.tools,
 				model.compat?.supportsOpenAIGrammarTools ?? false,
@@ -1561,17 +1561,62 @@ async function parseErrorResponse(response: Response): Promise<{ message: string
 // Auth & Headers
 // ============================================================================
 
-function extractAccountId(token: string): string {
-	try {
-		const parts = token.split(".");
-		if (parts.length !== 3) throw new Error("Invalid token");
-		const payload = JSON.parse(atob(parts[1]));
-		const accountId = payload?.[JWT_CLAIM_PATH]?.chatgpt_account_id;
-		if (!accountId) throw new Error("No account ID in token");
-		return accountId;
-	} catch {
-		throw new Error("Failed to extract accountId from token");
+/** Decode a JWT payload segment (base64url, optional padding) to a UTF-8 string. */
+function decodeJwtPayloadSegment(segment: string): string {
+	const base64 = segment.replace(/-/g, "+").replace(/_/g, "/");
+	const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+	const binary = atob(padded);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		bytes[i] = binary.charCodeAt(i);
 	}
+	return new TextDecoder().decode(bytes);
+}
+
+function extractAccountIdFromToken(token: string): string | undefined {
+	const parts = token.split(".");
+	if (parts.length !== 3) return undefined;
+	const payloadSegment = parts[1];
+	if (!payloadSegment) return undefined;
+	try {
+		const payload = JSON.parse(decodeJwtPayloadSegment(payloadSegment)) as {
+			[JWT_CLAIM_PATH]?: { chatgpt_account_id?: unknown };
+		};
+		const accountId = payload?.[JWT_CLAIM_PATH]?.chatgpt_account_id;
+		return typeof accountId === "string" && accountId.length > 0 ? accountId : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function getProviderHeader(headers: ProviderHeaders | undefined, name: string): string | undefined {
+	if (!headers) return undefined;
+	const expected = name.toLowerCase();
+	for (const [key, value] of Object.entries(headers)) {
+		if (key.toLowerCase() === expected && value !== null && value.trim().length > 0) {
+			return value.trim();
+		}
+	}
+	return undefined;
+}
+
+/**
+ * Resolve ChatGPT account id for Codex requests.
+ * Prefer the JWT claim; fall back to an explicit `chatgpt-account-id` header
+ * (model or request) when the token payload cannot be decoded.
+ */
+function resolveCodexAccountId(
+	token: string,
+	modelHeaders: Record<string, string> | undefined,
+	requestHeaders: ProviderHeaders | undefined,
+): string {
+	const fromToken = extractAccountIdFromToken(token);
+	if (fromToken) return fromToken;
+	const fromHeaders =
+		getProviderHeader(requestHeaders, "chatgpt-account-id") ??
+		getProviderHeader(modelHeaders, "chatgpt-account-id");
+	if (fromHeaders) return fromHeaders;
+	throw new Error("Failed to extract accountId from token");
 }
 
 function buildBaseCodexHeaders(

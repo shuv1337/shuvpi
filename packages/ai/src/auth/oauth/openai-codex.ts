@@ -105,8 +105,15 @@ function decodeJwt(token: string): JwtPayload | null {
 		const parts = token.split(".");
 		if (parts.length !== 3) return null;
 		const payload = parts[1] ?? "";
-		const decoded = atob(payload);
-		return JSON.parse(decoded) as JwtPayload;
+		// JWT uses base64url without padding; atob requires standard base64 + padding.
+		const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+		const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+		const binary = atob(padded);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+		return JSON.parse(new TextDecoder().decode(bytes)) as JwtPayload;
 	} catch {
 		return null;
 	}

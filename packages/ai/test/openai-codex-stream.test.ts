@@ -28,11 +28,19 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-function mockToken(): string {
-	const payload = Buffer.from(
-		JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
-		"utf8",
-	).toString("base64");
+/** Encode JWT payload as unpadded base64url (real tokens omit `=` and use -/_). */
+function encodeJwtPayload(payload: unknown): string {
+	return Buffer.from(JSON.stringify(payload), "utf8")
+		.toString("base64")
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_")
+		.replace(/=+$/g, "");
+}
+
+function mockToken(accountId = "acc_test"): string {
+	const payload = encodeJwtPayload({
+		"https://api.openai.com/auth": { chatgpt_account_id: accountId },
+	});
 	return `aaa.${payload}.bbb`;
 }
 
@@ -98,11 +106,7 @@ describe("openai-codex streaming", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
-		const payload = Buffer.from(
-			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
-			"utf8",
-		).toString("base64");
-		const token = `aaa.${payload}.bbb`;
+		const token = mockToken();
 
 		const sse = `${[
 			`data: ${JSON.stringify({
@@ -493,11 +497,7 @@ describe("openai-codex streaming", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
-		const payload = Buffer.from(
-			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
-			"utf8",
-		).toString("base64");
-		const token = `aaa.${payload}.bbb`;
+		const token = mockToken();
 
 		const sse = `${[
 			`data: ${JSON.stringify({
@@ -928,11 +928,7 @@ describe("openai-codex streaming", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
-		const payload = Buffer.from(
-			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
-			"utf8",
-		).toString("base64");
-		const token = `aaa.${payload}.bbb`;
+		const token = mockToken();
 
 		const sse = `${[
 			`data: ${JSON.stringify({
@@ -1127,11 +1123,7 @@ describe("openai-codex streaming", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
 		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
-		const payload = Buffer.from(
-			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
-			"utf8",
-		).toString("base64");
-		const token = `aaa.${payload}.bbb`;
+		const token = mockToken();
 
 		const sse = `${[
 			`data: ${JSON.stringify({
@@ -2521,5 +2513,143 @@ describe("openai-codex streaming", () => {
 		const result = await resultPromise;
 		expect(result.content.find((content) => content.type === "text")?.text).toBe("Hello");
 		expect(codexRequests).toBe(4);
+	});
+
+	it("decodes unpadded base64url JWT payloads for chatgpt-account-id", async () => {
+		// Craft a claim JSON whose base64 form needs padding and would use +/ if not url-safe.
+		// Real ChatGPT access tokens are base64url without padding; raw atob fails on them.
+		const claimJson = JSON.stringify({
+			"https://api.openai.com/auth": { chatgpt_account_id: "acc-base64url?>" },
+		});
+		const std = Buffer.from(claimJson, "utf8").toString("base64");
+		expect(std.includes("=") || std.includes("+") || std.includes("/")).toBe(true);
+		const token = mockToken("acc-base64url?>");
+		expect(token.split(".")[1]).not.toMatch(/[+/=]/);
+
+		let seenAccountId: string | null = null;
+		const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
+			const url = typeof input === "string" ? input : input.toString();
+			if (url === "https://chatgpt.com/backend-api/codex/responses") {
+				const headers = init?.headers instanceof Headers ? init.headers : new Headers(init?.headers);
+				seenAccountId = headers.get("chatgpt-account-id");
+				return new Response(buildSSEPayload({ status: "completed" }), {
+					status: 200,
+					headers: { "content-type": "text/event-stream" },
+				});
+			}
+			return new Response("not found", { status: 404 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "gpt-5.1-codex",
+			name: "GPT-5.1 Codex",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: "https://chatgpt.com/backend-api",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 400000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			messages: [{ role: "user", content: "hi", timestamp: Date.now() }],
+		};
+
+		const result = await streamOpenAICodexResponses(model, context, {
+			apiKey: token,
+			transport: "sse",
+			maxRetries: 0,
+		}).result();
+
+		expect(result.stopReason).toBe("stop");
+		expect(seenAccountId).toBe("acc-base64url?>");
+	});
+
+	it("falls back to explicit chatgpt-account-id header when JWT payload cannot be decoded", async () => {
+		let seenAccountId: string | null = null;
+		const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
+			const url = typeof input === "string" ? input : input.toString();
+			if (url === "https://chatgpt.com/backend-api/codex/responses") {
+				const headers = init?.headers instanceof Headers ? init.headers : new Headers(init?.headers);
+				seenAccountId = headers.get("chatgpt-account-id");
+				return new Response(buildSSEPayload({ status: "completed" }), {
+					status: 200,
+					headers: { "content-type": "text/event-stream" },
+				});
+			}
+			return new Response("not found", { status: 404 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "gpt-5.1-codex",
+			name: "GPT-5.1 Codex",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: "https://chatgpt.com/backend-api",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 400000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			messages: [{ role: "user", content: "hi", timestamp: Date.now() }],
+		};
+
+		const result = await streamOpenAICodexResponses(model, context, {
+			apiKey: "not-a-jwt",
+			headers: { "chatgpt-account-id": "acc_from_header" },
+			transport: "sse",
+			maxRetries: 0,
+		}).result();
+
+		expect(result.stopReason).toBe("stop");
+		expect(seenAccountId).toBe("acc_from_header");
+	});
+
+	it("prefers JWT chatgpt_account_id over a conflicting request header", async () => {
+		let seenAccountId: string | null = null;
+		const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
+			const url = typeof input === "string" ? input : input.toString();
+			if (url === "https://chatgpt.com/backend-api/codex/responses") {
+				const headers = init?.headers instanceof Headers ? init.headers : new Headers(init?.headers);
+				seenAccountId = headers.get("chatgpt-account-id");
+				return new Response(buildSSEPayload({ status: "completed" }), {
+					status: 200,
+					headers: { "content-type": "text/event-stream" },
+				});
+			}
+			return new Response("not found", { status: 404 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const model: Model<"openai-codex-responses"> = {
+			id: "gpt-5.1-codex",
+			name: "GPT-5.1 Codex",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: "https://chatgpt.com/backend-api",
+			reasoning: true,
+			input: ["text"],
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			contextWindow: 400000,
+			maxTokens: 128000,
+		};
+		const context: Context = {
+			messages: [{ role: "user", content: "hi", timestamp: Date.now() }],
+		};
+
+		const result = await streamOpenAICodexResponses(model, context, {
+			apiKey: mockToken("acc_from_jwt"),
+			headers: { "chatgpt-account-id": "acc_from_header" },
+			transport: "sse",
+			maxRetries: 0,
+		}).result();
+
+		expect(result.stopReason).toBe("stop");
+		expect(seenAccountId).toBe("acc_from_jwt");
 	});
 });

@@ -15,15 +15,23 @@ function getUrl(input: unknown): string {
 	throw new Error(`Unsupported fetch input: ${String(input)}`);
 }
 
+function toBase64Url(value: string): string {
+	return Buffer.from(value, "utf8")
+		.toString("base64")
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_")
+		.replace(/=+$/g, "");
+}
+
 function createAccessToken(accountId: string): string {
-	const header = Buffer.from(JSON.stringify({ alg: "none" })).toString("base64");
-	const payload = Buffer.from(
+	const header = toBase64Url(JSON.stringify({ alg: "none" }));
+	const payload = toBase64Url(
 		JSON.stringify({
 			"https://api.openai.com/auth": {
 				chatgpt_account_id: accountId,
 			},
 		}),
-	).toString("base64");
+	);
 	return `${header}.${payload}.signature`;
 }
 
@@ -475,5 +483,35 @@ describe("OpenAI Codex OAuth", () => {
 			}),
 		).rejects.toThrow(/OpenAI Codex token refresh failed \(401\).*Could not validate your token/);
 		expect(consoleError).not.toHaveBeenCalled();
+	});
+
+	it("extracts chatgpt_account_id from unpadded base64url JWT access tokens on refresh", async () => {
+		const accountId = "acc-base64url?>";
+		const accessToken = createAccessToken(accountId);
+		expect(accessToken.split(".")[1]).not.toMatch(/[+/=]/);
+
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (): Promise<Response> => {
+				return jsonResponse({
+					access_token: accessToken,
+					refresh_token: "refresh-token-2",
+					expires_in: 3600,
+				});
+			}),
+		);
+
+		await expect(
+			openaiCodexOAuth.refresh({
+				type: "oauth",
+				access: "old-access",
+				refresh: "refresh-token",
+				expires: 0,
+			}),
+		).resolves.toMatchObject({
+			access: accessToken,
+			refresh: "refresh-token-2",
+			accountId,
+		});
 	});
 });
