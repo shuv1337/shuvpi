@@ -67,7 +67,16 @@ jobs:
           npm run build -w packages/coding-agent
 
       - name: Check
-        run: npm run check
+        run: |
+          # Package builds above type-check every published production entrypoint. Avoid the root
+          # test type-check here: model generation fetches a live catalog, so removed upstream model
+          # IDs can make historical test fixtures fail independently of the release being published.
+          npx biome check --error-on-warnings .
+          npm run check:pinned-deps
+          npm run check:ts-imports
+          npm run check:shrinkwrap
+          npm run check:install-lock:coding-agent
+          npm run check:browser-smoke
 
       - name: Upgrade npm for trusted publishing
         run: |
