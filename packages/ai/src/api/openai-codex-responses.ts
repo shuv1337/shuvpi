@@ -1613,8 +1613,7 @@ function resolveCodexAccountId(
 	const fromToken = extractAccountIdFromToken(token);
 	if (fromToken) return fromToken;
 	const fromHeaders =
-		getProviderHeader(requestHeaders, "chatgpt-account-id") ??
-		getProviderHeader(modelHeaders, "chatgpt-account-id");
+		getProviderHeader(requestHeaders, "chatgpt-account-id") ?? getProviderHeader(modelHeaders, "chatgpt-account-id");
 	if (fromHeaders) return fromHeaders;
 	throw new Error("Failed to extract accountId from token");
 }
