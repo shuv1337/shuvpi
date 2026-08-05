@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-evals",
-	"version": "0.83.0",
+	"version": "0.83.1",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -8,8 +8,8 @@
 		"eval": "node scripts/run-evals.mjs"
 	},
 	"devDependencies": {
-		"@shuv1337/shuvpi-ai": "^0.83.0",
-		"@shuv1337/shuvpi-coding-agent": "^0.83.0",
+		"@shuv1337/shuvpi-ai": "^0.83.1",
+		"@shuv1337/shuvpi-coding-agent": "^0.83.1",
 		"@types/node": "24.12.4",
 		"shx": "0.4.0",
 		"typescript": "5.9.3",

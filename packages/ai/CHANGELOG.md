@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.83.1] - 2026-08-05
+
+### Fixed
+
+- Fixed ChatGPT Codex account identifiers being rejected when OAuth JWT payloads use unpadded base64url encoding, with an explicit account-header fallback for opaque access tokens.
+
 ## [0.83.0] - 2026-07-29
 
 ### Breaking Changes

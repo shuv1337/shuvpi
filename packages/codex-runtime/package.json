@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/pi-codex-runtime",
-	"version": "0.83.0",
+	"version": "0.83.1",
 	"description": "First-class Pi coding-agent runtime sidecar for Codex",
 	"type": "module",
 	"bin": {
@@ -45,8 +45,8 @@
 	},
 	"dependencies": {
 		"@bufbuild/protobuf": "2.12.1",
-		"@shuv1337/shuvpi-ai": "^0.83.0",
-		"@shuv1337/shuvpi-coding-agent": "^0.83.0"
+		"@shuv1337/shuvpi-ai": "^0.83.1",
+		"@shuv1337/shuvpi-coding-agent": "^0.83.1"
 	},
 	"devDependencies": {
 		"@bufbuild/protoc-gen-es": "2.12.1",
