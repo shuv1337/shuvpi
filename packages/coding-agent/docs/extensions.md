@@ -1436,6 +1436,28 @@ When not streaming, the message is sent immediately and triggers a new turn. Whe
 
 See [send-user-message.ts](../examples/extensions/send-user-message.ts) for a complete example.
 
+### shuvpi.runCommand(name, args?)
+
+Run a registered extension command by name. The handler receives a real `ExtensionCommandContext`, so it can use `ctx.waitForIdle()`, `ctx.newSession()`, `ctx.fork()`, `ctx.navigateTree()`, `ctx.switchSession()`, and `ctx.reload()`.
+
+Unlike `sendUserMessage("/my-command")`, this does not append a conversation entry and does not trigger a model turn. Use it to invoke command logic from event handlers or tools.
+
+```typescript
+shuvpi.registerCommand("index-repo", {
+  description: "Index the repository",
+  handler: async (args, ctx) => {
+    await ctx.waitForIdle();
+    shuvpi.appendEntry("index-state", { args });
+  },
+});
+
+shuvpi.on("session_start", async () => {
+  await shuvpi.runCommand("index-repo", "--incremental");
+});
+```
+
+Throws if `name` is not a registered command. Errors thrown by the handler are reported through the extension error channel and rethrown to the caller.
+
 ### shuvpi.appendEntry(customType, data?)
 
 Persist extension data. Custom entries do NOT participate in LLM context. In interactive mode, they can also render inside the chat transcript when paired with `shuvpi.registerEntryRenderer()`.

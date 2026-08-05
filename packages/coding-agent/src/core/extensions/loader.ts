@@ -178,6 +178,7 @@ export function createExtensionRuntime(): ExtensionRuntime {
 	const runtime: ExtensionRuntime = {
 		sendMessage: notInitialized,
 		sendUserMessage: notInitialized,
+		runCommand: () => Promise.reject(new Error("Extension runtime not initialized")),
 		appendEntry: notInitialized,
 		setSessionName: notInitialized,
 		getSessionName: notInitialized,
@@ -306,6 +307,11 @@ function createExtensionAPI(
 		sendUserMessage(content, options): void {
 			runtime.assertActive();
 			runtime.sendUserMessage(content, options);
+		},
+
+		runCommand(name: string, args?: string): Promise<void> {
+			runtime.assertActive();
+			return runtime.runCommand(name, args);
 		},
 
 		appendEntry(customType: string, data?: unknown): void {

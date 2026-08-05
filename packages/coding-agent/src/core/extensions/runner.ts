@@ -322,6 +322,7 @@ export class ExtensionRunner {
 		// Copy actions into the shared runtime (all extension APIs reference this)
 		this.runtime.sendMessage = actions.sendMessage;
 		this.runtime.sendUserMessage = actions.sendUserMessage;
+		this.runtime.runCommand = actions.runCommand;
 		this.runtime.appendEntry = actions.appendEntry;
 		this.runtime.setSessionName = actions.setSessionName;
 		this.runtime.getSessionName = actions.getSessionName;
@@ -646,6 +647,29 @@ export class ExtensionRunner {
 
 	getCommand(name: string): ResolvedCommand | undefined {
 		return this.resolveRegisteredCommands().find((command) => command.invocationName === name);
+	}
+
+	/**
+	 * Execute a registered extension command with a real command context.
+	 * Does not prompt, append conversation entries, or start a model turn.
+	 */
+	async runCommand(name: string, args = ""): Promise<void> {
+		this.assertActive();
+		const command = this.getCommand(name);
+		if (!command) {
+			throw new Error(`Unknown extension command: ${name}`);
+		}
+		const ctx = this.createCommandContext();
+		try {
+			await command.handler(args, ctx);
+		} catch (err) {
+			this.emitError({
+				extensionPath: `command:${name}`,
+				event: "command",
+				error: err instanceof Error ? err.message : String(err),
+			});
+			throw err;
+		}
 	}
 
 	/**

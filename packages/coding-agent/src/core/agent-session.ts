@@ -2397,6 +2397,9 @@ export class AgentSession {
 						});
 					});
 				},
+				runCommand: async (name, args) => {
+					await runner.runCommand(name, args);
+				},
 				appendEntry: (customType, data) => {
 					const entryId = this.sessionManager.appendCustomEntry(customType, data);
 					const entry = this.sessionManager.getEntry(entryId);

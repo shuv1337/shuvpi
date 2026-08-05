@@ -75,6 +75,7 @@ describe("ExtensionRunner", () => {
 	const extensionActions: ExtensionActions = {
 		sendMessage: () => {},
 		sendUserMessage: () => {},
+		runCommand: async () => {},
 		appendEntry: () => {},
 		setSessionName: () => {},
 		getSessionName: () => undefined,
@@ -116,6 +117,92 @@ describe("ExtensionRunner", () => {
 			const scoped = [{ model: { id: "scoped-test" }, thinkingLevel: "high" }] as unknown as ScopedModel[];
 			runner.bindCore(extensionActions, { ...extensionContextActions, getScopedModels: () => scoped });
 			expect(runner.createContext().scopedModels).toBe(scoped);
+		});
+	});
+
+	describe("runCommand", () => {
+		it("invokes a registered command with command context and no conversation mutation", async () => {
+			const extPath = path.join(extensionsDir, "run-command.ts");
+			fs.writeFileSync(
+				extPath,
+				`export default function(shuvpi) {
+	shuvpi.registerCommand("probe", {
+		description: "Capture command context",
+		handler: async (args, ctx) => {
+			shuvpi.appendEntry("probe-ran", {
+				args,
+				hasWaitForIdle: typeof ctx.waitForIdle === "function",
+				hasNavigateTree: typeof ctx.navigateTree === "function",
+			});
+		},
+	});
+	shuvpi.on("session_start", async () => {
+		await shuvpi.runCommand("probe", "silent-bind");
+	});
+}`,
+			);
+
+			const result = await discoverAndLoadExtensions([], tempDir, tempDir);
+			const runner = new ExtensionRunner(result.extensions, result.runtime, tempDir, sessionManager, modelRegistry);
+			const customEntries: Array<{ customType: string; data?: unknown }> = [];
+			const userMessages: unknown[] = [];
+			const modelPrompts: unknown[] = [];
+
+			runner.bindCore(
+				{
+					...extensionActions,
+					appendEntry: (customType, data) => {
+						customEntries.push({ customType, data });
+						sessionManager.appendCustomEntry(customType, data);
+					},
+					sendUserMessage: (content, options) => {
+						userMessages.push({ content, options });
+					},
+					sendMessage: (message, options) => {
+						modelPrompts.push({ message, options });
+					},
+					runCommand: async (name, args) => {
+						await runner.runCommand(name, args);
+					},
+				},
+				extensionContextActions,
+			);
+			runner.bindCommandContext({
+				waitForIdle: async () => {},
+				newSession: async () => ({ cancelled: false }),
+				fork: async () => ({ cancelled: false }),
+				navigateTree: async () => ({ cancelled: false }),
+				switchSession: async () => ({ cancelled: false }),
+				reload: async () => {},
+			});
+
+			const beforeBranch = sessionManager.getBranch();
+			const beforeUserOrAssistant = beforeBranch.filter(
+				(e) => e.type === "message" && (e.message.role === "user" || e.message.role === "assistant"),
+			).length;
+			await runner.emit({ type: "session_start", reason: "startup", previousSessionFile: undefined });
+			const afterBranch = sessionManager.getBranch();
+			const afterUserOrAssistant = afterBranch.filter(
+				(e) => e.type === "message" && (e.message.role === "user" || e.message.role === "assistant"),
+			).length;
+
+			expect(customEntries).toEqual([
+				{
+					customType: "probe-ran",
+					data: {
+						args: "silent-bind",
+						hasWaitForIdle: true,
+						hasNavigateTree: true,
+					},
+				},
+			]);
+			// runCommand itself must not send user/custom model messages or start a turn.
+			// The probe handler may append a non-LLM custom entry for the test assertion.
+			expect(userMessages).toEqual([]);
+			expect(modelPrompts).toEqual([]);
+			expect(afterUserOrAssistant).toBe(beforeUserOrAssistant);
+
+			await expect(runner.runCommand("missing-command")).rejects.toThrow(/Unknown extension command/);
 		});
 	});
 

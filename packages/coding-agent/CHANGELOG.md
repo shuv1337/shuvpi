@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `shuvpi.runCommand(name, args?)` to the extension API for invoking a registered extension command with a real `ExtensionCommandContext`, without appending a conversation entry or triggering a model turn. See [Extension API](docs/extensions.md#shuvpiruncommandname-args).
+
 ## [0.83.0] - 2026-07-29
 
 ### New Features
