@@ -16,11 +16,7 @@ function getUrl(input: unknown): string {
 }
 
 function toBase64Url(value: string): string {
-	return Buffer.from(value, "utf8")
-		.toString("base64")
-		.replace(/\+/g, "-")
-		.replace(/\//g, "_")
-		.replace(/=+$/g, "");
+	return Buffer.from(value, "utf8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 function createAccessToken(accountId: string): string {
