@@ -4,6 +4,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symli
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { parsePackResult } from "./npm-pack.mjs";
 
 const packages = [
 	{ directory: "packages/telemetry", name: "@shuv1337/shuvpi-telemetry" },
@@ -195,8 +196,7 @@ function packPackage(pkg, tarballDirectory) {
 		capture: true,
 		cwd: pkg.directory,
 	});
-	const packed = JSON.parse(output)[0];
-	return join(tarballDirectory, packed.filename);
+	return join(tarballDirectory, parsePackResult(output).filename);
 }
 
 const options = parseArgs();
