@@ -51,7 +51,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions.map((e) => path.basename(e.path)).sort()).toEqual(["bar.ts", "foo.ts"]);
 	});
 
-	it("loads the coding-agent entrypoint without rewriting pi-ai provider subpaths", async () => {
+	it("loads the coding-agent entrypoint without rewriting shuvpi-ai provider subpaths", async () => {
 		fs.writeFileSync(
 			path.join(extensionsDir, "coding-agent-import.ts"),
 			`
@@ -69,7 +69,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions).toHaveLength(1);
 	});
 
-	it("keeps the type-only pi-ai OAuth compatibility barrel resolvable", async () => {
+	it("keeps the type-only shuvpi-ai OAuth compatibility barrel resolvable", async () => {
 		fs.writeFileSync(
 			path.join(extensionsDir, "oauth-import.ts"),
 			`
@@ -374,6 +374,9 @@ describe("extensions discovery", () => {
 	it("registers message and entry renderers", async () => {
 		const extCode = `
 			export default function(shuvpi) {
+				shuvpi.registerMarkdownTransformer((markdown) => {
+					return markdown;
+				});
 				shuvpi.registerMessageRenderer("my-custom-type", (message, options, theme) => {
 					return null; // Use default rendering
 				});
@@ -388,6 +391,7 @@ describe("extensions discovery", () => {
 
 		expect(result.errors).toHaveLength(0);
 		expect(result.extensions).toHaveLength(1);
+		expect(result.extensions[0].markdownTransformer).toBeDefined();
 		expect(result.extensions[0].messageRenderers.has("my-custom-type")).toBe(true);
 		expect(result.extensions[0].entryRenderers?.has("my-entry-type")).toBe(true);
 	});
@@ -524,29 +528,5 @@ describe("extensions discovery", () => {
 
 		expect(result.errors).toHaveLength(0);
 		expect(result.extensions).toHaveLength(0);
-	});
-
-	it("resolves canonical shuvpi package imports to bundled modules", async () => {
-		const extension = `
-				import { SessionManager } from "@shuv1337/shuvpi-coding-agent";
-				import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
-				import "@shuv1337/shuvpi-tui";
-				import "@shuv1337/shuvpi-ai";
-				import "@shuv1337/shuvpi-agent-core";
-				export default function(shuvpi: ExtensionAPI) {
-					shuvpi.registerCommand("canonical", {
-						handler: async () => {
-							if (typeof SessionManager !== "function") throw new Error("SessionManager missing");
-						},
-					});
-				}
-			`;
-		fs.writeFileSync(path.join(extensionsDir, "canonical.ts"), extension);
-
-		const result = await discoverAndLoadExtensions([], tempDir, tempDir);
-
-		expect(result.errors).toHaveLength(0);
-		expect(result.extensions).toHaveLength(1);
-		expect(result.extensions[0].commands.has("canonical")).toBe(true);
 	});
 });

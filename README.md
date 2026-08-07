@@ -16,11 +16,14 @@ The project remains derived from [upstream Pi](https://github.com/earendil-works
 
 | Package | Description |
 |---------|-------------|
+| **[@shuv1337/shuvpi-telemetry](packages/telemetry)** | Vendor-neutral telemetry contracts, reference adapter, conformance tests, and typed schemas |
 | **[@shuv1337/shuvpi-ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
 | **[@shuv1337/shuvpi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
 | **[@shuv1337/shuvpi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
 | **[@shuv1337/shuvpi-tui](packages/tui)** | Terminal UI library with differential rendering |
-| **[@shuv1337/shuvpi-storage-sqlite-node](packages/storage/sqlite-node)** | SQLite session-storage backend for Node.js |
+| **[@shuv1337/shuvpi-protocol](packages/protocol)** | Shared wire protocol contracts for the server and client packages |
+| **[@shuv1337/shuvpi-client](packages/client)** | Client library for the Shuvpi server protocol |
+| **[@shuv1337/shuvpi-session-backend-sqlite-node](packages/session-backends/sqlite-node)** | SQLite session backend for Node.js |
 | **[@shuv1337/shuvpi-server](packages/server)** | Experimental Shuvpi server package |
 
 For upstream Slack/chat automation and workflows, see [earendil-works/pi-chat](https://github.com/earendil-works/pi-chat).

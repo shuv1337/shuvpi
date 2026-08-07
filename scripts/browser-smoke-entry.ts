@@ -1,3 +1,4 @@
+import { ShuvpiClient } from "@shuv1337/shuvpi-client";
 import { createAssistantMessageEventStream, Type } from "@shuv1337/shuvpi-ai";
 import { complete, getModel, getProviders, streamSimple } from "@shuv1337/shuvpi-ai/compat";
 import {
@@ -5,18 +6,19 @@ import {
 	bashExecutionToText,
 	convertToLlm,
 	createCustomMessage,
+	InMemorySessionRepo,
 	FileError,
 	formatPromptTemplateInvocation,
 	formatSkillInvocation,
 	formatSkillsForSystemPrompt,
 	getOrThrow,
-	InMemorySessionRepo,
 	ok,
 	parseCommandArgs,
 	streamProxy,
 	toError,
 	truncateHead,
 } from "@shuv1337/shuvpi-agent-core";
+import { decodeCbor, encodeCbor, PROTOCOL_VERSION } from "@shuv1337/shuvpi-protocol";
 
 // Keep this entry browser-safe. It is bundled by scripts/check-browser-smoke.mjs
 // to catch accidental Node-only runtime imports in browser-facing package exports.
@@ -58,4 +60,7 @@ console.log(
 	new FileError("not_found", "missing").code,
 	toError("boom").message,
 	typeof streamProxy,
+	typeof ShuvpiClient,
+	PROTOCOL_VERSION,
+	decodeCbor(encodeCbor({ browser: true })),
 );

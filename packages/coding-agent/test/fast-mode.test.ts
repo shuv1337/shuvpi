@@ -327,6 +327,7 @@ describe("FooterComponent fast-mode indicator", () => {
 			getContextUsage: () => ({ contextWindow: 200_000, percent: 12.3 }),
 			modelRuntime: {
 				isUsingOAuth: () => false,
+				isUsingSubscription: () => false,
 			},
 			isFastModeActiveForCurrentModel: () => true,
 		} as unknown as ConstructorParameters<typeof FooterComponent>[0];

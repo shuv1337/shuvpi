@@ -462,6 +462,14 @@ describe("ToolExecutionComponent parity", () => {
 			absent: undefined,
 		},
 		{
+			title: "AGENTS.override.md",
+			path: join(process.cwd(), ".shuvpi", "AGENTS.override.md"),
+			content: "Hidden override instructions",
+			compact: "read resource .shuvpi/AGENTS.override.md",
+			hidden: "Hidden override instructions",
+			absent: undefined,
+		},
+		{
 			title: "outside AGENTS.md",
 			path: resolve(process.cwd(), "..", "AGENTS.md"),
 			content: "Hidden outside resource instructions",

@@ -10,6 +10,12 @@
 		],
 		"noEmit": true,
 		"paths": {
+			"@shuv1337/shuvpi-telemetry": [
+				"../telemetry/src/index.ts"
+			],
+			"@shuv1337/shuvpi-telemetry/testing": [
+				"../telemetry/src/testing/index.ts"
+			],
 			"@shuv1337/shuvpi-agent-core": [
 				"../agent/src/index.ts"
 			],

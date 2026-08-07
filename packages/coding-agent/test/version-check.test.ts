@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	checkForNewShuvpiVersion,
 	comparePackageVersions,
+	formatVersionCheckError,
 	getLatestShuvpiRelease,
 	getLatestShuvpiVersion,
 	isNewerPackageVersion,
@@ -9,7 +10,6 @@ import {
 import { allowNetwork } from "./test-network-env.ts";
 
 const originalSkipVersionCheck = process.env.SHUVPI_SKIP_VERSION_CHECK;
-const originalOffline = process.env.SHUVPI_OFFLINE;
 
 beforeEach(() => {
 	allowNetwork();
@@ -21,11 +21,6 @@ afterEach(() => {
 		delete process.env.SHUVPI_SKIP_VERSION_CHECK;
 	} else {
 		process.env.SHUVPI_SKIP_VERSION_CHECK = originalSkipVersionCheck;
-	}
-	if (originalOffline === undefined) {
-		delete process.env.SHUVPI_OFFLINE;
-	} else {
-		process.env.SHUVPI_OFFLINE = originalOffline;
 	}
 });
 
@@ -61,6 +56,37 @@ describe("version checks", () => {
 				}),
 			}),
 		);
+	});
+
+	it("retries a transient version request when explicitly requested", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockRejectedValueOnce(new Error("fetch failed"))
+			.mockRejectedValueOnce(new Error("fetch failed"))
+			.mockResolvedValueOnce(Response.json({ version: "1.2.4" }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(getLatestShuvpiRelease("1.2.3", { retry: true })).resolves.toEqual({ version: "1.2.4" });
+		expect(fetchMock).toHaveBeenCalledTimes(3);
+	});
+
+	it("keeps automatic version checks to one request", async () => {
+		const fetchMock = vi.fn().mockRejectedValue(new Error("fetch failed"));
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(checkForNewShuvpiVersion("1.2.3")).resolves.toBeUndefined();
+		expect(fetchMock).toHaveBeenCalledOnce();
+	});
+
+	it("formats nested network error details", () => {
+		const error = new Error("fetch failed", {
+			cause: new AggregateError([
+				Object.assign(new Error("connect timeout"), { code: "ETIMEDOUT" }),
+				Object.assign(new Error("network unreachable"), { code: "ENETUNREACH" }),
+			]),
+		});
+
+		expect(formatVersionCheckError(error)).toBe("fetch failed (ETIMEDOUT, ENETUNREACH)");
 	});
 
 	it("returns the active package metadata from the version check api", async () => {

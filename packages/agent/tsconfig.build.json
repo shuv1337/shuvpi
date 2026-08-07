@@ -3,6 +3,7 @@
 	"compilerOptions": {
 		"outDir": "./dist",
 		"paths": {
+			"@shuv1337/shuvpi-telemetry": ["../telemetry/dist/index.d.ts"],
 			"@shuv1337/shuvpi-ai": ["../ai/dist/index.d.ts"],
 			"@shuv1337/shuvpi-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"]
 		},

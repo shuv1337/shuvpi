@@ -7,6 +7,8 @@
 			"@shuv1337/shuvpi-agent-core/*": ["../agent/dist/*.d.ts"],
 			"@shuv1337/shuvpi-ai": ["../ai/dist/index.d.ts"],
 			"@shuv1337/shuvpi-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"],
+			"@shuv1337/shuvpi-client": ["../client/dist/index.d.ts"],
+			"@shuv1337/shuvpi-protocol": ["../protocol/dist/index.d.ts"],
 			"@shuv1337/shuvpi-tui": ["../tui/dist/index.d.ts"],
 			"@shuv1337/shuvpi-tui/*": ["../tui/dist/*.d.ts", "../tui/dist/components/*.d.ts"]
 		},

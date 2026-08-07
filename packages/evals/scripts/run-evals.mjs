@@ -1,9 +1,18 @@
+import { randomUUID } from "node:crypto";
+import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const artifactDirectory = process.env.SHUVPI_EVAL_ARTIFACT_DIR
+	? resolve(packageRoot, process.env.SHUVPI_EVAL_ARTIFACT_DIR)
+	: resolve(
+			packageRoot,
+			".eval",
+			`${new Date().toISOString().replaceAll(":", "-")}_${randomUUID()}`,
+		);
 const args = process.argv.slice(2);
 let provider;
 let model;
@@ -37,37 +46,47 @@ for (let index = 0; index < args.length; index += 1) {
 	vitestArgs.push(arg);
 }
 
-if (hasCliModelSelection && (!provider || !model)) {
-	console.error("CLI model selection requires both --provider and --model.");
-	process.exit(1);
-}
-
-provider ??= process.env.SHUVPI_PROVIDER;
-model ??= process.env.SHUVPI_MODEL;
-
-if (!provider || !model) {
-	console.error(
-		"No eval model selected. Pass --provider and --model, or set SHUVPI_PROVIDER and SHUVPI_MODEL.",
-	);
-	process.exit(1);
+provider = provider?.trim() || undefined;
+model = model?.trim() || undefined;
+if (hasCliModelSelection) {
+	if (!provider || !model) {
+		console.error("CLI model selection requires both --provider and --model.");
+		process.exit(1);
+	}
+} else {
+	provider = process.env.SHUVPI_PROVIDER?.trim() || undefined;
+	model = process.env.SHUVPI_MODEL?.trim() || undefined;
+	if (Boolean(provider) !== Boolean(model)) {
+		console.error("Default model selection requires both SHUVPI_PROVIDER and SHUVPI_MODEL.");
+		process.exit(1);
+	}
 }
 
 const require = createRequire(import.meta.url);
 const vitestPackagePath = require.resolve("vitest/package.json");
 const vitestCliPath = resolve(dirname(vitestPackagePath), "vitest.mjs");
 
-console.error(`[eval] provider=${provider} model=${model}`);
+mkdirSync(artifactDirectory, { recursive: true, mode: 0o700 });
+console.error(`[eval] default-model=${provider && model ? `${provider}/${model}` : "none"}`);
+console.error(`[eval] artifacts=${artifactDirectory}`);
+const childEnvironment = {
+	...process.env,
+	SHUVPI_EVAL_ARTIFACT_DIR: artifactDirectory,
+};
+if (provider && model) {
+	childEnvironment.SHUVPI_PROVIDER = provider;
+	childEnvironment.SHUVPI_MODEL = model;
+} else {
+	delete childEnvironment.SHUVPI_PROVIDER;
+	delete childEnvironment.SHUVPI_MODEL;
+}
 const result = spawnSync(
 	process.execPath,
 	[vitestCliPath, "run", "--config", "vitest.config.ts", ...vitestArgs],
 	{
 		cwd: packageRoot,
 		stdio: "inherit",
-		env: {
-			...process.env,
-			SHUVPI_PROVIDER: provider,
-			SHUVPI_MODEL: model,
-		},
+		env: childEnvironment,
 	},
 );
 

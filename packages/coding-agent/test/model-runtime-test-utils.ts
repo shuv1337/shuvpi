@@ -1,6 +1,7 @@
 import type { CredentialStore } from "@shuv1337/shuvpi-ai";
 import { ModelRegistry } from "../src/core/model-registry.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";
+import { InMemoryCodingAgentModelsStore } from "../src/core/models-store.ts";
 
 const runtimes = new WeakMap<ModelRegistry, ModelRuntime>();
 
@@ -10,26 +11,20 @@ function wrap(runtime: ModelRuntime): ModelRegistry {
 	return registry;
 }
 
-async function createOfflineRuntime(
-	credentials: CredentialStore,
-	modelsPath: string | null | undefined,
-): Promise<ModelRuntime> {
-	const offline = process.env.SHUVPI_OFFLINE;
-	process.env.SHUVPI_OFFLINE = "1";
-	try {
-		return await ModelRuntime.create({ credentials, modelsPath, allowModelNetwork: false });
-	} finally {
-		if (offline === undefined) delete process.env.SHUVPI_OFFLINE;
-		else process.env.SHUVPI_OFFLINE = offline;
-	}
-}
-
+/** Load optional models.json configuration without introducing file-backed catalog locks into unit tests. */
 export async function createModelRegistry(credentials: CredentialStore, modelsPath?: string): Promise<ModelRegistry> {
-	return wrap(await createOfflineRuntime(credentials, modelsPath));
+	return wrap(
+		await ModelRuntime.create({
+			credentials,
+			modelsPath,
+			modelsStore: new InMemoryCodingAgentModelsStore(),
+			allowModelNetwork: false,
+		}),
+	);
 }
 
 export async function createInMemoryModelRegistry(credentials: CredentialStore): Promise<ModelRegistry> {
-	return wrap(await createOfflineRuntime(credentials, null));
+	return wrap(await ModelRuntime.create({ credentials, modelsPath: null, allowModelNetwork: false }));
 }
 
 export function getModelRuntime(modelRegistry: ModelRegistry): ModelRuntime {

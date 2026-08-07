@@ -61,9 +61,12 @@ jobs:
           # Only packages published by scripts/publish.mjs (plus deps).
           # Skip codex-runtime: not published and needs protoc-gen-es.
           npm run build -w packages/tui
+          npm run build -w packages/telemetry
           npm run build -w packages/ai
           npm run build -w packages/agent
-          npm run build -w packages/storage/sqlite-node
+          npm run build -w packages/protocol
+          npm run build -w packages/client
+          npm run build -w packages/session-backends/sqlite-node
           npm run build -w packages/coding-agent
 
       - name: Check

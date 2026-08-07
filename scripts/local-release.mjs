@@ -6,10 +6,14 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const packages = [
+	{ directory: "packages/telemetry", name: "@shuv1337/shuvpi-telemetry" },
 	{ directory: "packages/ai", name: "@shuv1337/shuvpi-ai" },
 	{ directory: "packages/tui", name: "@shuv1337/shuvpi-tui" },
 	{ directory: "packages/agent", name: "@shuv1337/shuvpi-agent-core" },
-	{ directory: "packages/storage/sqlite-node", name: "@shuv1337/shuvpi-storage-sqlite-node" },
+	{ directory: "packages/protocol", name: "@shuv1337/shuvpi-protocol" },
+	{ directory: "packages/client", name: "@shuv1337/shuvpi-client" },
+	{ directory: "packages/session-backends/sqlite-node", name: "@shuv1337/shuvpi-session-backend-sqlite-node" },
+	{ directory: "packages/server", name: "@shuv1337/shuvpi-server" },
 	{ directory: "packages/coding-agent", name: "@shuv1337/shuvpi-coding-agent" },
 ];
 

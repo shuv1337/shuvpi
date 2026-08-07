@@ -100,6 +100,8 @@ Shuvpi loads:
 - `~/.shuvpi/agent/AGENTS.md` for global instructions
 - `AGENTS.md` or `CLAUDE.md` from parent directories and the current directory
 
+If a directory contains `AGENTS.override.md`, Shuvpi loads it instead of `AGENTS.md` or `CLAUDE.md` from that directory.
+
 Restart shuvpi, or run `/reload`, after changing context files.
 
 ## Common things to try

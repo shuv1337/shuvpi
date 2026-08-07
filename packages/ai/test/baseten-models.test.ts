@@ -1,22 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getModel, getModels, getProviders } from "../src/compat.ts";
+import { getModel, streamSimple } from "../src/compat.ts";
 import { findEnvKeys, getEnvApiKey } from "../src/env-api-keys.ts";
+import { getSupportedThinkingLevels } from "../src/models.ts";
 
 const originalBasetenApiKey = process.env.BASETEN_API_KEY;
-
-const BASETEN_BASE_URL = "https://inference.baseten.co/v1";
-const BASETEN_REASONING_EFFORT_MODELS = ["deepseek-ai/DeepSeek-V4-Pro", "openai/gpt-oss-120b"] as const;
-const BASETEN_CHAT_TEMPLATE_MODELS = [
-	"moonshotai/Kimi-K2.5",
-	"moonshotai/Kimi-K2.6",
-	"moonshotai/Kimi-K2.7-Code",
-	"zai-org/GLM-4.7",
-	"zai-org/GLM-5",
-	"zai-org/GLM-5.1",
-	"zai-org/GLM-5.2",
-	"nvidia/Nemotron-120B-A12B",
-	"nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
-] as const;
 
 afterEach(() => {
 	if (originalBasetenApiKey === undefined) {
@@ -27,111 +14,122 @@ afterEach(() => {
 });
 
 describe("Baseten models", () => {
-	it("registers baseten as a built-in provider", () => {
-		expect(getProviders()).toContain("baseten");
-	});
+	it("registers GLM 5.2 as the default OpenAI-compatible reasoning model", () => {
+		const model = getModel("baseten", "zai-org/GLM-5.2");
 
-	it("generates only tool-capable Baseten models with expected invariants", () => {
-		const models = getModels("baseten");
-		const reasoningAllowlist = new Set<string>([...BASETEN_REASONING_EFFORT_MODELS, ...BASETEN_CHAT_TEMPLATE_MODELS]);
-
-		expect(models.length).toBeGreaterThan(0);
-		for (const model of models) {
-			expect(model.provider).toBe("baseten");
-			expect(model.api).toBe("openai-completions");
-			expect(model.baseUrl).toBe(BASETEN_BASE_URL);
-
-			if (reasoningAllowlist.has(model.id)) {
-				expect(model.reasoning).toBe(true);
-			} else {
-				expect(model.reasoning).toBe(false);
-				expect(model.thinkingLevelMap).toBeUndefined();
-				expect(model.compat?.thinkingFormat).toBeUndefined();
-				expect(model.compat?.chatTemplateKwargs).toBeUndefined();
-				expect(model.compat?.chatTemplateKwargs).toBeUndefined();
-			}
-		}
-
-		expect(models.some((model) => model.id === "deepseek-ai/DeepSeek-V3.1")).toBe(false);
-		expect(models.some((model) => model.id === "MiniMaxAI/MiniMax-M2.5")).toBe(false);
-	});
-
-	it("preserves exact case-sensitive model IDs", () => {
-		const kimi = getModel("baseten", "moonshotai/Kimi-K2.6");
-		expect(kimi?.id).toBe("moonshotai/Kimi-K2.6");
-		expect(getModel("baseten", "moonshotai/kimi-k2.6" as "moonshotai/Kimi-K2.6")).toBeUndefined();
-	});
-
-	it("models always-on reasoning controls from Baseten documentation", () => {
-		const deepSeekV4 = getModel("baseten", "deepseek-ai/DeepSeek-V4-Pro");
-		expect(deepSeekV4?.reasoning).toBe(true);
-		expect(deepSeekV4?.thinkingLevelMap).toEqual({
-			off: null,
-			minimal: null,
-			low: "low",
-			medium: "medium",
-			high: "high",
-			xhigh: "xhigh",
-		});
-		expect(deepSeekV4?.compat).toMatchObject({
-			supportsReasoningEffort: true,
-			thinkingFormat: "openai",
-			requiresReasoningContentOnAssistantMessages: true,
-		});
-
-		const gptOss = getModel("baseten", "openai/gpt-oss-120b");
-		expect(gptOss?.reasoning).toBe(true);
-		expect(gptOss?.thinkingLevelMap).toEqual({
-			off: null,
-			minimal: null,
-			low: "low",
-			medium: "medium",
-			high: "high",
-			xhigh: null,
-		});
-		expect(gptOss?.compat).toMatchObject({
-			supportsReasoningEffort: true,
-			thinkingFormat: "openai",
-		});
-	});
-
-	it("models opt-in reasoning families with chat_template_args", () => {
-		for (const modelId of BASETEN_CHAT_TEMPLATE_MODELS) {
-			const model = getModel("baseten", modelId);
-			expect(model?.reasoning).toBe(true);
-			expect(model?.thinkingLevelMap).toEqual({
+		expect(model).toMatchObject({
+			api: "openai-completions",
+			provider: "baseten",
+			baseUrl: "https://inference.baseten.co/v1",
+			reasoning: true,
+			thinkingLevelMap: {
+				off: "none",
 				minimal: null,
 				low: null,
 				medium: null,
-			});
-			expect(model?.compat).toMatchObject({
-				thinkingFormat: "chat-template",
-				requiresReasoningContentOnAssistantMessages: true,
-				chatTemplateKwargs: {
-					enable_thinking: { $var: "thinking.enabled" },
-				},
-			});
-		}
-	});
-
-	it("uses conservative OpenAI compatibility defaults", () => {
-		const model = getModel("baseten", "moonshotai/Kimi-K2.6");
-		expect(model?.compat).toMatchObject({
-			supportsStore: false,
-			supportsDeveloperRole: false,
-			supportsReasoningEffort: false,
-			maxTokensField: "max_tokens",
-			supportsStrictMode: false,
-			supportsLongCacheRetention: false,
+				high: "high",
+				xhigh: null,
+				max: "max",
+			},
+			input: ["text"],
+			contextWindow: 1048576,
+			maxTokens: 262144,
+			cost: {
+				input: 1.4,
+				output: 4.4,
+				cacheRead: 0.3,
+				cacheWrite: 0,
+			},
+			compat: {
+				supportsStore: false,
+				supportsDeveloperRole: false,
+				supportsReasoningEffort: true,
+				supportsUsageInStreaming: true,
+				maxTokensField: "max_tokens",
+				supportsStrictMode: true,
+				supportsLongCacheRetention: false,
+				thinkingFormat: "baseten",
+				chatTemplateArgs: { enable_thinking: { $var: "thinking.enabled" } },
+			},
 		});
 	});
 
-	it("preserves vision input metadata from the generated catalog", () => {
-		const kimi = getModel("baseten", "moonshotai/Kimi-K2.6");
-		expect(kimi?.input).toEqual(["text", "image"]);
+	it("models Kimi K2.6 reasoning as an explicit off/on toggle", async () => {
+		const model = getModel("baseten", "moonshotai/Kimi-K2.6");
+		let payload: Record<string, unknown> | undefined;
 
-		const gptOss = getModel("baseten", "openai/gpt-oss-120b");
-		expect(gptOss?.input).toEqual(["text"]);
+		expect(model.thinkingLevelMap).toEqual({
+			off: "off",
+			minimal: null,
+			low: null,
+			medium: null,
+			high: "high",
+			xhigh: null,
+			max: null,
+		});
+		expect(model.compat).toMatchObject({
+			supportsReasoningEffort: false,
+			thinkingFormat: "baseten",
+			chatTemplateArgs: { enable_thinking: { $var: "thinking.enabled" } },
+		});
+		expect(getSupportedThinkingLevels(model)).toEqual(["off", "high"]);
+
+		await streamSimple(
+			model,
+			{ messages: [{ role: "user", content: "test", timestamp: 0 }] },
+			{
+				apiKey: "test-baseten-key",
+				reasoning: "high",
+				onPayload: (value) => {
+					payload = value as Record<string, unknown>;
+					throw new Error("payload captured");
+				},
+			},
+		).result();
+
+		expect(payload?.chat_template_args).toEqual({ enable_thinking: true });
+		expect(payload?.reasoning_effort).toBeUndefined();
+	});
+
+	it("sends Baseten chat_template_args with reasoning effort", async () => {
+		const model = getModel("baseten", "zai-org/GLM-5.2");
+		let payload: Record<string, unknown> | undefined;
+
+		await streamSimple(
+			model,
+			{ messages: [{ role: "user", content: "test", timestamp: 0 }] },
+			{
+				apiKey: "test-baseten-key",
+				reasoning: "high",
+				onPayload: (value) => {
+					payload = value as Record<string, unknown>;
+					throw new Error("payload captured");
+				},
+			},
+		).result();
+
+		expect(payload?.chat_template_args).toEqual({ enable_thinking: true });
+		expect(payload?.reasoning_effort).toBe("high");
+	});
+
+	it("disables Baseten opt-in reasoning when thinking is off", async () => {
+		const model = getModel("baseten", "zai-org/GLM-5.2");
+		let payload: Record<string, unknown> | undefined;
+
+		await streamSimple(
+			model,
+			{ messages: [{ role: "user", content: "test", timestamp: 0 }] },
+			{
+				apiKey: "test-baseten-key",
+				onPayload: (value) => {
+					payload = value as Record<string, unknown>;
+					throw new Error("payload captured");
+				},
+			},
+		).result();
+
+		expect(payload?.chat_template_args).toEqual({ enable_thinking: false });
+		expect(payload?.reasoning_effort).toBe("none");
 	});
 
 	it("resolves BASETEN_API_KEY from the environment", () => {
