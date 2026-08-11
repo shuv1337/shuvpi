@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-mom",
-	"version": "0.83.1",
+	"version": "0.84.2",
 	"description": "Slack bot that delegates messages to the shuvpi coding agent",
 	"type": "module",
 	"bin": {
@@ -20,9 +20,9 @@
 	},
 	"dependencies": {
 		"@anthropic-ai/sandbox-runtime": "0.0.26",
-		"@shuv1337/shuvpi-agent-core": "^0.83.1",
-		"@shuv1337/shuvpi-ai": "^0.83.1",
-		"@shuv1337/shuvpi-coding-agent": "^0.83.1",
+		"@shuv1337/shuvpi-agent-core": "^0.84.2",
+		"@shuv1337/shuvpi-ai": "^0.84.2",
+		"@shuv1337/shuvpi-coding-agent": "^0.84.2",
 		"typebox": "1.1.38",
 		"@slack/socket-mode": "2.0.7",
 		"@slack/web-api": "7.16.0",

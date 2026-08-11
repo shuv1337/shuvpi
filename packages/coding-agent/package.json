@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-coding-agent",
-	"version": "0.83.1",
+	"version": "0.84.2",
 	"description": "Coding agent CLI with read, bash, edit, write tools and session management",
 	"type": "module",
 	"shuvpiConfig": {
@@ -44,11 +44,11 @@
 		"prepublishOnly": "npm run clean && npm run build && npm run shrinkwrap"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-agent-core": "^0.83.1",
-		"@shuv1337/shuvpi-ai": "^0.83.1",
-		"@shuv1337/shuvpi-client": "^0.83.1",
-		"@shuv1337/shuvpi-protocol": "^0.83.1",
-		"@shuv1337/shuvpi-tui": "^0.83.1",
+		"@shuv1337/shuvpi-agent-core": "^0.84.2",
+		"@shuv1337/shuvpi-ai": "^0.84.2",
+		"@shuv1337/shuvpi-client": "^0.84.2",
+		"@shuv1337/shuvpi-protocol": "^0.84.2",
+		"@shuv1337/shuvpi-tui": "^0.84.2",
 		"@silvia-odwyer/photon-node": "0.3.4",
 		"chalk": "5.6.2",
 		"cross-spawn": "7.0.6",
