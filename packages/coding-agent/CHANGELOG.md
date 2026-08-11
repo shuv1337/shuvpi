@@ -6,6 +6,11 @@
 
 - Added `shuvpi.runCommand(name, args?)` to the extension API for invoking a registered extension command with a real `ExtensionCommandContext`, without appending a conversation entry or triggering a model turn. See [Extension API](docs/extensions.md#shuvpiruncommandname-args).
 
+### Changed
+
+- Merged upstream pi v0.84.1. This fork did not publish 0.84.0 or 0.84.1, so everything in the [0.84.0] and [0.84.1] sections below reaches Shuvpi users in this release.
+- Pinned the npm publish set to the eight-package CLI closure, adding `@shuv1337/shuvpi-telemetry`, `@shuv1337/shuvpi-protocol`, `@shuv1337/shuvpi-client`, and `@shuv1337/shuvpi-session-backend-sqlite-node` alongside `@shuv1337/shuvpi-ai`, `@shuv1337/shuvpi-tui`, `@shuv1337/shuvpi-agent-core`, and `@shuv1337/shuvpi-coding-agent`.
+
 ## [0.84.1] - 2026-08-07
 
 ### New Features
