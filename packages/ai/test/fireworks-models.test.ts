@@ -103,6 +103,7 @@ describe("Fireworks models", () => {
 			high: "high",
 			xhigh: null,
 			max: "max",
+			ultra: null,
 		};
 
 		expect(base.api).toBe("openai-completions");

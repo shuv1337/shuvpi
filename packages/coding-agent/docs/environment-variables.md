@@ -22,7 +22,7 @@ Commands run by the bash tool receive the current Shuvpi session state:
 | `SHUVPI_SESSION_FILE` | Absolute path to the current session JSONL file; unset for ephemeral sessions |
 | `SHUVPI_PROVIDER` | Currently selected model provider |
 | `SHUVPI_MODEL` | Currently selected model ID |
-| `SHUVPI_REASONING_LEVEL` | Current effective reasoning level: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max` |
+| `SHUVPI_REASONING_LEVEL` | Current effective reasoning level: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, or `ultra` |
 
 The values are resolved when each command starts. Switching models or changing the reasoning level therefore affects the next bash command without restarting Shuvpi. `SHUVPI_PROVIDER` and `SHUVPI_MODEL` identify the selected Shuvpi model, not a different upstream model that a router may choose internally.
 

@@ -958,7 +958,7 @@ export function buildRequest(
 	};
 }
 
-type ClampedThinkingLevel = Exclude<ThinkingLevel, "xhigh" | "max">;
+type ClampedThinkingLevel = Exclude<ThinkingLevel, "xhigh" | "max" | "ultra">;
 
 function getDisabledThinkingConfig(modelId: string): ThinkingConfig {
 	// Google docs: Gemini 3.1 Pro cannot disable thinking, and Gemini 3 Flash / Flash-Lite

@@ -286,9 +286,9 @@ Set the reasoning/thinking level for models that support it.
 {"type": "set_thinking_level", "level": "high"}
 ```
 
-Levels: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"`
+Levels: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"`, `"ultra"`
 
-`"xhigh"` and `"max"` are exposed only when supported by the selected model. Some models, including GPT-5.6, expose both.
+`"xhigh"`, `"max"`, and `"ultra"` are exposed only when supported by the selected model. GPT-5.6 models can expose `"xhigh"` and `"max"`; the ChatGPT Codex Daybreak Blue alias also exposes `"ultra"`.
 
 Response:
 ```json

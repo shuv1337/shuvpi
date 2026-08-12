@@ -19,6 +19,7 @@ Use `/login` in interactive mode, then select a provider:
 - ChatGPT Plus/Pro (Codex)
 - Claude Pro/Max
 - GitHub Copilot
+- Google AI Pro / Antigravity
 - xAI (Grok/X subscription)
 - OpenRouter (OAuth-minted API key billed from OpenRouter credits)
 - Radius
@@ -29,6 +30,13 @@ Use `/logout` to clear credentials. Tokens are stored in `~/.shuvpi/agent/auth.j
 
 - Requires ChatGPT Plus or Pro subscription
 - Officially endorsed by OpenAI: [Codex for OSS](https://developers.openai.com/community/codex-for-oss)
+- Approved Daybreak accounts can select `openai-codex/gpt-daybreak-blue-latest`. This cyber-specialty model exposes `low` through `ultra` reasoning and should be used with sandboxing, scoped permissions, and human review rather than unrestricted tool access.
+
+### OpenAI Daybreak Blue
+
+Daybreak Blue requires separate OpenAI approval and provisioning for authorized defensive cybersecurity work. Use `openai/daybreak-blue-latest` with an API key, or `openai-codex/gpt-daybreak-blue-latest` after ChatGPT Codex login. The direct API alias resolves to GPT-5.6 Sol and supports `none`, `low`, `medium`, `high`, `xhigh`, and `max` reasoning; the Codex catalog supports `low`, `medium`, `high`, `xhigh`, `max`, and `ultra`.
+
+See [OpenAI's Daybreak model page](https://developers.openai.com/api/docs/models/daybreak-blue-latest) and [Daybreak safety guidance](https://openai.com/index/expanding-daybreak-as-the-cyber-defense-window-narrows/). Access approval changes model availability but does not remove the need to define authorization scope, isolate risky workflows, and review elevated actions.
 
 ### Claude Pro/Max
 
@@ -38,6 +46,13 @@ Anthropic subscription auth is active for Claude Pro/Max accounts. Third-party h
 
 - Press Enter for github.com, or enter your GitHub Enterprise Server domain
 - If you get "model not supported", enable it in VS Code: Copilot Chat → model selector → select model → "Enable"
+
+### Google AI Pro / Antigravity
+
+- Run `/login google-antigravity`. An existing Antigravity login on this machine is imported when one is found; otherwise a browser authorization runs against the official Antigravity CLI client.
+- Requests go to Cloud Code Assist (`v1internal`), not the Gemini API, so this is a separate provider from `google`. Gemini API keys do not work here, and a Google AI Pro credential does not enable `google` models.
+- Default model is `gemini-3.7-flash-high`. The catalog refreshes from your account and lists Gemini models only — the Claude and GPT models Cloud Code also serves draw from a separate quota bucket and are deliberately not exposed.
+- Usage is metered against your subscription quota, so these models report zero per-token cost.
 
 ### xAI (Grok/X subscription)
 

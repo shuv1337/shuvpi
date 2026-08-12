@@ -385,7 +385,7 @@ const available = await modelRuntime.getAvailable();
 
 const { session } = await createAgentSession({
   model: opus,
-  thinkingLevel: "medium", // off, minimal, low, medium, high, xhigh, max
+  thinkingLevel: "medium", // off, minimal, low, medium, high, xhigh, max, ultra
   
   // Models for cycling (Ctrl+P in interactive mode)
   scopedModels: [

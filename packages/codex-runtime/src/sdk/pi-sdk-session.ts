@@ -561,7 +561,7 @@ function parseThinkingLevel(value?: string): ThinkingLevel | undefined {
 	if (!value) {
 		return undefined;
 	}
-	if (["off", "minimal", "low", "medium", "high", "xhigh", "max"].includes(value)) {
+	if (["off", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"].includes(value)) {
 		return value as ThinkingLevel;
 	}
 	throw new Error(`unsupported Pi thinking level: ${value}`);

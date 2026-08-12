@@ -13,6 +13,7 @@ describe("getEffortThinkingLevelMap", () => {
 			high: "high",
 			xhigh: null,
 			max: "max",
+			ultra: null,
 		});
 	});
 
@@ -25,6 +26,7 @@ describe("getEffortThinkingLevelMap", () => {
 			high: "high",
 			xhigh: null,
 			max: "max",
+			ultra: null,
 		});
 	});
 

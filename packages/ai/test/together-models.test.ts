@@ -52,6 +52,7 @@ describe("Together models", () => {
 			high: "high",
 			max: null,
 			xhigh: null,
+			ultra: null,
 		});
 		expect(gptOss.compat).toMatchObject({
 			supportsReasoningEffort: true,

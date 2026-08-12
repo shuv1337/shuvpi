@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added OpenAI Daybreak Blue as a selectable model for approved API and ChatGPT Codex accounts, including Codex `ultra` reasoning.
+- **Google AI Pro / Antigravity subscription** — Use `/login google-antigravity` to access Gemini through a Google AI Pro subscription instead of a Gemini API key. Defaults to `gemini-3.7-flash-high`. See [Subscriptions](docs/providers.md#subscriptions).
+
 ## [0.84.2] - 2026-08-11
 
 ### Added

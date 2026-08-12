@@ -256,13 +256,13 @@ Only OpenAI-compatible APIs apply it (`openai-completions`, `openai-responses`, 
 
 ### Thinking Level Map
 
-Use `thinkingLevelMap` on a model to describe model-specific thinking controls. Keys are shuvpi thinking levels: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`. Maps may contain holes; for example, a model can expose `high` and `max` without exposing `xhigh`.
+Use `thinkingLevelMap` on a model to describe model-specific thinking controls. Keys are shuvpi thinking levels: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, `ultra`. Maps may contain holes; for example, a model can expose `high` and `max` without exposing `xhigh`.
 
 Values are tristate:
 
 | Value | Meaning |
 |-------|---------|
-| omitted | Standard levels through `high` use the provider's default mapping; extended `xhigh` and `max` levels are unsupported |
+| omitted | Standard levels through `high` use the provider's default mapping; extended `xhigh`, `max`, and `ultra` levels are unsupported |
 | string | Level is supported and this value is sent to the provider |
 | `null` | Level is unsupported and hidden/skipped/clamped away |
 

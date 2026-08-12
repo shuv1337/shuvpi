@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added OpenAI Daybreak Blue model metadata for the approved direct API alias and ChatGPT Codex access path, including Codex `ultra` reasoning.
+- Added the `google-antigravity` provider: Gemini through Cloud Code Assist `v1internal`, authorized by a Google AI Pro / Antigravity subscription. Login mints tokens with the official Antigravity CLI client (PKCE, loopback callback) after first trying to import an existing Antigravity login, and resolves the Cloud Code project id the endpoint requires. The catalog ships the known model ids and merges whatever `fetchAvailableModels` reports; only Google models are exposed, because the Claude and GPT models Cloud Code also serves draw from a separate quota bucket.
+- Added the `google-antigravity` API implementation (`@shuv1337/shuvpi-ai/api/google-antigravity`) and its `GoogleAntigravityOptions` type, covering the Cloud Code request envelope, JSON Schema cleanup for tool declarations, and SSE response unwrapping.
+
+### Fixed
+
+- Set `originator: codex_cli_rs` on OpenAI Codex Responses API requests so Fast Mode / `service_tier: "priority"` is honored by the backend.
+
 ## [0.84.1] - 2026-08-07
 
 ### Added

@@ -9,7 +9,7 @@ import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
 import { resolveJsonSchemaStrictSampling } from "./constrained-sampling.ts";
 import { transformMessages } from "./transform-messages.ts";
 
-type GoogleApiType = "google-generative-ai" | "google-gemini-cli" | "google-vertex";
+type GoogleApiType = "google-generative-ai" | "google-gemini-cli" | "google-antigravity" | "google-vertex";
 
 /**
  * Thinking level for Gemini 3 models.

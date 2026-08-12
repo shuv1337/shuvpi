@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `ultra` to model capability and session thinking-level responses.
+
 ## [0.84.1] - 2026-08-07
 
 ## [0.84.0] - 2026-08-06

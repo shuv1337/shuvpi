@@ -151,6 +151,11 @@ describe("parseArgs", () => {
 			expect(result.thinking).toBe("high");
 		});
 
+		test("parses --thinking ultra", () => {
+			const result = parseArgs(["--thinking", "ultra"]);
+			expect(result.thinking).toBe("ultra");
+		});
+
 		test("parses --models as comma-separated list", () => {
 			const result = parseArgs(["--models", "gpt-4o,claude-sonnet,gemini-pro"]);
 			expect(result.models).toEqual(["gpt-4o", "claude-sonnet", "gemini-pro"]);

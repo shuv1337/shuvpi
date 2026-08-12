@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `ultra` reasoning passthrough for Codex-hosted ShuvPi sessions.
+
 ## [0.84.2] - 2026-08-11
 
 ### Fixed

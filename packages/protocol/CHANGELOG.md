@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `ultra` to the remote-session thinking-level protocol.
+
 ## [0.84.1] - 2026-08-07
 
 ## [0.84.0] - 2026-08-06
