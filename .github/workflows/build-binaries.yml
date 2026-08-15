@@ -139,3 +139,40 @@ jobs:
               --notes-file "${notes_file}" \
               --target "${target_sha}"
           fi
+
+  notify-discord:
+    runs-on: ubuntu-latest
+    needs:
+      - publish-github-release
+    permissions:
+      contents: read
+    env:
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - id: release
+        name: Load release details
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          name="$(gh release view "$TAG" --repo "$GH_REPO" --json name --jq .name)"
+          url="$(gh release view "$TAG" --repo "$GH_REPO" --json url --jq .url)"
+          delimiter="release-notes-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          {
+            echo "name=$name"
+            echo "url=$url"
+            echo "body<<$delimiter"
+            gh release view "$TAG" --repo "$GH_REPO" --json body --jq .body
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post release notes to Discord
+        uses: SethCohen/github-releases-to-discord@24d166886aee4646d448c8a389ff9e1ebcab3682 # v1.20.0
+        with:
+          webhook_url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+          release_name: ${{ steps.release.outputs.name }}
+          release_body: ${{ steps.release.outputs.body }}
+          release_html_url: ${{ steps.release.outputs.url }}
+          username: shuvpi releases
+          reduce_headings: true
