@@ -458,6 +458,25 @@ export function getInteractiveAssetsDir(): string {
 	return join(packageDir, srcOrDist, "modes", "interactive", "assets");
 }
 
+/** Get a non-code asset used by the built-in Shuv extension. */
+export function getPiShuvAssetPath(
+	name: "app-bridge.bundle.js" | "powerline-theme.json" | "sandbox-child.cjs",
+): string {
+	const packageDir = getPackageDir();
+	if (isBunBinary) {
+		return join(packageDir, "shuvpi-shuv-assets", name);
+	}
+	if (existsSync(join(packageDir, "src"))) {
+		const sourcePaths = {
+			"app-bridge.bundle.js": ["vendor", "pi-shuv", "vendor", "pi-mcp-adapter", "app-bridge.bundle.js"],
+			"powerline-theme.json": ["vendor", "pi-shuv", "vendor", "powerline-footer", "theme.json"],
+			"sandbox-child.cjs": ["vendor", "pi-shuv", "vendor", "workflows", "sandbox-child.cjs"],
+		} as const;
+		return join(packageDir, ...sourcePaths[name]);
+	}
+	return join(packageDir, "dist", "shuvpi-shuv-assets", name);
+}
+
 /** Get path to a bundled interactive asset */
 export function getBundledInteractiveAssetPath(name: string): string {
 	return join(getInteractiveAssetsDir(), name);

@@ -9,6 +9,7 @@ export {
 	getDocsPath,
 	getExamplesPath,
 	getPackageDir,
+	getPiShuvAssetPath,
 	getReadmePath,
 	VERSION,
 } from "./config.ts";

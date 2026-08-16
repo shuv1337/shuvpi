@@ -3,13 +3,15 @@ import { join } from "node:path";
 import ts from "typescript";
 
 const ignoredDirectories = new Set([".git", "coverage", "dist", "node_modules"]);
+const ignoredPaths = new Set(["packages/coding-agent/vendor"]);
 const files = [];
 
 function collectTypescriptFiles(directory) {
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		if (entry.isDirectory()) {
-			if (!ignoredDirectories.has(entry.name)) {
-				collectTypescriptFiles(join(directory, entry.name));
+			const child = join(directory, entry.name);
+			if (!ignoredDirectories.has(entry.name) && !ignoredPaths.has(child)) {
+				collectTypescriptFiles(child);
 			}
 			continue;
 		}
@@ -40,6 +42,12 @@ for (const file of files.sort()) {
 
 	function checkSpecifier(node) {
 		if (!isRelativeJavaScriptSpecifier(node.text)) return;
+		if (
+			file === "packages/coding-agent/src/extensions/index.ts" &&
+			node.text === "./shuvpi-shuv.bundle.js"
+		) {
+			return;
+		}
 		const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
 		failures.push(`${file}:${line + 1}:${character + 1}: ${node.text}`);
 	}

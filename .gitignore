@@ -37,6 +37,8 @@ out.jsonl
 shuvpi-*.html
 out.html
 packages/coding-agent/binaries/
+packages/coding-agent/src/extensions/shuvpi-shuv.bundle.js
+packages/coding-agent/src/extensions/shuvpi-shuv.release.bundle.js
 todo.md
 plans/
 .shuvpi/hf-sessions/

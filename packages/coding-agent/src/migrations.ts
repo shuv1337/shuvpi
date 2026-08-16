@@ -4,13 +4,64 @@
 
 import chalk from "chalk";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
+import { homedir } from "os";
 import { dirname, join } from "path";
 import { CONFIG_DIR_NAME, getAgentDir, getBinDir } from "./config.ts";
 import { migrateKeybindingsConfig } from "./core/keybindings.ts";
+import type { PackageSource } from "./core/settings-manager.ts";
+import { isLocalPath, resolvePath } from "./utils/paths.ts";
 
 const MIGRATION_GUIDE_URL =
 	"https://github.com/shuv1337/pi-mono/blob/main/packages/coding-agent/CHANGELOG.md#extensions-migration";
 const EXTENSIONS_DOC_URL = "https://github.com/shuv1337/pi-mono/blob/main/packages/coding-agent/docs/extensions.md";
+const BUNDLED_SHUV_PACKAGE_NAME = "@shuv1337/shuvpi-shuv";
+
+function getPackageSource(source: PackageSource): string {
+	return typeof source === "string" ? source : source.source;
+}
+
+function isBundledShuvPackage(source: PackageSource, baseDir: string): boolean {
+	const value = getPackageSource(source).trim();
+	if (
+		value === BUNDLED_SHUV_PACKAGE_NAME ||
+		value === `npm:${BUNDLED_SHUV_PACKAGE_NAME}` ||
+		value.startsWith(`npm:${BUNDLED_SHUV_PACKAGE_NAME}@`)
+	) {
+		return true;
+	}
+	if (!isLocalPath(value)) return false;
+
+	try {
+		const packageJson = JSON.parse(
+			readFileSync(
+				join(resolvePath(value, baseDir, { homeDir: process.env.HOME || homedir(), trim: true }), "package.json"),
+				"utf-8",
+			),
+		) as {
+			name?: unknown;
+		};
+		return packageJson.name === BUNDLED_SHUV_PACKAGE_NAME;
+	} catch {
+		return false;
+	}
+}
+
+export function migrateBundledShuvPackage(settingsDir = getAgentDir(), packageBaseDir = settingsDir): void {
+	const settingsPath = join(settingsDir, "settings.json");
+	if (!existsSync(settingsPath)) return;
+
+	try {
+		const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as { packages?: unknown };
+		if (!Array.isArray(settings.packages)) return;
+		const packages = settings.packages as PackageSource[];
+		const retained = packages.filter((source) => !isBundledShuvPackage(source, packageBaseDir));
+		if (retained.length === packages.length) return;
+		settings.packages = retained;
+		writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+	} catch {
+		// Ignore malformed settings during migration.
+	}
+}
 
 /**
  * Migrate legacy oauth.json and settings.json apiKeys to auth.json.
@@ -309,6 +360,8 @@ export function runMigrations(cwd: string): {
 	migrateSessionsFromAgentRoot();
 	migrateToolsToBin();
 	migrateKeybindingsConfigFile();
+	migrateBundledShuvPackage();
+	migrateBundledShuvPackage(join(cwd, CONFIG_DIR_NAME));
 	const deprecationWarnings = migrateExtensionSystem(cwd);
 	return { migratedAuthProviders, deprecationWarnings };
 }

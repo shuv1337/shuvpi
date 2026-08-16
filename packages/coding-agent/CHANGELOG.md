@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Vendored Shuv's default extension bundle and Night Owl themes into the Shuvpi CLI and standalone binary releases, replacing prior `@shuv1337/shuvpi-shuv` package settings during startup migration.
+
 ## [0.84.3] - 2026-08-15
 
 ### Added

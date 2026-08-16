@@ -1,0 +1,14 @@
+{
+  "_comment": "Night Owl (Ghostty) palette. Uses ANSI SGR codes (e.g., '38;2;R;G;B' for 24-bit color)",
+  "border": "38;2;95;126;151",
+  "title": "38;2;130;170;255",
+  "selected": "38;2;130;170;255",
+  "selectedText": "38;2;214;222;235",
+  "queued": "38;2;34;218;110",
+  "searchIcon": "38;2;127;219;202",
+  "placeholder": "3;38;2;95;126;151",
+  "description": "38;2;95;126;151",
+  "hint": "38;2;95;126;151",
+  "confirm": "38;2;34;218;110",
+  "cancel": "38;2;239;83;80"
+}

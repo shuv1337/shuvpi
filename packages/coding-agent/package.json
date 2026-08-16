@@ -23,6 +23,10 @@
 		"./client": {
 			"types": "./dist/client/index.d.ts",
 			"import": "./dist/client/index.js"
+		},
+		"./custom-editor": {
+			"types": "./dist/modes/interactive/components/custom-editor.d.ts",
+			"import": "./dist/modes/interactive/components/custom-editor.js"
 		}
 	},
 	"files": [
@@ -34,11 +38,12 @@
 		"npm-shrinkwrap.json"
 	],
 	"scripts": {
-		"clean": "shx rm -rf dist",
-		"build": "tsgo -p tsconfig.build.json && shx chmod +x dist/cli.js dist/rpc-entry.js && npm run copy-assets",
+		"clean": "shx rm -rf dist src/extensions/shuvpi-shuv.bundle.js src/extensions/shuvpi-shuv.release.bundle.js",
+		"build": "node scripts/build-vendored-pi-shuv.mjs && tsgo -p tsconfig.build.json && shx chmod +x dist/cli.js dist/rpc-entry.js && npm run copy-assets",
 		"build:binary": "npm --prefix ../tui run build && npm --prefix ../telemetry run build && npm --prefix ../ai run build && npm --prefix ../agent run build && npm --prefix ../protocol run build && npm --prefix ../client run build && npm run build && bun build --compile --no-compile-autoload-bunfig ./dist/bun/cli.js ./src/utils/image-resize-worker.ts --outfile dist/shuvpi && npm run copy-binary-assets",
-		"copy-assets": "shx mkdir -p dist/modes/interactive/theme && shx cp src/modes/interactive/theme/*.json dist/modes/interactive/theme/ && shx mkdir -p dist/modes/interactive/assets && shx cp src/modes/interactive/assets/*.png dist/modes/interactive/assets/ && shx mkdir -p dist/core/export-html/vendor && shx cp src/core/export-html/template.html src/core/export-html/template.css src/core/export-html/template.js dist/core/export-html/ && shx cp src/core/export-html/vendor/*.js dist/core/export-html/vendor/",
+		"copy-assets": "shx cp src/extensions/shuvpi-shuv.release.bundle.js dist/extensions/shuvpi-shuv.bundle.js && shx mkdir -p dist/shuvpi-shuv-assets && shx cp vendor/pi-shuv/vendor/pi-mcp-adapter/app-bridge.bundle.js dist/shuvpi-shuv-assets/ && shx cp vendor/pi-shuv/vendor/workflows/sandbox-child.cjs dist/shuvpi-shuv-assets/ && shx cp vendor/pi-shuv/vendor/powerline-footer/theme.json dist/shuvpi-shuv-assets/powerline-theme.json && shx mkdir -p dist/modes/interactive/theme && shx cp src/modes/interactive/theme/*.json dist/modes/interactive/theme/ && shx mkdir -p dist/modes/interactive/assets && shx cp src/modes/interactive/assets/*.png dist/modes/interactive/assets/ && shx mkdir -p dist/core/export-html/vendor && shx cp src/core/export-html/template.html src/core/export-html/template.css src/core/export-html/template.js dist/core/export-html/ && shx cp src/core/export-html/vendor/*.js dist/core/export-html/vendor/",
 		"copy-binary-assets": "shx cp package.json dist/ && shx cp README.md dist/ && shx cp CHANGELOG.md dist/ && shx mkdir -p dist/theme && shx cp src/modes/interactive/theme/*.json dist/theme/ && shx mkdir -p dist/assets && shx cp src/modes/interactive/assets/*.png dist/assets/ && shx mkdir -p dist/export-html/vendor && shx cp src/core/export-html/template.html dist/export-html/ && shx cp src/core/export-html/vendor/*.js dist/export-html/vendor/ && shx cp -r docs dist/ && shx cp -r examples dist/ && shx cp ../../node_modules/@silvia-odwyer/photon-node/photon_rs_bg.wasm dist/",
+		"pretest": "node scripts/build-vendored-pi-shuv.mjs",
 		"test": "vitest --run",
 		"shrinkwrap": "node ../../scripts/generate-coding-agent-shrinkwrap.mjs",
 		"prepublishOnly": "npm run clean && npm run build && npm run shrinkwrap"
@@ -77,6 +82,10 @@
 		"@mariozechner/clipboard": "0.3.9"
 	},
 	"devDependencies": {
+		"@anthropic-ai/claude-agent-sdk": "0.3.210",
+		"@modelcontextprotocol/client": "2.0.0-beta.5",
+		"@modelcontextprotocol/ext-apps": "1.7.5",
+		"@modelcontextprotocol/sdk": "1.29.0",
 		"@types/cross-spawn": "6.0.6",
 		"@types/diff": "7.0.2",
 		"@types/hosted-git-info": "3.0.5",
@@ -84,9 +93,18 @@
 		"@types/node": "24.12.4",
 		"@types/proper-lockfile": "4.1.4",
 		"@types/semver": "7.7.1",
+		"acorn": "8.17.0",
+		"effect": "4.0.0-beta.98",
+		"esbuild": "0.28.1",
+		"open": "10.2.0",
+		"recheck": "4.5.0",
 		"shx": "0.4.0",
+		"smol-toml": "1.7.0",
+		"strip-json-comments": "5.0.3",
 		"typescript": "5.9.3",
-		"vitest": "4.1.9"
+		"vitest": "4.1.9",
+		"ws": "8.21.1",
+		"zod": "4.4.3"
 	},
 	"keywords": [
 		"coding-agent",

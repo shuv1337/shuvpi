@@ -31,6 +31,10 @@ describe("theme picker", () => {
 		vi.unstubAllEnvs();
 	});
 
+	it("includes the bundled Night Owl themes", () => {
+		expect(getAvailableThemes()).toEqual(expect.arrayContaining(["nightowl", "nightowl-light"]));
+	});
+
 	it("uses custom theme content names instead of file names", () => {
 		const darkTheme = JSON.parse(
 			readFileSync(new URL("../src/modes/interactive/theme/dark.json", import.meta.url), "utf-8"),
