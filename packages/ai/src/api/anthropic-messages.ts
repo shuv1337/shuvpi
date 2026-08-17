@@ -33,11 +33,12 @@ import { splitDeferredTools } from "../utils/deferred-tools.ts";
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { parseJsonWithRepair, parseStreamingJson } from "../utils/json-parse.ts";
+import { getPiUserAgent } from "../utils/pi-user-agent.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 import { retryProviderRequest } from "../utils/provider-retry.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
 
-import { resolveJsonSchemaStrictSampling } from "./constrained-sampling.ts";
+import { getJsonSchemaToolParameters, resolveJsonSchemaStrictSampling } from "./constrained-sampling.ts";
 import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.ts";
 import { adjustMaxTokensForThinking, buildBaseOptions, clampMaxTokensToContext } from "./simple-options.ts";
 import { transformMessages } from "./transform-messages.ts";
@@ -269,6 +270,20 @@ function mergeHeaders(...headerSources: (ProviderHeaders | undefined)[]): Provid
 		if (headers) {
 			Object.assign(merged, headers);
 		}
+	}
+	return merged;
+}
+
+function mergeClientHeaders(
+	model: Model<"anthropic-messages">,
+	...headerSources: (ProviderHeaders | undefined)[]
+): ProviderHeaders {
+	const merged = mergeHeaders(...headerSources);
+	if (model.provider === "kimi-coding") {
+		for (const name of Object.keys(merged)) {
+			if (name.toLowerCase() === "user-agent") delete merged[name];
+		}
+		merged["User-Agent"] = getPiUserAgent();
 	}
 	return merged;
 }
@@ -535,17 +550,17 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 				const cacheRetention = resolveCacheRetention(options?.cacheRetention, options?.env);
 				const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
 
-				const created = createClient(
+				const created = createClient({
 					model,
 					apiKey,
-					options?.interleavedThinking ?? true,
-					shouldUseFineGrainedToolStreamingBeta(model, context),
-					options?.headers,
-					options?.fetch,
-					copilotDynamicHeaders,
+					interleavedThinking: options?.interleavedThinking ?? true,
+					useFineGrainedToolStreamingBeta: shouldUseFineGrainedToolStreamingBeta(model, context),
+					optionsHeaders: options?.headers,
+					fetch: options?.fetch,
+					dynamicHeaders: copilotDynamicHeaders,
 					cacheSessionId,
-					options?.sessionId,
-				);
+					clientSessionId: options?.sessionId,
+				});
 				client = created.client;
 				isOAuth = created.isOAuthToken;
 			}
@@ -847,17 +862,29 @@ function isOAuthToken(apiKey: string): boolean {
 	return apiKey.includes("sk-ant-oat");
 }
 
-function createClient(
-	model: Model<"anthropic-messages">,
-	apiKey: string | undefined,
-	interleavedThinking: boolean,
-	useFineGrainedToolStreamingBeta: boolean,
-	optionsHeaders?: ProviderHeaders,
-	fetch?: typeof globalThis.fetch,
-	dynamicHeaders?: Record<string, string>,
-	cacheSessionId?: string,
-	clientSessionId?: string,
-): { client: Anthropic; isOAuthToken: boolean } {
+interface CreateClientOptions {
+	model: Model<"anthropic-messages">;
+	apiKey: string | undefined;
+	interleavedThinking: boolean;
+	useFineGrainedToolStreamingBeta: boolean;
+	optionsHeaders?: ProviderHeaders;
+	fetch?: typeof globalThis.fetch;
+	dynamicHeaders?: Record<string, string>;
+	cacheSessionId?: string;
+	clientSessionId?: string;
+}
+
+function createClient({
+	model,
+	apiKey,
+	interleavedThinking,
+	useFineGrainedToolStreamingBeta,
+	optionsHeaders,
+	fetch,
+	dynamicHeaders,
+	cacheSessionId,
+	clientSessionId,
+}: CreateClientOptions): { client: Anthropic; isOAuthToken: boolean } {
 	// Adaptive thinking models have interleaved thinking built in, so skip the beta header.
 	const needsInterleavedBeta = interleavedThinking && model.compat?.forceAdaptiveThinking !== true;
 	const betaFeatures: string[] = [];
@@ -876,7 +903,8 @@ function createClient(
 			baseURL: model.baseUrl,
 			dangerouslyAllowBrowser: true,
 			fetch,
-			defaultHeaders: mergeHeaders(
+			defaultHeaders: mergeClientHeaders(
+				model,
 				{
 					accept: "application/json",
 					"anthropic-dangerous-direct-browser-access": "true",
@@ -906,7 +934,8 @@ function createClient(
 				const nextFetch = fetch ?? globalThis.fetch;
 				return nextFetch(input instanceof Request ? new Request(url, input) : url, init);
 			},
-			defaultHeaders: mergeHeaders(
+			defaultHeaders: mergeClientHeaders(
+				model,
 				{
 					accept: "application/json",
 					"anthropic-dangerous-direct-browser-access": "true",
@@ -928,7 +957,8 @@ function createClient(
 		cacheSessionId && getAnthropicCompat(model).sendSessionAffinityHeaders
 			? { "x-session-affinity": cacheSessionId }
 			: {};
-	const defaultHeaders = mergeHeaders(
+	const defaultHeaders = mergeClientHeaders(
+		model,
 		{
 			accept: "application/json",
 			"anthropic-dangerous-direct-browser-access": "true",
@@ -1312,7 +1342,8 @@ function convertTools(
 
 	return tools.map((tool, index) => {
 		const strict = resolveJsonSchemaStrictSampling(tool, supportsStrictTools);
-		const schema = tool.parameters as { properties?: unknown; required?: string[] };
+		const parameters = getJsonSchemaToolParameters(tool, strict);
+		const schema = parameters as { properties?: unknown; required?: string[] };
 		const legacyInputSchema = {
 			type: "object" as const,
 			properties: schema.properties ?? {},
@@ -1321,7 +1352,7 @@ function convertTools(
 		const inputSchema =
 			strict === true
 				? {
-						...(tool.parameters as Record<string, unknown>),
+						...(parameters as Record<string, unknown>),
 						...legacyInputSchema,
 					}
 				: legacyInputSchema;

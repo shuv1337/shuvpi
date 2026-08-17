@@ -14,6 +14,12 @@
 
 - Added the model-gated `ultra` thinking level used by ChatGPT Codex Daybreak Blue.
 
+## [0.84.2] - 2026-08-14
+
+### Fixed
+
+- Fixed `streamProxy()` dropping finalized tool-call metadata such as OpenAI Responses namespaces ([#7709](https://github.com/earendil-works/pi/issues/7709)).
+
 ## [0.84.1] - 2026-08-07
 
 ### Added

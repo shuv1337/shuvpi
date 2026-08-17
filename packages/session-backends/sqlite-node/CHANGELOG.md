@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Added migration `002_integer_timestamps.sql` to convert existing TEXT timestamp columns and index set to the INTEGER unix-ms schema used by the repository; shipped `001_initial.sql` remains unchanged for databases that already applied it.
+
 ## [0.84.6] - 2026-08-17
 
 ## [0.84.5] - 2026-08-17
@@ -9,6 +13,8 @@
 ## [0.84.4] - 2026-08-17
 
 ## [0.84.3] - 2026-08-15
+
+## [0.84.2] - 2026-08-14
 
 ## [0.84.1] - 2026-08-07
 

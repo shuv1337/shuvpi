@@ -3,14 +3,19 @@
 Shuvpi uses environment variables in three ways:
 
 - Variables such as `SHUVPI_OFFLINE` configure the Shuvpi process.
-- Shuvpi sets `SHUVPI_CODING_AGENT` so child processes can detect that they run inside Shuvpi.
+- Shuvpi sets process markers so child processes can identify Shuvpi as the launching agent.
 - Commands run by the LLM-callable bash tool receive `SHUVPI_*` variables describing the current session.
 
 Provider API-key variables are documented separately in [Providers](providers.md#environment-variables-or-auth-file).
 
 ## Process Marker
 
-The CLI and RPC entry points set `SHUVPI_CODING_AGENT=true`. Child processes inherit it and can use it to detect that they run inside Shuvpi. It is not session-specific and is not set automatically when Shuvpi is embedded through the SDK.
+The CLI and RPC entry points set two process markers:
+
+- `AI_AGENT=shuvpi` is a generic marker that lets tooling identify Shuvpi as the agent that launched the process.
+- `SHUVPI_CODING_AGENT=true` is Shuvpi-specific and lets child processes detect that they run inside Shuvpi.
+
+Child processes inherit both markers. They are not session-specific and are not set automatically when Shuvpi is embedded through the SDK.
 
 ## Bash Tool Session Environment
 
@@ -82,6 +87,7 @@ These variables are read by Shuvpi itself:
 | `SHUVPI_CACHE_RETENTION` | Set to `long` for extended provider prompt caching where supported |
 | `SHUVPI_SHARE_VIEWER_URL` | Override the base URL used by `/share` |
 | `SHUVPI_HARDWARE_CURSOR` | Set to `1` to show the hardware cursor; see [Terminal setup](terminal-setup.md) |
+| `PI_TUI_ESC_TIMEOUT` | How long to wait after a lone ESC before treating it as Escape, in milliseconds; defaults to `100` over SSH and `10` otherwise. Increase if Alt-key input is misread as Escape |
 | `VISUAL`, `EDITOR` | External editor fallback when `externalEditor` is unset |
 | `HTTP_PROXY`, `HTTPS_PROXY` | Proxy outbound HTTP requests |
 
