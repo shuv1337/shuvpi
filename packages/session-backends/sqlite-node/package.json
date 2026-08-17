@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-session-backend-sqlite-node",
-	"version": "0.84.5",
+	"version": "0.84.6",
 	"description": "Node sqlite session backend for @shuv1337/shuvpi-agent-core sessions",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -34,8 +34,8 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-ai": "^0.84.5",
-		"@shuv1337/shuvpi-agent-core": "^0.84.5"
+		"@shuv1337/shuvpi-ai": "^0.84.6",
+		"@shuv1337/shuvpi-agent-core": "^0.84.6"
 	},
 	"devDependencies": {
 		"@vitest/coverage-v8": "4.1.9",
