@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-server",
-	"version": "0.84.3",
+	"version": "0.84.4",
 	"description": "experimental server package for shuvpi",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -47,8 +47,8 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-ai": "^0.84.3",
-		"@shuv1337/shuvpi-protocol": "^0.84.3"
+		"@shuv1337/shuvpi-ai": "^0.84.4",
+		"@shuv1337/shuvpi-protocol": "^0.84.4"
 	},
 	"devDependencies": {
 		"shx": "0.4.0",

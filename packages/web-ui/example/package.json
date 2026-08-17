@@ -1,6 +1,6 @@
 {
 	"name": "shuvpi-web-ui-example",
-	"version": "0.84.3",
+	"version": "0.84.4",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -12,8 +12,8 @@
 	},
 	"dependencies": {
 		"@mariozechner/mini-lit": "0.2.1",
-		"@shuv1337/shuvpi-ai": "^0.84.3",
-		"@shuv1337/shuvpi-web-ui": "^0.84.3",
+		"@shuv1337/shuvpi-ai": "^0.84.4",
+		"@shuv1337/shuvpi-web-ui": "^0.84.4",
 		"@tailwindcss/vite": "4.3.0",
 		"lit": "3.3.3",
 		"lucide": "0.544.0"
