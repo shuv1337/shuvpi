@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Shuvpi update checks and self-updates targeting the upstream `@earendil-works/pi-coding-agent` package by resolving releases directly from `@shuv1337/shuvpi-coding-agent` on npm.
+
 ## [0.84.4] - 2026-08-17
 
 ### Added

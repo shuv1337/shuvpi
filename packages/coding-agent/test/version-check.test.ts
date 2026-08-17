@@ -42,13 +42,13 @@ describe("version checks", () => {
 		await expect(checkForNewShuvpiVersion("1.2.2")).resolves.toEqual({ version: "1.2.3" });
 	});
 
-	it("uses the pi.dev version check api with a shuvpi user agent", async () => {
-		const fetchMock = vi.fn(async () => Response.json({ version: "1.2.4" }));
+	it("uses the Shuvpi npm package metadata with a shuvpi user agent", async () => {
+		const fetchMock = vi.fn(async () => Response.json({ name: "@shuv1337/shuvpi-coding-agent", version: "1.2.4" }));
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(getLatestShuvpiVersion("1.2.3")).resolves.toBe("1.2.4");
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://pi.dev/api/latest-version",
+			"https://registry.npmjs.org/%40shuv1337%2Fshuvpi-coding-agent/latest",
 			expect.objectContaining({
 				headers: expect.objectContaining({
 					"User-Agent": expect.stringMatching(/^shuvpi\/1\.2\.3 /),
@@ -89,17 +89,17 @@ describe("version checks", () => {
 		expect(formatVersionCheckError(error)).toBe("fetch failed (ETIMEDOUT, ENETUNREACH)");
 	});
 
-	it("returns the active package metadata from the version check api", async () => {
+	it("returns the active package metadata from npm", async () => {
 		const fetchMock = vi.fn(async () =>
 			Response.json({
-				packageName: "@new-scope/shuvpi",
+				name: "@shuv1337/shuvpi-coding-agent",
 				version: "1.2.4",
 			}),
 		);
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(getLatestShuvpiRelease("1.2.3")).resolves.toEqual({
-			packageName: "@new-scope/shuvpi",
+			packageName: "@shuv1337/shuvpi-coding-agent",
 			version: "1.2.4",
 		});
 	});

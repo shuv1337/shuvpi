@@ -77,7 +77,7 @@ These variables are read by Shuvpi itself:
 | `SHUVPI_CODING_AGENT_SESSION_DIR` | Override session storage; overridden by `--session-dir` |
 | `SHUVPI_PACKAGE_DIR` | Override the package directory, useful for Nix/Guix store paths |
 | `SHUVPI_OFFLINE` | Disable startup network operations, including update checks, package updates, and install/update telemetry |
-| `SHUVPI_SKIP_VERSION_CHECK` | Disable the `pi.dev` latest-version request |
+| `SHUVPI_SKIP_VERSION_CHECK` | Disable the npm registry latest-version request |
 | `SHUVPI_TELEMETRY` | Override install/update telemetry and provider attribution headers: `1`/`true`/`yes` or `0`/`false`/`no` |
 | `SHUVPI_CACHE_RETENTION` | Set to `long` for extended provider prompt caching where supported |
 | `SHUVPI_SHARE_VIEWER_URL` | Override the base URL used by `/share` |
