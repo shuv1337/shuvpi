@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-client",
-	"version": "0.84.4",
+	"version": "0.84.5",
 	"description": "Transport-neutral client for remote shuvpi sessions over framed CBOR bytes",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -47,7 +47,7 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-protocol": "^0.84.4"
+		"@shuv1337/shuvpi-protocol": "^0.84.5"
 	},
 	"devDependencies": {
 		"shx": "0.4.0",
