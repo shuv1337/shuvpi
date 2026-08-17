@@ -18,6 +18,8 @@ Local patches:
   subpath to avoid a package-root initialization cycle in Bun binaries.
 - MCP regex safety uses recheck's self-contained browser implementation so it
   remains available inside standalone binaries without native sidecars.
+- Background-terminal status widgets truncate ANSI-aware output to the render
+  width so narrow terminals cannot violate the TUI line-width invariant.
 - Package manifests, lockfiles, tests, plans, and development-only files are
   omitted. Runtime dependencies are pinned by the coding-agent package.
 

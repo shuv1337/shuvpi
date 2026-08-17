@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed background-terminal status widgets crashing the TUI when the terminal is narrower than the status text.
+
 ## [0.84.6] - 2026-08-17
 
 ### Added

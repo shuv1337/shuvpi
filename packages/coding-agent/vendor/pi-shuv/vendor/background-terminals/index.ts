@@ -24,9 +24,10 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   ExtensionUIContext,
+  Theme,
 } from "@shuv1337/shuvpi-coding-agent";
 import { getMarkdownTheme } from "@shuv1337/shuvpi-coding-agent";
-import { Markdown, Text } from "@shuv1337/shuvpi-tui";
+import { type Component, Markdown, Text, truncateToWidth } from "@shuv1337/shuvpi-tui";
 import { Type } from "typebox";
 import type { TerminalSnapshot } from "./src/domain.ts";
 import { TerminalManager, type TerminalManagerShape } from "./src/manager.ts";
@@ -56,6 +57,19 @@ import { sanitizeText } from "./src/ui/output-view.ts";
 import { openTerminalPicker } from "./src/ui/ps.ts";
 
 const WIDGET_KEY = "background-terminals";
+
+export function createBackgroundTerminalStatusWidget(theme: Pick<Theme, "fg">, running: number): Component {
+  const line =
+    theme.fg("warning", "■ ") +
+    theme.fg(
+      "text",
+      `${running} background terminal${running === 1 ? "" : "s"} running`,
+    ) +
+    theme.fg("dim", " • ") +
+    theme.fg("accent", "/ps") +
+    theme.fg("dim", " to view");
+  return { render: (width) => [truncateToWidth(line, width, "")], invalidate: () => {} };
+}
 
 export default function (pi: ExtensionAPI) {
   let runtime: TerminalRuntime | undefined;
@@ -100,16 +114,7 @@ export default function (pi: ExtensionAPI) {
         return;
       }
       ui.setWidget(WIDGET_KEY, (_tui, theme) => {
-        const line =
-          theme.fg("warning", "■ ") +
-          theme.fg(
-            "text",
-            `${running} background terminal${running === 1 ? "" : "s"} running`,
-          ) +
-          theme.fg("dim", " • ") +
-          theme.fg("accent", "/ps") +
-          theme.fg("dim", " to view");
-        return { render: () => [line], invalidate: () => {} };
+        return createBackgroundTerminalStatusWidget(theme, running);
       });
     } catch {
       // UI may be unavailable (print/RPC modes or teardown).
