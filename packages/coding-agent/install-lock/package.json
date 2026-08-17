@@ -1,10 +1,10 @@
 {
 	"name": "@shuv1337/shuvpi-coding-agent-install",
-	"version": "0.84.6",
+	"version": "0.85.0",
 	"private": true,
 	"description": "Lockfile root used by the Shuvpi installer and updater.",
 	"dependencies": {
-		"@shuv1337/shuvpi-coding-agent": "0.84.6"
+		"@shuv1337/shuvpi-coding-agent": "0.85.0"
 	},
 	"overrides": {
 		"protobufjs": "7.6.5",

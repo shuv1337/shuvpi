@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-protocol",
-	"version": "0.84.6",
+	"version": "0.85.0",
 	"description": "Transport-neutral CBOR protocol for remote shuvpi sessions",
 	"type": "module",
 	"main": "./dist/index.js",
