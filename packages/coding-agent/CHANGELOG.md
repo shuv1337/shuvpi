@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added a universal POSIX installer that uses a writable npm global prefix or falls back to a shell-configured user installation under `~/.local` without `sudo`.
+
 ## [0.84.5] - 2026-08-17
 
 ### Fixed

@@ -4,7 +4,15 @@ This page gets you from install to a useful first shuvpi session.
 
 ## Install
 
-Shuvpi is distributed as an npm package:
+Run the Shuvpi installer on macOS, Linux, or another POSIX environment:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shuv1337/shuvpi/main/install.sh | sh
+```
+
+The installer uses your existing writable npm global prefix when its bin directory is already on `PATH`. Otherwise, it installs Shuvpi under `~/.local` and configures your shell `PATH`. It never uses `sudo` or changes npm's global configuration.
+
+To install directly with npm when its global prefix is already writable:
 
 ```bash
 npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
@@ -14,11 +22,14 @@ npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
 
 ### Uninstall
 
-Use the package manager that installed shuvpi. The curl installer uses npm globally, so curl and npm installs are removed with npm:
+Use the package manager and prefix that installed shuvpi:
 
 ```bash
-# curl installer or npm install -g
+# npm install -g, or the installer when the configured prefix was writable
 npm uninstall -g @shuv1337/shuvpi-coding-agent
+
+# installer fallback under ~/.local
+npm --prefix "$HOME/.local" uninstall -g @shuv1337/shuvpi-coding-agent
 
 # pnpm
 pnpm remove -g @shuv1337/shuvpi-coding-agent

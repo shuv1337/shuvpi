@@ -12,6 +12,14 @@ Shuvpi is Shuv's maintained fork of the Pi agent harness. The distinct package n
 
 The project remains derived from [upstream Pi](https://github.com/earendil-works/pi). Upstream services such as the `pi.dev` session viewer remain external dependencies where explicitly documented.
 
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shuv1337/shuvpi/main/install.sh | sh
+```
+
+The installer uses a writable npm global prefix when its bin directory is already on `PATH` and otherwise installs under `~/.local`, without `sudo` or changes to npm's global configuration. Node.js 22.19.0 or newer is required.
+
 ## All Packages
 
 | Package | Description |

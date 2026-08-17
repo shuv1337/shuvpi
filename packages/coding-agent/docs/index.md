@@ -4,18 +4,21 @@ Shuvpi is a minimal terminal coding harness. It is designed to stay small at the
 
 ## Quick start
 
-Install Shuvpi with npm:
+Install Shuvpi on macOS, Linux, or another POSIX environment:
 
 ```bash
-npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
+curl -fsSL https://raw.githubusercontent.com/shuv1337/shuvpi/main/install.sh | sh
 ```
 
-`--ignore-scripts` disables dependency lifecycle scripts during install. Shuvpi does not require install scripts for normal npm installs.
+The installer uses a writable npm global prefix when available and otherwise installs under `~/.local` without `sudo`. Direct npm, pnpm, Yarn, and Bun global installs remain supported.
 
 To uninstall an npm installation of shuvpi:
 
 ```bash
 npm uninstall -g @shuv1337/shuvpi-coding-agent
+
+# Installer fallback under ~/.local
+npm --prefix "$HOME/.local" uninstall -g @shuv1337/shuvpi-coding-agent
 ```
 
 For pnpm, Yarn, or Bun installs, use the matching global remove command: `pnpm remove -g @shuv1337/shuvpi-coding-agent`, `yarn global remove @shuv1337/shuvpi-coding-agent`, or `bun uninstall -g @shuv1337/shuvpi-coding-agent`.

@@ -63,16 +63,18 @@ I regularly publish my own `pi-mono` work sessions here:
 ## Quick Start
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/shuv1337/shuvpi/main/install.sh | sh
+```
+
+The installer uses your existing writable npm global prefix when its bin directory is already on `PATH`. Otherwise, it installs Shuvpi under `~/.local` and configures your shell `PATH`. It never uses `sudo` or changes npm's global configuration.
+
+Direct npm install:
+
+```bash
 npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
 ```
 
-`--ignore-scripts` disables dependency lifecycle scripts during install. Pi does not require install scripts for normal npm installs.
-
-Installer alternative:
-
-```bash
-curl -fsSL https://pi.dev/install.sh | sh
-```
+`--ignore-scripts` disables dependency lifecycle scripts during install. Shuvpi does not require install scripts for normal npm installs.
 
 Authenticate with an API key:
 
@@ -672,7 +674,7 @@ pi --thinking high "Solve this complex problem"
 | `SHUVPI_CODING_AGENT_SESSION_DIR` | Override session storage directory (overridden by `--session-dir`) |
 | `SHUVPI_PACKAGE_DIR` | Override package directory (useful for Nix/Guix where store paths tokenize poorly) |
 | `SHUVPI_OFFLINE` | Disable startup network operations, including update checks, package update checks, and install/update telemetry |
-| `SHUVPI_SKIP_VERSION_CHECK` | Skip the Pi version update check at startup. This prevents the `pi.dev` latest-version request |
+| `SHUVPI_SKIP_VERSION_CHECK` | Skip the Shuvpi version update check against the npm registry at startup |
 | `SHUVPI_TELEMETRY` | Override install/update telemetry and provider attribution headers. Use `1`/`true`/`yes` to enable or `0`/`false`/`no` to disable. This does not disable update checks |
 | `SHUVPI_CACHE_RETENTION` | Set to `long` for extended prompt cache (Anthropic: 1h, OpenAI: 24h) |
 | `VISUAL`, `EDITOR` | Fallback external editor for Ctrl+G when `externalEditor` is unset; defaults to Notepad on Windows and `nano` elsewhere |
