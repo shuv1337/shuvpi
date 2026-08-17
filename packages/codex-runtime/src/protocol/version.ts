@@ -1,1 +1,0 @@
-export const SHUVPI_CODEX_PROTOCOL_VERSION = 2;

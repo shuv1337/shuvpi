@@ -59,7 +59,6 @@ jobs:
       - name: Build publish packages
         run: |
           # Only packages published by scripts/publish.mjs (plus deps).
-          # Skip codex-runtime: not published and needs protoc-gen-es.
           npm run build -w packages/tui
           npm run build -w packages/telemetry
           npm run build -w packages/ai

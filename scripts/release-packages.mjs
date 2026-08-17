@@ -5,7 +5,7 @@ import { join } from "node:path";
  * Workspace packages this fork publishes to npm, in dependency order.
  *
  * The fork publishes only the `shuvpi` CLI closure. Fork-owned workspaces that are
- * not part of that closure (`mom`, `pods`, `web-ui`, `codex-runtime`, `server`) stay
+ * not part of that closure (`mom`, `pods`, `web-ui`, `server`) stay
  * unpublished even though their manifests are not marked private.
  */
 const PUBLISHED_PACKAGE_DIRECTORIES = [
