@@ -49,7 +49,9 @@ function notify(title: string, body: string): void {
 }
 
 export default function (shuvpi: ExtensionAPI) {
-	shuvpi.on("agent_end", async () => {
+	// `agent_end` fires after each low-level run; Shuvpi may still retry, compact,
+	// or continue with queued follow-ups. Notify only after the full run settles.
+	shuvpi.on("agent_settled", async () => {
 		notify("Shuvpi", "Ready for input");
 	});
 }

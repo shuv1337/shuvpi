@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed duplicate fullscreen right-click paste in VS Code-based terminals on Windows ([#8186](https://github.com/earendil-works/pi/issues/8186)).
+
 ### Added
 
 - Added unbound single-line transcript scrolling actions, `tui.altScreen.lineUp` and `tui.altScreen.lineDown`, for fullscreen TUI keybindings ([#7903](https://github.com/earendil-works/pi/pull/7903) by [@midastruth](https://github.com/midastruth)).

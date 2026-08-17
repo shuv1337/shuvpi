@@ -34,7 +34,7 @@ import {
 	unwrapDataLine,
 	wrapGenerateRequest,
 } from "./google-antigravity-shared.ts";
-import type { GoogleThinkingLevel } from "./google-shared.ts";
+import type { GoogleApiThinkingLevel } from "./google-shared.ts";
 import {
 	convertMessages,
 	convertTools,
@@ -60,7 +60,7 @@ export interface GoogleAntigravityOptions extends StreamOptions {
 		 * Antigravity CLI sends a budget, so `streamSimple` uses `budgetTokens`
 		 * and this stays available for callers that want a level.
 		 */
-		level?: GoogleThinkingLevel;
+		level?: GoogleApiThinkingLevel;
 	};
 	/** Cloud Code project id. Normally supplied through the credential-derived header. */
 	projectId?: string;

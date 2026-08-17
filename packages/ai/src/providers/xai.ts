@@ -1,4 +1,3 @@
-import { openAICompletionsApi } from "../api/openai-completions.lazy.ts";
 import { openAIResponsesApi } from "../api/openai-responses.lazy.ts";
 import { envApiKeyAuth, lazyOAuth } from "../auth/helpers.ts";
 import { loadXaiOAuth } from "../auth/oauth/load.ts";
@@ -20,9 +19,6 @@ export function xaiProvider(): Provider<"openai-completions" | "openai-responses
 			}),
 		},
 		models: Object.values(XAI_MODELS),
-		api: {
-			"openai-completions": openAICompletionsApi(),
-			"openai-responses": openAIResponsesApi(),
-		},
+		api: openAIResponsesApi(),
 	});
 }

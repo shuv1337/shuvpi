@@ -46,8 +46,8 @@ export default function (shuvpi: ExtensionAPI) {
 		}
 	});
 
-	shuvpi.on("agent_end", async () => {
-		// Clear checkpoints after agent completes
+	shuvpi.on("agent_settled", async () => {
+		// Clear checkpoints after the full agent run completes
 		checkpoints.clear();
 	});
 }

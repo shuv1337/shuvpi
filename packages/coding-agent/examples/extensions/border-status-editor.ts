@@ -92,7 +92,7 @@ export default function (shuvpi: ExtensionAPI) {
 		activeTui?.requestRender();
 	});
 
-	shuvpi.on("agent_end", () => {
+	shuvpi.on("agent_settled", () => {
 		isWorking = false;
 		stopSpinner();
 		activeTui?.requestRender();

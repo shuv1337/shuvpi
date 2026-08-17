@@ -65,8 +65,8 @@ export default function (shuvpi: ExtensionAPI) {
 		return undefined;
 	});
 
-	shuvpi.on("agent_end", async (event) => {
-		console.log(\`[Extension] Done, \${event.messages.length} messages\`);
+	shuvpi.on("agent_settled", async (event) => {
+		console.log(`[Extension] Done, ${event.messages.length} messages`);
 	});
 
 	// Register a custom tool

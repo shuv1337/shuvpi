@@ -104,7 +104,8 @@
 		"typescript": "5.9.3",
 		"vitest": "4.1.9",
 		"ws": "8.21.1",
-		"zod": "4.4.3"
+		"zod": "4.4.3",
+		"zod-to-json-schema": "3.25.1"
 	},
 	"keywords": [
 		"coding-agent",

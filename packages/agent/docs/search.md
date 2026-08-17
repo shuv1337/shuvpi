@@ -1,6 +1,6 @@
 # Session Search
 
-Pi search is a small query interface over committed session entries. The shared contract returns only stable hit identity; implementations may extend hits with backend-specific display data.
+Shuvpi search is a small query interface over committed session entries. The shared contract returns only stable hit identity; implementations may extend hits with backend-specific display data.
 
 ## Core API
 
@@ -145,7 +145,7 @@ import {
   type SessionSearch,
   type SessionSearchHit,
   type SessionSearchOptions,
-} from "@earendil-works/pi-agent-core";
+} from "@shuv1337/shuvpi-agent-core";
 
 // JSONL-backed code can provide this locally from existing JSONL list/load helpers.
 async function* jsonlReadables(jsonl: JsonlSessionRepoOptions, options: { cwd?: string } = {}) {

@@ -532,7 +532,7 @@ describe("SettingsManager", () => {
 
 			expect(SettingsManager.create(projectDir, agentDir).getDefaultTools()).toEqual(["read", "bash"]);
 
-			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ defaultTools: ["grep"] }));
+			writeFileSync(join(projectDir, ".shuvpi", "settings.json"), JSON.stringify({ defaultTools: ["grep"] }));
 
 			expect(SettingsManager.create(projectDir, agentDir).getDefaultTools()).toEqual(["grep"]);
 		});

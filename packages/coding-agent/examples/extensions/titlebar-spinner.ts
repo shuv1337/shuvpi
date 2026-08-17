@@ -48,7 +48,7 @@ export default function (shuvpi: ExtensionAPI) {
 		startAnimation(ctx);
 	});
 
-	shuvpi.on("agent_end", async (_event, ctx) => {
+	shuvpi.on("agent_settled", async (_event, ctx) => {
 		stopAnimation(ctx);
 	});
 

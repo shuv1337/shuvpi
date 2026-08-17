@@ -16,17 +16,17 @@ function createBuiltInTools() {
 }
 
 describe("experimental strict built-in tools", () => {
-	const originalPiExperimental = process.env.PI_EXPERIMENTAL;
+	const originalShuvpiExperimental = process.env.SHUVPI_EXPERIMENTAL;
 
 	afterEach(() => {
-		if (originalPiExperimental === undefined) delete process.env.PI_EXPERIMENTAL;
-		else process.env.PI_EXPERIMENTAL = originalPiExperimental;
+		if (originalShuvpiExperimental === undefined) delete process.env.SHUVPI_EXPERIMENTAL;
+		else process.env.SHUVPI_EXPERIMENTAL = originalShuvpiExperimental;
 	});
 
 	it("only enables strict-prefer sampling in experimental mode", () => {
-		delete process.env.PI_EXPERIMENTAL;
+		delete process.env.SHUVPI_EXPERIMENTAL;
 		const normalTools = createBuiltInTools();
-		process.env.PI_EXPERIMENTAL = "1";
+		process.env.SHUVPI_EXPERIMENTAL = "1";
 		const experimentalTools = createBuiltInTools();
 
 		for (const [index, tool] of experimentalTools.entries()) {
