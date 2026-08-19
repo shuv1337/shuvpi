@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated Google Antigravity requests to identify as Antigravity CLI 1.1.15.
+
 ## [0.85.0] - 2026-08-17
 
 ### Breaking Changes

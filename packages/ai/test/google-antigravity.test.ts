@@ -52,7 +52,7 @@ const nativeBody = {
 describe("google antigravity oauth", () => {
 	it("builds the official CLI user agent and authorize URL", () => {
 		expect(antigravityUserAgent()).toMatch(
-			/^antigravity\/cli\/1\.1\.13 \(aidev_client; os_type=(linux|darwin|windows); arch=(amd64|arm64); cl=964361259; auth_method=consumer\)$/,
+			/^antigravity\/cli\/1\.1\.15 \(aidev_client; os_type=(linux|darwin|windows); arch=(amd64|arm64); cl=966910857; auth_method=consumer\)$/,
 		);
 
 		const url = new URL(authorizeURL("challenge-1", "state-1"));

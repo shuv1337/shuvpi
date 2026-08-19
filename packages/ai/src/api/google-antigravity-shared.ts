@@ -25,8 +25,8 @@ const CONTEXT_WINDOW = 1_048_576;
 const FLASH_MAX_OUTPUT = 65_536;
 const PRO_MAX_OUTPUT = 32_768;
 
-const CLI_VERSION = "1.1.13";
-const CLI_CL = "964361259";
+const CLI_VERSION = "1.1.15";
+const CLI_CL = "966910857";
 
 /** Header carrying the Cloud Code project id from the stored OAuth credential to the stream. */
 export const PROJECT_ID_HEADER = "x-goog-antigravity-project";
