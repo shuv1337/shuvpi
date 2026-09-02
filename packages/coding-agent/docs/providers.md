@@ -51,7 +51,7 @@ Anthropic subscription auth is active for Claude Pro/Max accounts. Third-party h
 
 - Run `/login google-antigravity`. An existing Antigravity login on this machine is imported when one is found; otherwise a browser authorization runs against the official Antigravity CLI client.
 - Requests go to Cloud Code Assist (`v1internal`), not the Gemini API, so this is a separate provider from `google`. Gemini API keys do not work here, and a Google AI Pro credential does not enable `google` models.
-- Default model is `gemini-3.7-flash-high`. The catalog refreshes from your account and lists Gemini models only — the Claude and GPT models Cloud Code also serves draw from a separate quota bucket and are deliberately not exposed.
+- Default model is `gemini-3.8-flash-high`; low, medium, and high tiers are selectable. The catalog refreshes from your account and lists Gemini models only — the Claude and GPT models Cloud Code also serves draw from a separate quota bucket and are deliberately not exposed.
 - Usage is metered against your subscription quota, so these models report zero per-token cost.
 
 ### xAI (Grok/X subscription)

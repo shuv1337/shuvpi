@@ -3,6 +3,7 @@ import {
 	antigravityUserAgent,
 	buildAntigravityModels,
 	catalogModelId,
+	DEFAULT_MODEL_ID,
 	filterGoogleModels,
 	maxOutputFor,
 	parseCatalogModels,
@@ -247,12 +248,15 @@ describe("google antigravity wire", () => {
 
 	it("builds a subscription catalog that keeps only Google models", () => {
 		const models = buildAntigravityModels("google-antigravity", [
-			{ id: "gemini-3.8-flash-high", name: "Gemini 3.8 Flash (High)", provider: "MODEL_PROVIDER_GOOGLE" },
+			{ id: "gemini-4-flash-high", name: "Gemini 4 Flash (High)", provider: "MODEL_PROVIDER_GOOGLE" },
 			{ id: "claude-opus-5", name: "Claude Opus 5", provider: "MODEL_PROVIDER_ANTHROPIC" },
 		]);
 		const ids = models.map((model) => model.id);
+		for (const tier of ["high", "medium", "low"]) {
+			expect(ids).toContain(`gemini-3.8-flash-${tier}`);
+		}
 		expect(ids).toContain("gemini-3.7-flash-high");
-		expect(ids).toContain("gemini-3.8-flash-high");
+		expect(ids).toContain("gemini-4-flash-high");
 		expect(ids).not.toContain("claude-opus-5");
 		for (const model of models) {
 			expect(model.provider).toBe("google-antigravity");
@@ -275,7 +279,12 @@ describe("google antigravity wire", () => {
 		for (const id of ["gemini-pro-agent", "gemini-3.1-pro-high", "gemini-3.1-pro-low", "gemini-4-pro-high"]) {
 			expect(byId.get(id)?.maxTokens, id).toBe(32_768);
 		}
-		for (const id of ["gemini-3.7-flash-high", "gemini-3-flash-agent", "gemini-4-flash-high"]) {
+		for (const id of [
+			"gemini-3.8-flash-high",
+			"gemini-3.7-flash-high",
+			"gemini-3-flash-agent",
+			"gemini-4-flash-high",
+		]) {
 			expect(byId.get(id)?.maxTokens, id).toBe(65_536);
 		}
 		for (const model of models) expect(model.contextWindow).toBe(1_048_576);
@@ -295,7 +304,8 @@ describe("googleAntigravityProvider", () => {
 		expect(provider.auth.apiKey).toBeUndefined();
 
 		const ids = provider.getModels().map((model) => model.id);
-		expect(ids).toContain("gemini-3.7-flash-high");
+		expect(DEFAULT_MODEL_ID).toBe("gemini-3.8-flash-high");
+		expect(ids).toContain(DEFAULT_MODEL_ID);
 		expect(ids.some((id) => id.startsWith("claude") || id.startsWith("gpt"))).toBe(false);
 	});
 

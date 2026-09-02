@@ -14,10 +14,10 @@ import { uuidv7 } from "../utils/uuid.ts";
 
 export const CLOUD_CODE_ENDPOINT = "https://daily-cloudcode-pa.googleapis.com";
 export const GENERATE_URL = `${CLOUD_CODE_ENDPOINT}/v1internal:streamGenerateContent?alt=sse`;
-export const DEFAULT_MODEL_ID = "gemini-3.7-flash-high";
+export const DEFAULT_MODEL_ID = "gemini-3.8-flash-high";
 
 /**
- * Antigravity model metadata is absent from models.dev, so limits are pinned here.
+ * Antigravity's tier-specific model metadata is absent from models.dev, so limits are pinned here.
  * Cloud Code validates `maxOutputTokens` against the model and answers 400
  * INVALID_ARGUMENT when it is too high: the Pro agent rejects Flash's 65536.
  */
@@ -56,6 +56,9 @@ export type ShippedModel = {
 };
 
 export const SHIPPED_MODELS: readonly ShippedModel[] = [
+	{ id: "gemini-3.8-flash-high", name: "Gemini 3.8 Flash (High)" },
+	{ id: "gemini-3.8-flash-medium", name: "Gemini 3.8 Flash (Medium)" },
+	{ id: "gemini-3.8-flash-low", name: "Gemini 3.8 Flash (Low)" },
 	{ id: "gemini-3.7-flash-high", name: "Gemini 3.7 Flash (High)", modelEnum: "MODEL_PLACEHOLDER_M298" },
 	{ id: "gemini-3.7-flash-medium", name: "Gemini 3.7 Flash (Medium)", modelEnum: "MODEL_PLACEHOLDER_M299" },
 	{ id: "gemini-3.7-flash-low", name: "Gemini 3.7 Flash (Low)", modelEnum: "MODEL_PLACEHOLDER_M300" },

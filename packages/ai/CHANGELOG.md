@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added Gemini 3.8 Flash low, medium, and high tiers to the Google Antigravity catalog and made the high tier the default.
+
 ### Changed
 
 - Updated Google Antigravity requests to identify as Antigravity CLI 1.1.15.

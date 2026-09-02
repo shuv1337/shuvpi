@@ -709,8 +709,9 @@ describe("default model selection", () => {
 		expect(defaultModelPerProvider["ant-ling"]).toBe("Ring-2.6-1T");
 	});
 
-	test("baseten default tracks current models", () => {
+	test("baseten and Google Antigravity defaults track current models", () => {
 		expect(defaultModelPerProvider.baseten).toBe("moonshotai/Kimi-K2.6");
+		expect(defaultModelPerProvider["google-antigravity"]).toBe("gemini-3.8-flash-high");
 	});
 
 	test("built-in defaults exist in generated provider catalogs", () => {

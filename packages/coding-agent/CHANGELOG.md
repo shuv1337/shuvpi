@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added Gemini 3.8 Flash low, medium, and high tiers to Google AI Pro / Antigravity and made the high tier the default.
+
 ## [0.85.0] - 2026-08-17
 
 ### Fixed

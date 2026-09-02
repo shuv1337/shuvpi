@@ -13,8 +13,8 @@ afterEach(() => {
 });
 
 const model: Model<"google-antigravity"> = {
-	id: "gemini-3.7-flash-high",
-	name: "Gemini 3.7 Flash (High)",
+	id: "gemini-3.8-flash-high",
+	name: "Gemini 3.8 Flash (High)",
 	api: "google-antigravity",
 	provider: "google-antigravity",
 	baseUrl: "https://daily-cloudcode-pa.googleapis.com",
@@ -92,11 +92,11 @@ describe("google antigravity stream", () => {
 		expect(requestHeaders?.get("x-goog-antigravity-project")).toBeNull();
 
 		expect(requestBody.project).toBe("canvas-wallaby-dvmxc");
-		expect(requestBody.model).toBe("gemini-3.7-flash-high");
+		expect(requestBody.model).toBe("gemini-3.8-flash-high");
 		expect(requestBody.userAgent).toBe("antigravity");
 		expect(requestBody.requestType).toBe("agent");
 		expect(requestBody.request.systemInstruction.role).toBe("user");
-		expect(requestBody.request.labels.model_enum).toBe("MODEL_PLACEHOLDER_M298");
+		expect(requestBody.request.labels.model_enum).toBeUndefined();
 		expect(requestBody.request.labels.used_claude).toBe("false");
 		expect(requestBody.request.toolConfig.functionCallingConfig.mode).toBe("VALIDATED");
 
