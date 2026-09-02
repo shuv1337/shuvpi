@@ -10,6 +10,10 @@
 
 - Updated Google Antigravity requests to identify as Antigravity CLI 1.1.15.
 
+### Fixed
+
+- Fixed Cloudflare AI Gateway catalog generation to retain non-OpenAI and non-Anthropic upstreams through the Unified API, and updated its default compatibility model to Kimi K3.
+
 ## [0.85.0] - 2026-08-17
 
 ### Breaking Changes

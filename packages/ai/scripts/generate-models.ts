@@ -1623,18 +1623,17 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 					api = "anthropic-messages";
 					baseUrl = CLOUDFLARE_AI_GATEWAY_ANTHROPIC_BASE_URL;
 					id = nativeId;
-				} else if (upstream === "workers-ai") {
+				} else {
+					// The Unified API accepts every other upstream as a provider-prefixed
+					// OpenAI-compatible model id (for example moonshotai/kimi-k3).
 					api = "openai-completions";
 					baseUrl = CLOUDFLARE_AI_GATEWAY_COMPAT_BASE_URL;
 					id = prefixedId;
-				} else {
-					continue;
 				}
 
-				// Gateway passthroughs forward session affinity headers to upstreams that
-				// use them for cache/routing affinity.
-				const compat =
-					upstream === "anthropic" || upstream === "workers-ai" ? { sendSessionAffinityHeaders: true } : undefined;
+				// Gateway passthroughs and the Unified API forward session affinity
+				// headers to upstreams that use them for cache/routing affinity.
+				const compat = upstream !== "openai" ? { sendSessionAffinityHeaders: true } : undefined;
 
 				models.push({
 					id,

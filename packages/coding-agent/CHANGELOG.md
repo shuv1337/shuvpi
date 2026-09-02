@@ -6,6 +6,10 @@
 
 - Added Gemini 3.8 Flash low, medium, and high tiers to Google AI Pro / Antigravity and made the high tier the default.
 
+### Fixed
+
+- Fixed regenerated Cloudflare AI Gateway catalogs dropping Unified API upstreams, and updated the default compatibility model to Kimi K3.
+
 ## [0.85.0] - 2026-08-17
 
 ### Fixed

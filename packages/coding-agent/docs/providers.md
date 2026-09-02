@@ -273,7 +273,7 @@ export CLOUDFLARE_GATEWAY_ID=...        # create at dash.cloudflare.com â†’ AI â
 pi --provider cloudflare-ai-gateway --model "claude-sonnet-4-5"
 ```
 
-Routes to OpenAI, Anthropic, and Workers AI through Cloudflare AI Gateway. Workers AI uses the Unified API (`/compat`) and prefixed model IDs (`workers-ai/@cf/...`). OpenAI uses the OpenAI passthrough route (`/openai`) with native OpenAI model IDs such as `gpt-5.1`. Anthropic uses the Anthropic passthrough route (`/anthropic`) with native Anthropic model IDs such as `claude-sonnet-4-5`.
+Routes supported upstreams through Cloudflare AI Gateway. OpenAI uses the `/openai` passthrough with native IDs such as `gpt-5.1`, and Anthropic uses `/anthropic` with native IDs such as `claude-sonnet-4-5`. Other upstreams use the Unified API (`/compat`) with provider-prefixed IDs such as `moonshotai/kimi-k3` or `workers-ai/@cf/...`.
 
 AI Gateway authentication uses `CLOUDFLARE_API_KEY` as `cf-aig-authorization`. Upstream authentication can be one of:
 
