@@ -3,10 +3,14 @@ import { getModel, getSupportedThinkingLevels } from "../src/compat.ts";
 
 const GPT_56_MODELS = [
 	["gpt-5.6-luna", "GPT-5.6 Luna", 0.2, 1.2, 0.02, 0.25],
+	["gpt-5.6-sol", "GPT-5.6 Sol", 4, 20, 0.4, 5],
+	["gpt-5.6-terra", "GPT-5.6 Terra", 2, 12, 0.2, 2.5],
+] as const;
+const GPT_56_CODEX_MODELS = [
+	["gpt-5.6-luna", "GPT-5.6 Luna", 0.2, 1.2, 0.02, 0.25],
 	["gpt-5.6-sol", "GPT-5.6 Sol", 5, 30, 0.5, 6.25],
 	["gpt-5.6-terra", "GPT-5.6 Terra", 2, 12, 0.2, 2.5],
 ] as const;
-const GPT_56_CODEX_MODELS = GPT_56_MODELS;
 
 describe("OpenAI Daybreak Blue", () => {
 	it("registers the approved direct API alias with GPT-5.6 Sol capabilities", () => {

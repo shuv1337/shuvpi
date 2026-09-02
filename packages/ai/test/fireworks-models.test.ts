@@ -37,15 +37,16 @@ describe("Fireworks models", () => {
 		});
 	});
 
-	it("registers the Fire Pass turbo router model", () => {
-		const model = getModels("fireworks").find(
-			(candidate) => candidate.id.startsWith("accounts/fireworks/routers/") && candidate.id.endsWith("-turbo"),
+	it("registers the current Fireworks fast router models", () => {
+		const models = getModels("fireworks").filter(
+			(candidate) => candidate.id.startsWith("accounts/fireworks/routers/") && candidate.id.endsWith("-fast"),
 		);
 
-		expect(model).toBeDefined();
-		expect(model?.api).toBe("anthropic-messages");
-		expect(model?.baseUrl).toBe("https://api.fireworks.ai/inference");
-		expect(model?.input).toEqual(["text", "image"]);
+		expect(models.length).toBeGreaterThan(0);
+		for (const model of models) {
+			expect(model.api).toBe("openai-completions");
+			expect(model.baseUrl).toBe("https://api.fireworks.ai/inference/v1");
+		}
 	});
 
 	it("aligns GLM 5.2 Fast with GLM 5.2's OpenAI-compatible config", () => {
