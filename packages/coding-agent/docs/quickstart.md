@@ -4,15 +4,7 @@ This page gets you from install to a useful first shuvpi session.
 
 ## Install
 
-Run the Shuvpi installer on macOS, Linux, or another POSIX environment:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/shuv1337/shuvpi/main/install.sh | sh
-```
-
-The installer uses your existing writable npm global prefix when its bin directory is already on `PATH`. Otherwise, it installs Shuvpi under `~/.local` and configures your shell `PATH`. It never uses `sudo` or changes npm's global configuration.
-
-To install directly with npm when its global prefix is already writable:
+Shuvpi is distributed as an npm package:
 
 ```bash
 npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
@@ -22,14 +14,11 @@ npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
 
 ### Uninstall
 
-Use the package manager and prefix that installed shuvpi:
+Use the package manager that installed shuvpi. The curl installer uses npm globally, so curl and npm installs are removed with npm:
 
 ```bash
-# npm install -g, or the installer when the configured prefix was writable
+# curl installer or npm install -g
 npm uninstall -g @shuv1337/shuvpi-coding-agent
-
-# installer fallback under ~/.local
-npm --prefix "$HOME/.local" uninstall -g @shuv1337/shuvpi-coding-agent
 
 # pnpm
 pnpm remove -g @shuv1337/shuvpi-coding-agent
@@ -140,7 +129,7 @@ The command output is sent to the model. Use `!!command` to run a command withou
 
 ### Switch models
 
-Use `/model` or Ctrl+L to choose a model. Use Shift+Tab to cycle thinking level. Use Ctrl+P / Shift+Ctrl+P to cycle through scoped models.
+Use `/model` or Ctrl+L to choose a model for the current session. Press Ctrl+S in the model picker to save the highlighted model as the startup default. Use `/thinking` to choose a thinking level for the current session, or Ctrl+S in that picker to save the startup default thinking level. Use Shift+Tab to cycle thinking level. Use Ctrl+P / Shift+Ctrl+P to cycle through scoped models.
 
 ### Continue later
 

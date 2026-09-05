@@ -66,7 +66,7 @@ For project-level Claude Code skills, add to `.shuvpi/settings.json`:
 
 1. At startup, shuvpi scans skill locations and extracts names and descriptions
 2. The system prompt includes available skills in XML format per the [specification](https://agentskills.io/integrate-skills)
-3. When a task matches, the agent uses `read` to load the full SKILL.md (models don't always do this; use prompting or `/skill:name` to force it)
+3. When a task matches, the agent uses `read`, or `bash` when `read` is unavailable, to load the full SKILL.md (models don't always do this; use prompting or `/skill:name` to force it)
 4. The agent follows the instructions, using relative paths to reference scripts and assets
 
 This is progressive disclosure: only descriptions are always in context, full instructions load on-demand.
@@ -229,4 +229,4 @@ cd /path/to/brave-search && npm install
 ## Skill Repositories
 
 - [Anthropic Skills](https://github.com/anthropics/skills) - Document processing (docx, pdf, pptx, xlsx), web development
-- [Pi Skills](https://github.com/badlogic/pi-skills) - Web search, browser automation, Google APIs, transcription
+- [Shuvpi Skills](https://github.com/badlogic/shuvpi-skills) - Web search, browser automation, Google APIs, transcription

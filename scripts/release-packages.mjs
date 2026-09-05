@@ -9,6 +9,7 @@ import { join } from "node:path";
  * unpublished even though their manifests are not marked private.
  */
 const PUBLISHED_PACKAGE_DIRECTORIES = [
+	"packages/chord",
 	"packages/telemetry",
 	"packages/ai",
 	"packages/tui",

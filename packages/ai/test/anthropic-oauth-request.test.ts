@@ -44,7 +44,7 @@ describe("Anthropic OAuth request identity", () => {
 		expect(request!.headers.get("authorization")).toBe(`Bearer ${oauthToken}`);
 		expect(request!.headers.get("x-api-key")).toBeNull();
 		expect(request!.headers.get("anthropic-dangerous-direct-browser-access")).toBe("true");
-		expect(request!.headers.get("user-agent")).toBe("claude-cli/2.1.207 (external, cli)");
+		expect(request!.headers.get("user-agent")).toBe("claude-cli/2.1.251 (external, cli)");
 		expect(request!.headers.get("x-app")).toBe("cli");
 		expect(request!.headers.get("x-claude-code-session-id")).toBe("session-test");
 		expect(request!.headers.get("anthropic-beta")?.split(",")).toEqual(

@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { createTypedSpanStarter, NOOP_TELEMETRY_CONTEXT, type TelemetryContext } from "@shuv1337/shuvpi-telemetry";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { renderAgentTelemetrySchemaMarkdown } from "../../scripts/generate-telemetry-docs.ts";
+import { BACKGROUND_CONTEXT, withTelemetryContext } from "../../src/harness/context.ts";
 import {
 	AGENT_TELEMETRY_SCHEMAS,
 	AI_TELEMETRY_SCHEMA,
@@ -82,8 +83,8 @@ describe("agent telemetry schemas", () => {
 		>();
 
 		const telemetryContext: TelemetryContext = NOOP_TELEMETRY_CONTEXT;
+		const context = withTelemetryContext(telemetryContext, BACKGROUND_CONTEXT);
 		await startAiSpan(
-			telemetryContext,
 			"shuvpi.ai.request",
 			{
 				"shuvpi.ai.operation": "stream",
@@ -97,6 +98,7 @@ describe("agent telemetry schemas", () => {
 				// @ts-expect-error shuvpi.ai.request declares no span events
 				span.addEvent("chunk");
 			},
+			context,
 		);
 
 		const compileTimeFailures = () => {
@@ -109,9 +111,9 @@ describe("agent telemetry schemas", () => {
 				"shuvpi.ai.unknown": true,
 			} as const;
 			// @ts-expect-error variables with unknown attributes are rejected
-			void startAiSpan(telemetryContext, "shuvpi.ai.request", extraAttributes, () => {});
+			void startAiSpan("shuvpi.ai.request", extraAttributes, () => {}, context);
 			// @ts-expect-error missing required start attributes
-			void startAiSpan(telemetryContext, "shuvpi.ai.request", { "shuvpi.ai.operation": "stream" }, () => {});
+			void startAiSpan("shuvpi.ai.request", { "shuvpi.ai.operation": "stream" }, () => {}, context);
 		};
 		expectTypeOf(compileTimeFailures).toBeFunction();
 	});
@@ -119,14 +121,27 @@ describe("agent telemetry schemas", () => {
 	it("infers per-span harness literals and optional completion enrichment", async () => {
 		type RunStart = HarnessSpanStartAttributes<"shuvpi.harness.run">;
 		type RunEnd = HarnessSpanEndAttributes<"shuvpi.harness.run">;
+		type WriteStart = HarnessSpanStartAttributes<"shuvpi.session.write">;
+		type WriteEnd = HarnessSpanEndAttributes<"shuvpi.session.write">;
 		expectTypeOf<RunStart["shuvpi.operation.kind"]>().toEqualTypeOf<"run">();
 		expectTypeOf<RunEnd["shuvpi.operation.outcome"]>().toEqualTypeOf<
 			"completed" | "aborted" | "failed" | "suspended" | undefined
 		>();
+		const writeStart = {
+			"shuvpi.session.id": "session",
+			"shuvpi.session.item_count": 2,
+			"shuvpi.session.item_kinds": ["entry", "value", "list"],
+		} satisfies WriteStart;
+		const writeEnd = {
+			"shuvpi.session.first_seq": 1,
+			"shuvpi.session.last_seq": 2,
+		} satisfies WriteEnd;
+		expectTypeOf(writeStart["shuvpi.session.item_count"]).toEqualTypeOf<number>();
+		expectTypeOf(writeEnd["shuvpi.session.last_seq"]).toEqualTypeOf<number>();
 
 		const telemetryContext: TelemetryContext = NOOP_TELEMETRY_CONTEXT;
+		const context = withTelemetryContext(telemetryContext, BACKGROUND_CONTEXT);
 		await startHarnessSpan(
-			telemetryContext,
 			"shuvpi.harness.run",
 			{
 				"shuvpi.session.id": "session",
@@ -141,6 +156,7 @@ describe("agent telemetry schemas", () => {
 				// @ts-expect-error the harness schema declares no span events
 				span.addEvent("result");
 			},
+			context,
 		);
 
 		const compileTimeFailures = () => {
@@ -153,9 +169,8 @@ describe("agent telemetry schemas", () => {
 				"shuvpi.unknown": true,
 			} as const;
 			// @ts-expect-error variables with unknown attributes are rejected
-			void startHarnessSpan(telemetryContext, "shuvpi.harness.run", extraRunAttributes, () => {});
+			void startHarnessSpan("shuvpi.harness.run", extraRunAttributes, () => {}, context);
 			void startHarnessSpan(
-				telemetryContext,
 				"shuvpi.harness.checkpoint",
 				{
 					"shuvpi.lane.name": "main",
@@ -166,9 +181,9 @@ describe("agent telemetry schemas", () => {
 					// @ts-expect-error empty end schemas reject every attribute
 					span.setAttributes({ "shuvpi.unknown": true });
 				},
+				context,
 			);
 			void startHarnessSpan(
-				telemetryContext,
 				"shuvpi.harness.run",
 				{
 					"shuvpi.session.id": "session",
@@ -179,9 +194,10 @@ describe("agent telemetry schemas", () => {
 					"shuvpi.operation.recovery": false,
 				},
 				() => {},
+				context,
 			);
 			// @ts-expect-error missing required run start attributes
-			void startHarnessSpan(telemetryContext, "shuvpi.harness.run", {}, () => {});
+			void startHarnessSpan("shuvpi.harness.run", {}, () => {}, context);
 		};
 		expectTypeOf(compileTimeFailures).toBeFunction();
 	});

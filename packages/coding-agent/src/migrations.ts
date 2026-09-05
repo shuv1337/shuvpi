@@ -10,6 +10,7 @@ import { CONFIG_DIR_NAME, getAgentDir, getBinDir } from "./config.ts";
 import { migrateKeybindingsConfig } from "./core/keybindings.ts";
 import type { PackageSource } from "./core/settings-manager.ts";
 import { isLocalPath, resolvePath } from "./utils/paths.ts";
+import { stripBom } from "./utils/text.ts";
 
 const MIGRATION_GUIDE_URL =
 	"https://github.com/shuv1337/pi-mono/blob/main/packages/coding-agent/CHANGELOG.md#extensions-migration";
@@ -83,7 +84,7 @@ export function migrateAuthToAuthJson(): string[] {
 	// Migrate oauth.json
 	if (existsSync(oauthPath)) {
 		try {
-			const oauth = JSON.parse(readFileSync(oauthPath, "utf-8"));
+			const oauth = JSON.parse(stripBom(readFileSync(oauthPath, "utf-8")));
 			for (const [provider, cred] of Object.entries(oauth)) {
 				migrated[provider] = { type: "oauth", ...(cred as object) };
 				providers.push(provider);
@@ -98,7 +99,7 @@ export function migrateAuthToAuthJson(): string[] {
 	if (existsSync(settingsPath)) {
 		try {
 			const content = readFileSync(settingsPath, "utf-8");
-			const settings = JSON.parse(content);
+			const settings = JSON.parse(stripBom(content));
 			if (settings.apiKeys && typeof settings.apiKeys === "object") {
 				for (const [provider, key] of Object.entries(settings.apiKeys)) {
 					if (!migrated[provider] && typeof key === "string") {
@@ -209,7 +210,7 @@ function migrateKeybindingsConfigFile(): void {
 	if (!existsSync(configPath)) return;
 
 	try {
-		const parsed = JSON.parse(readFileSync(configPath, "utf-8")) as unknown;
+		const parsed = JSON.parse(stripBom(readFileSync(configPath, "utf-8"))) as unknown;
 		if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
 			return;
 		}

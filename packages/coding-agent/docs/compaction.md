@@ -1,8 +1,8 @@
 # Compaction & Branch Summarization
 
-LLMs have limited context windows. When conversations grow too long, Pi uses compaction to summarize older content while preserving recent work. This page covers both auto-compaction and branch summarization.
+LLMs have limited context windows. When conversations grow too long, Shuvpi uses compaction to summarize older content while preserving recent work. This page covers both auto-compaction and branch summarization.
 
-**Source files** ([pi-mono](https://github.com/earendil-works/pi-mono)):
+**Source files** ([shuvpi-mono](https://github.com/earendil-works/pi-mono)):
 - [`packages/coding-agent/src/core/compaction/compaction.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/compaction/compaction.ts) - Auto-compaction logic
 - [`packages/coding-agent/src/core/compaction/branch-summarization.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/compaction/branch-summarization.ts) - Branch summarization
 - [`packages/coding-agent/src/core/compaction/utils.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/compaction/utils.ts) - Shared utilities (file tracking, serialization)
@@ -13,7 +13,7 @@ For TypeScript definitions in your project, inspect `node_modules/@shuv1337/shuv
 
 ## Overview
 
-Pi has two summarization mechanisms:
+Shuvpi has two summarization mechanisms:
 
 | Mechanism | Trigger | Purpose |
 |-----------|---------|---------|
@@ -33,6 +33,8 @@ contextTokens > contextWindow - reserveTokens
 ```
 
 By default, `reserveTokens` is 16384 tokens (configurable in `~/.shuvpi/agent/settings.json` or `<project-dir>/.shuvpi/settings.json`). This leaves room for the LLM's response.
+
+During a multi-turn agent run, Shuvpi checks this threshold after tools finish and their results are appended, before starting the next assistant response. If the threshold is crossed, Shuvpi compacts inside the same agent run and resumes with the summary and retained messages. It skips this between-turn check when the completed tool batch terminates the run and no queued message requires another response. Shuvpi also checks the threshold before a new user prompt and after a low-level agent run ends.
 
 You can also trigger manually with `/compact [instructions]`, where optional instructions focus the summary.
 
@@ -76,7 +78,7 @@ What the LLM sees:
     prompt   from cmp          messages from firstKeptEntryId
 ```
 
-On repeated compactions, the summarized span starts at the previous compaction's kept boundary (`firstKeptEntryId`), not at the compaction entry itself, falling back to the entry after the previous compaction if that kept entry cannot be found in the path. This preserves messages that survived the earlier compaction by including them in the next summarization pass as well. Pi also recalculates `tokensBefore` from the rebuilt session context before writing the new `CompactionEntry`, so the token count reflects the actual pre-compaction context being replaced.
+On repeated compactions, the summarized span starts at the previous compaction's kept boundary (`firstKeptEntryId`), not at the compaction entry itself, falling back to the entry after the previous compaction if that kept entry cannot be found in the path. This preserves messages that survived the earlier compaction by including them in the next summarization pass as well. Shuvpi also recalculates `tokensBefore` from the rebuilt session context before writing the new `CompactionEntry`, so the token count reflects the actual pre-compaction context being replaced.
 
 ### Split Turns
 
@@ -102,7 +104,7 @@ Split turn (one huge turn exceeds budget):
   turnPrefixMessages = [usr, ass, tool, ass, tool, tool]
 ```
 
-For split turns, Pi generates two summaries and merges them:
+For split turns, Shuvpi generates two summaries and merges them:
 1. **History summary**: Previous context (if any)
 2. **Turn prefix summary**: The early part of the split turn
 
@@ -149,7 +151,7 @@ See [`prepareCompaction()`](https://github.com/earendil-works/pi-mono/blob/main/
 
 ### When It Triggers
 
-When you use `/tree` to navigate to a different branch, Pi offers to summarize the work you're leaving. This injects context from the left branch into the new branch.
+When you use `/tree` to navigate to a different branch, Shuvpi offers to summarize the work you're leaving. This injects context from the left branch into the new branch.
 
 ### How It Works
 
@@ -178,7 +180,7 @@ After navigation with summary:
 
 ### Cumulative File Tracking
 
-Both compaction and branch summarization track files cumulatively. When generating a summary, pi extracts file operations from:
+Both compaction and branch summarization track files cumulatively. When generating a summary, shuvpi extracts file operations from:
 - Tool calls in the messages being summarized
 - Previous compaction or branch summary `details` (if any)
 
@@ -351,7 +353,7 @@ See [custom-compaction.ts](../examples/extensions/custom-compaction.ts) for a co
 Fired when manual or automatic compaction fails or is aborted. This is useful for telemetry extensions that need to pair `session_before_compact` attempts with terminal outcomes.
 
 ```typescript
-pi.on("session_compact_failed", async (event, ctx) => {
+shuvpi.on("session_compact_failed", async (event, ctx) => {
   const { reason, errorMessage, aborted, willRetry, fromExtension } = event;
   // reason - "manual" (/compact), "threshold", or "overflow"
   // errorMessage - present for non-abort failures

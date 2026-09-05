@@ -4,13 +4,13 @@
 
 > New issues and PRs from new contributors are auto-closed by default. Maintainers review auto-closed issues daily. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Shuvpi is Shuv's maintained fork of the Pi agent harness. The distinct package names, binary, config directory, and environment variables let it coexist with a native upstream Pi installation.
+Shuvpi is Shuv's maintained fork of the Shuvpi agent harness. The distinct package names, binary, config directory, and environment variables let it coexist with a native upstream Shuvpi installation.
 
 * **[@shuv1337/shuvpi-coding-agent](packages/coding-agent)**: Interactive coding agent CLI
 * **[@shuv1337/shuvpi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
 * **[@shuv1337/shuvpi-ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)
 
-The project remains derived from [upstream Pi](https://github.com/earendil-works/pi). Upstream services such as the `pi.dev` session viewer remain external dependencies where explicitly documented.
+The project remains derived from [upstream Shuvpi](https://github.com/earendil-works/pi). Upstream services such as the `pi.dev` session viewer remain external dependencies where explicitly documented.
 
 ## Install
 
@@ -24,6 +24,7 @@ The installer uses a writable npm global prefix when its bin directory is alread
 
 | Package | Description |
 |---------|-------------|
+| **[@shuv1337/shuvpi-chord](packages/chord)** | Standalone application-composition runtime for services, replicated state, RPC, and plugins |
 | **[@shuv1337/shuvpi-telemetry](packages/telemetry)** | Vendor-neutral telemetry contracts, reference adapter, conformance tests, and typed schemas |
 | **[@shuv1337/shuvpi-ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
 | **[@shuv1337/shuvpi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
@@ -34,7 +35,7 @@ The installer uses a writable npm global prefix when its bin directory is alread
 | **[@shuv1337/shuvpi-session-backend-sqlite-node](packages/session-backends/sqlite-node)** | SQLite session backend for Node.js |
 | **[@shuv1337/shuvpi-server](packages/server)** | Experimental Shuvpi server package |
 
-For upstream Slack/chat automation and workflows, see [earendil-works/pi-chat](https://github.com/earendil-works/pi-chat).
+For upstream Slack/chat automation and workflows, see [earendil-works/shuvpi-chat](https://github.com/earendil-works/pi-chat).
 
 ## Permissions & Containerization
 
@@ -63,12 +64,12 @@ npm run check        # Lint, format, and type check
 
 ## Config migration
 
-Shuvpi uses `~/.shuvpi` and project-local `.shuvpi` directories. It does not automatically read, move, or delete upstream `~/.pi` or `.pi` data. To reuse selected settings, copy them explicitly and review paths before launching:
+Shuvpi uses `~/.shuvpi` and project-local `.shuvpi` directories. It does not automatically read, move, or delete upstream `~/.shuvpi` or `.shuvpi` data. To reuse selected settings, copy them explicitly and review paths before launching:
 
 ```bash
 mkdir -p ~/.shuvpi
-cp -a ~/.pi/agent ~/.shuvpi/
-cp -a .pi .shuvpi
+cp -a ~/.shuvpi/agent ~/.shuvpi/
+cp -a .shuvpi .shuvpi
 ```
 
 Use either command only when its source exists. A copy keeps the upstream installation intact.
@@ -108,13 +109,13 @@ Public OSS session data helps improve coding agents with real-world tasks, tool 
 
 For the full explanation, see [this post on X](https://x.com/badlogicgames/status/2037811643774652911).
 
-To publish sessions, use [`badlogic/pi-share-hf`](https://github.com/badlogic/pi-share-hf). Read its README.md for setup instructions. All you need is a Hugging Face account, the Hugging Face CLI, and `pi-share-hf`.
+To publish sessions, use [`badlogic/shuvpi-share-hf`](https://github.com/badlogic/shuvpi-share-hf). Read its README.md for setup instructions. All you need is a Hugging Face account, the Hugging Face CLI, and `shuvpi-share-hf`.
 
-You can also watch [this video](https://x.com/badlogicgames/status/2041151967695634619), where I show how I publish my `pi-mono` sessions.
+You can also watch [this video](https://x.com/badlogicgames/status/2041151967695634619), where I show how I publish my `shuvpi-mono` sessions.
 
-I regularly publish my own `pi-mono` work sessions here:
+I regularly publish my own `shuvpi-mono` work sessions here:
 
-- [badlogicgames/pi-mono on Hugging Face](https://huggingface.co/datasets/badlogicgames/pi-mono)
+- [badlogicgames/shuvpi-mono on Hugging Face](https://huggingface.co/datasets/badlogicgames/shuvpi-mono)
 
 ## License
 

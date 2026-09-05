@@ -28,7 +28,7 @@
       <ul>
         <li>Use <code>shuvpi</code> as the sole active fork identity; do not preserve <code>pi</code> or <code>shuvcode</code> aliases.</li>
         <li>Rename fork-owned npm packages to <code>@shuv1337/shuvpi-*</code>.</li>
-        <li>Start runtime state under <code>~/.shuvpi</code>; do not mutate existing <code>~/.pi</code> data automatically.</li>
+        <li>Start runtime state under <code>~/.shuvpi</code>; do not mutate existing <code>~/.shuvpi</code> data automatically.</li>
         <li>Keep the current <code>shuv1337/pi-mono</code> repository remote until an external rename is separately authorized.</li>
         <li>Remove old-scope extension aliases instead of creating nonexistent <code>@earendil-works/shuvpi-*</code> or <code>@mariozechner/shuvpi-*</code> compatibility packages.</li>
       </ul>
@@ -59,7 +59,7 @@
         <li>Focused post-audit validation passed 109 tests across agent and coding-agent.</li>
         <li><code>HOME=/tmp/shuvpi-test-home ./test.sh</code> passed: 180 agent tests, 509 AI tests, 1,538 coding-agent tests, and the TUI suite; provider/e2e tests remained intentionally skipped.</li>
         <li><code>npm run release:local -- --out /tmp/shuvpi-local-release --force</code> produced npm, Bun, and standalone Linux x64 artifacts.</li>
-        <li>Active-surface grep found only documented <code>~/.pi</code> migration text and external <code>pi.dev</code>/<code>pi-mono</code> provenance.</li>
+        <li>Active-surface grep found only documented <code>~/.shuvpi</code> migration text and external <code>pi.dev</code>/<code>pi-mono</code> provenance.</li>
         <li><code>shuvpi --version</code>, <code>--help</code>, and <code>--list-models</code> passed; the installed command resolves to this checkout. <code>shuvcode</code> still resolves to the OpenCode fork, and no <code>pi</code> command was installed.</li>
       </ul>
     </section>

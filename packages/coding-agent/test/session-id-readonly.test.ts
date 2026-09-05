@@ -10,6 +10,7 @@ import { SettingsManager } from "../src/core/settings-manager.ts";
 import { createSessionManager } from "../src/main.ts";
 
 const cliPath = resolve(__dirname, "../src/cli.ts");
+const sourceResolverPath = resolve(__dirname, "../src/experimental/source-resolver.ts");
 const tempDirs: string[] = [];
 
 afterEach(() => {
@@ -23,7 +24,7 @@ function createTempDir(): string {
 	// realpath: on macOS tmpdir() is a symlink (/var -> /private/var), but the
 	// spawned CLI sees the physical path via process.cwd(). Session cwd
 	// filtering compares paths textually, so the fixture must use physical paths.
-	const dir = realpathSync(mkdtempSync(join(tmpdir(), "shuvpi-session-id-readonly-")));
+	const dir = realpathSync(mkdtempSync(join(tmpdir(), "pi-session-id-readonly-")));
 	tempDirs.push(dir);
 	return dir;
 }
@@ -54,13 +55,12 @@ async function runCli(args: string[]): Promise<{ code: number | null; agentDir: 
 	mkdirSync(projectDir, { recursive: true });
 
 	const code = await new Promise<number | null>((resolvePromise, reject) => {
-		const child = spawn(process.execPath, [cliPath, ...args], {
+		const child = spawn(process.execPath, ["--import", sourceResolverPath, cliPath, ...args], {
 			cwd: projectDir,
 			env: {
 				...process.env,
 				[ENV_AGENT_DIR]: agentDir,
 				SHUVPI_OFFLINE: "1",
-				TSX_TSCONFIG_PATH: resolve(__dirname, "../../../tsconfig.json"),
 			},
 			stdio: ["ignore", "ignore", "ignore"],
 		});

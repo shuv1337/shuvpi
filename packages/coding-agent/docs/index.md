@@ -4,21 +4,24 @@ Shuvpi is a minimal terminal coding harness. It is designed to stay small at the
 
 ## Quick start
 
-Install Shuvpi on macOS, Linux, or another POSIX environment:
+Install Shuvpi with npm:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/shuv1337/shuvpi/main/install.sh | sh
+npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
 ```
 
-The installer uses a writable npm global prefix when available and otherwise installs under `~/.local` without `sudo`. Direct npm, pnpm, Yarn, and Bun global installs remain supported.
+`--ignore-scripts` disables dependency lifecycle scripts during install. Shuvpi does not require install scripts for normal npm installs.
 
-To uninstall an npm installation of shuvpi:
+On Linux or macOS, you can also use the installer:
+
+```bash
+curl -fsSL https://pi.dev/install.sh | sh
+```
+
+To uninstall shuvpi itself, use npm for curl and npm installs:
 
 ```bash
 npm uninstall -g @shuv1337/shuvpi-coding-agent
-
-# Installer fallback under ~/.local
-npm --prefix "$HOME/.local" uninstall -g @shuv1337/shuvpi-coding-agent
 ```
 
 For pnpm, Yarn, or Bun installs, use the matching global remove command: `pnpm remove -g @shuv1337/shuvpi-coding-agent`, `yarn global remove @shuv1337/shuvpi-coding-agent`, or `bun uninstall -g @shuv1337/shuvpi-coding-agent`.
@@ -65,7 +68,7 @@ For the full first-run flow, see [Quickstart](quickstart.md).
 
 ## Reference
 
-- [Environment variables](environment-variables.md) - Pi process configuration and session metadata available to bash tools.
+- [Environment variables](environment-variables.md) - Shuvpi process configuration and session metadata available to bash tools.
 - [Session format](session-format.md) - JSONL session file format, entry types, and SessionManager API.
 
 ## Platform setup

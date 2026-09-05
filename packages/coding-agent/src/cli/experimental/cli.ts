@@ -1,7 +1,16 @@
+import { Command } from "./command.ts";
 import { type ClientCommandContext, clientCommand } from "./commands/client.ts";
 import { type ServerCommandContext, serverCommand } from "./commands/server.ts";
-import { type ShuvpiCommandContext, shuvpiCommand } from "./commands/shuvpi.ts";
 
-export type ExperimentalCliContext = ShuvpiCommandContext & ServerCommandContext & ClientCommandContext;
+interface ExperimentalCommandGroup {
+	readonly command: "experimental";
+}
 
-export const experimentalCli = shuvpiCommand.command(serverCommand).command(clientCommand);
+export type CliContext = ServerCommandContext & ClientCommandContext;
+
+const experimentalCommand = new Command<ExperimentalCommandGroup, CliContext>("experimental").build(() => ({
+	ok: false,
+	errors: ["Expected experimental command: server or client"],
+}));
+
+export const cli = experimentalCommand.command(serverCommand).command(clientCommand);

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Merged upstream pi v0.85.0: provider stream event-sequence fixes, Codex SSE parsing, Copilot reasoning levels, `toolChoice` support, thinking budgets, and Cloudflare AI binding transport. Fork behavior preserved: `ultra` thinking level, Anthropic OAuth stealth identity, no default runtime User-Agent on Anthropic, and tool_choice omitted without tools.
+
 ## [0.85.1] - 2026-09-02
 
 ### Added

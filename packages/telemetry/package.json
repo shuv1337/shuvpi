@@ -1,7 +1,7 @@
 {
 	"name": "@shuv1337/shuvpi-telemetry",
 	"version": "0.85.1",
-	"description": "Vendor-neutral telemetry contracts and typed schema utilities for shuvpi",
+	"description": "Vendor-neutral telemetry contracts and typed schema utilities for pi",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -34,14 +34,14 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/shuv1337/shuvpi.git",
+		"url": "git+https://github.com/earendil-works/pi.git",
 		"directory": "packages/telemetry"
 	},
 	"engines": {
 		"node": ">=22.19.0"
 	},
 	"devDependencies": {
-		"@types/node": "24.12.4",
+		"@types/node": "22.19.19",
 		"vitest": "4.1.9"
 	}
 }

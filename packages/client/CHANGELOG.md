@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Merged upstream pi v0.85.0: client rewritten for the service-addressed session RPC protocol with unix transport support.
+
 ## [0.85.1] - 2026-09-02
 
 ## [0.85.0] - 2026-08-17

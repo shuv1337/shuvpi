@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Merged upstream pi v0.85.0: server rewritten around chord services with unix transports and remote session event streaming.
+
 ## [0.85.1] - 2026-09-02
 
 ## [0.85.0] - 2026-08-17

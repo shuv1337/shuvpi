@@ -15,11 +15,13 @@ export default defineConfig({
 		silent: "passed-only",
 	},
 	resolve: {
+		conditions: ["source"],
 		alias: [
-			{ find: /^@earendil-works\/shuvpi-telemetry$/, replacement: telemetrySrcIndex },
-			{ find: /^@earendil-works\/shuvpi-agent-core$/, replacement: agentSrcIndex },
-			{ find: /^@earendil-works\/shuvpi-ai$/, replacement: aiSrcIndex },
-			{ find: /^@earendil-works\/shuvpi-ai\/compat$/, replacement: aiSrcCompat },
+			{ find: /^@shuv1337\/shuvpi-telemetry$/, replacement: telemetrySrcIndex },
+			{ find: /^@shuv1337\/shuvpi-agent-core$/, replacement: agentSrcIndex },
+			{ find: /^@shuv1337\/shuvpi-ai$/, replacement: aiSrcIndex },
+			{ find: /^@shuv1337\/shuvpi-ai\/compat$/, replacement: aiSrcCompat },
 		],
 	},
+	ssr: { resolve: { conditions: ["source"] } },
 });

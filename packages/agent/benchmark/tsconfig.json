@@ -1,0 +1,12 @@
+{
+	"extends": "../../../tsconfig.base.json",
+	"compilerOptions": {
+		"baseUrl": "../../..",
+		"noEmit": true,
+		"paths": {
+			"@shuv1337/shuvpi-ai": ["packages/ai/src/index.ts"],
+			"@shuv1337/shuvpi-ai/*": ["packages/ai/src/*"]
+		}
+	},
+	"include": ["./**/*.ts", "../src/**/*.ts"]
+}

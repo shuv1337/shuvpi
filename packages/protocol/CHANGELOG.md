@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Merged upstream pi v0.85.0: service-addressed session RPC protocol.
+
 ## [0.85.1] - 2026-09-02
 
 ## [0.85.0] - 2026-08-17

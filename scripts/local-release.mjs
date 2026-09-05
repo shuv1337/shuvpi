@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { parsePackResult } from "./npm-pack.mjs";
 
 const packages = [
+	{ directory: "packages/chord", name: "@shuv1337/shuvpi-chord" },
 	{ directory: "packages/telemetry", name: "@shuv1337/shuvpi-telemetry" },
 	{ directory: "packages/ai", name: "@shuv1337/shuvpi-ai" },
 	{ directory: "packages/tui", name: "@shuv1337/shuvpi-tui" },

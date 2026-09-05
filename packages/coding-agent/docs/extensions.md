@@ -1,10 +1,10 @@
-> pi can create extensions. Ask it to build one for your use case.
+> shuvpi can create extensions. Ask it to build one for your use case.
 
 # Extensions
 
-Extensions are TypeScript modules that extend pi's behavior. They can subscribe to lifecycle events, register custom tools callable by the LLM, add commands, and more.
+Extensions are TypeScript modules that extend shuvpi's behavior. They can subscribe to lifecycle events, register custom tools callable by the LLM, add commands, and more.
 
-> **Placement for /reload:** Put extensions in `~/.shuvpi/agent/extensions/` (global) or `.shuvpi/extensions/` (project-local) for auto-discovery. Use `pi -e ./path.ts` only for quick tests. Extensions in auto-discovered locations can be hot-reloaded with `/reload`.
+> **Placement for /reload:** Put extensions in `~/.shuvpi/agent/extensions/` (global) or `.shuvpi/extensions/` (project-local) for auto-discovery. Use `shuvpi -e ./path.ts` only for quick tests. Extensions in auto-discovered locations can be hot-reloaded with `/reload`.
 
 **Key capabilities:**
 - **Custom tools** - Register tools the LLM can call via `shuvpi.registerTool()`
@@ -103,7 +103,7 @@ export default function (shuvpi: ExtensionAPI) {
 Test with `--extension` (or `-e`) flag:
 
 ```bash
-pi -e ./my-extension.ts
+shuvpi -e ./my-extension.ts
 ```
 
 ## Extension Locations
@@ -134,7 +134,7 @@ Additional paths via `settings.json`:
 }
 ```
 
-To share extensions via npm or git as pi packages, see [packages.md](packages.md).
+To share extensions via npm or git as shuvpi packages, see [packages.md](packages.md).
 
 ## Available Imports
 
@@ -147,7 +147,7 @@ To share extensions via npm or git as pi packages, see [packages.md](packages.md
 
 npm dependencies work too. Add a `package.json` next to your extension (or in a parent directory), run `npm install`, and imports from `node_modules/` are resolved automatically.
 
-For distributed pi packages installed with `pi install` (npm or git), runtime deps must be in `dependencies`. Package installation uses production installs (`npm install --omit=dev`) by default, so `devDependencies` are not available at runtime; when `npmCommand` is configured, git packages use plain `install` for compatibility with wrappers.
+For distributed shuvpi packages installed with `shuvpi install` (npm or git), runtime deps must be in `dependencies`. Package installation uses production installs (`npm install --omit=dev`) by default, so `devDependencies` are not available at runtime; when `npmCommand` is configured, git packages use plain `install` for compatibility with wrappers.
 
 Node.js built-ins (`node:fs`, `node:path`, etc.) are also available.
 
@@ -178,7 +178,7 @@ export default function (shuvpi: ExtensionAPI) {
 
 Extensions are loaded via [jiti](https://github.com/unjs/jiti), so TypeScript works without compilation.
 
-If the factory returns a `Promise`, pi awaits it before continuing startup. That means async initialization completes before `session_start`, before `resources_discover`, and before provider registrations queued via `shuvpi.registerProvider()` are flushed.
+If the factory returns a `Promise`, shuvpi awaits it before continuing startup. That means async initialization completes before `session_start`, before `resources_discover`, and before provider registrations queued via `shuvpi.registerProvider()` are flushed.
 
 ### Async factory functions
 
@@ -215,7 +215,7 @@ export default async function (shuvpi: ExtensionAPI) {
 }
 ```
 
-This pattern makes the fetched models available during normal startup and to `pi --list-models`.
+This pattern makes the fetched models available during normal startup and to `shuvpi --list-models`.
 
 ### Long-lived resources and shutdown
 
@@ -275,7 +275,7 @@ Run `npm install` in the extension directory, then imports from `node_modules/` 
 ### Lifecycle Overview
 
 ```
-pi starts
+shuvpi starts
   │
   ├─► project_trust (user/global and CLI extensions only, before project resources load)
   ├─► session_start { reason: "startup" }
@@ -352,7 +352,7 @@ exit (Ctrl+C, Ctrl+D, SIGHUP, SIGTERM)
 
 #### project_trust
 
-Fired before pi decides whether to trust a project with dynamic configs (`.pi` or `.agents/skills`). It runs during startup and when session replacement (for example `/resume`) enters a cwd whose trust has not been resolved in the current process. Only user/global extensions and CLI `-e` extensions participate; project-local extensions are not loaded until after trust is resolved.
+Fired before shuvpi decides whether to trust a project with dynamic configs (`.shuvpi` or `.agents/skills`). It runs during startup and when session replacement (for example `/resume`) enters a cwd whose trust has not been resolved in the current process. Only user/global extensions and CLI `-e` extensions participate; project-local extensions are not loaded until after trust is resolved.
 
 ```typescript
 shuvpi.on("project_trust", async (event, ctx) => {
@@ -365,7 +365,7 @@ shuvpi.on("project_trust", async (event, ctx) => {
 });
 ```
 
-A `project_trust` handler must return `{ trusted: "yes" | "no" | "undecided" }`. A user/global or CLI extension that returns `"yes"` or `"no"` owns the decision; the first yes/no decision wins and suppresses the built-in trust prompt. Use `remember: true` to persist a yes/no decision; otherwise it applies only to the current process. Return `"undecided"` to let later handlers or the built-in trust flow decide. Check `ctx.hasUI` before prompting. If no handler returns yes/no, normal trust resolution continues: saved `trust.json` decisions apply first, then `defaultProjectTrust` controls whether pi asks, trusts, or declines by default.
+A `project_trust` handler must return `{ trusted: "yes" | "no" | "undecided" }`. A user/global or CLI extension that returns `"yes"` or `"no"` owns the decision; the first yes/no decision wins and suppresses the built-in trust prompt. Use `remember: true` to persist a yes/no decision; otherwise it applies only to the current process. Return `"undecided"` to let later handlers or the built-in trust flow decide. Check `ctx.hasUI` before prompting. If no handler returns yes/no, normal trust resolution continues: saved `trust.json` decisions apply first, then `defaultProjectTrust` controls whether shuvpi asks, trusts, or declines by default.
 
 ### Resource Events
 
@@ -429,7 +429,7 @@ shuvpi.on("session_before_switch", async (event, ctx) => {
 });
 ```
 
-After a successful switch or new-session action, pi emits `session_shutdown` for the old extension instance, reloads and rebinds extensions for the new session, then emits `session_start` with `reason: "new" | "resume"` and `previousSessionFile`.
+After a successful switch or new-session action, shuvpi emits `session_shutdown` for the old extension instance, reloads and rebinds extensions for the new session, then emits `session_start` with `reason: "new" | "resume"` and `previousSessionFile`.
 Do cleanup work in `session_shutdown`, then reestablish any in-memory state in `session_start`.
 
 #### session_before_fork
@@ -446,7 +446,7 @@ shuvpi.on("session_before_fork", async (event, ctx) => {
 });
 ```
 
-After a successful fork or clone, pi emits `session_shutdown` for the old extension instance, reloads and rebinds extensions for the new session, then emits `session_start` with `reason: "fork"` and `previousSessionFile`.
+After a successful fork or clone, shuvpi emits `session_shutdown` for the old extension instance, reloads and rebinds extensions for the new session, then emits `session_start` with `reason: "fork"` and `previousSessionFile`.
 Do cleanup work in `session_shutdown`, then reestablish any in-memory state in `session_start`.
 
 #### session_before_compact / session_compact / session_compact_failed
@@ -481,7 +481,7 @@ shuvpi.on("session_compact", async (event, ctx) => {
   // event.willRetry - whether the aborted turn is retried after compaction (overflow recovery)
 });
 
-pi.on("session_compact_failed", async (event, ctx) => {
+shuvpi.on("session_compact_failed", async (event, ctx) => {
   // event.reason - "manual" (/compact), "threshold", or "overflow"
   // event.errorMessage - present for non-abort failures
   // event.aborted - true for cancelled/aborted compactions
@@ -560,13 +560,13 @@ shuvpi.on("before_agent_start", async (event, ctx) => {
 });
 ```
 
-The `systemPromptOptions` field gives extensions access to the same structured data Pi uses to build the system prompt. This lets you inspect what Pi has loaded — custom prompts, guidelines, tool snippets, context files, skills — without re-discovering resources or re-parsing flags. Use it when your extension needs to make deep, informed changes to the system prompt while respecting user-provided configuration.
+The `systemPromptOptions` field gives extensions access to the same structured data Shuvpi uses to build the system prompt. This lets you inspect what Shuvpi has loaded — custom prompts, guidelines, tool snippets, context files, skills — without re-discovering resources or re-parsing flags. Use it when your extension needs to make deep, informed changes to the system prompt while respecting user-provided configuration.
 
 Inside `before_agent_start`, `event.systemPrompt` and `ctx.getSystemPrompt()` both reflect the chained system prompt as of the current handler. Later `before_agent_start` handlers can still modify it again.
 
 #### agent_start / agent_end / agent_settled
 
-`agent_start` fires when a low-level agent run begins. `agent_end` fires when that run ends, but Pi may still auto-retry, auto-compact and retry, or continue with queued follow-up messages. Use `agent_settled` for status integrations that need to know Pi will not continue running automatically.
+`agent_start` fires when a low-level agent run begins. `agent_end` fires when that run ends, but Shuvpi may still auto-retry, auto-compact and retry, or continue with queued follow-up messages. Use `agent_settled` for status integrations that need to know Shuvpi will not continue running automatically.
 
 ```typescript
 shuvpi.on("agent_start", async (_event, ctx) => {});
@@ -577,6 +577,24 @@ shuvpi.on("agent_end", async (event, ctx) => {
 
 shuvpi.on("agent_settled", async (_event, ctx) => {
   // ctx.isIdle() is true here unless another extension started a new run.
+});
+```
+
+#### ui_prompt_start / ui_prompt_end
+
+Notification-only lifecycle events for blocking user-facing extension UI prompts. They fire around `ctx.ui.select()`, `ctx.ui.confirm()`, `ctx.ui.input()`, `ctx.ui.editor()`, and `ctx.ui.custom()` so host/status integrations can report "waiting for user" instead of just "running".
+
+Nested or overlapping prompts are coalesced into one outer waiting span. Handlers are invoked best-effort and are not awaited before showing or closing the prompt.
+
+```typescript
+shuvpi.on("ui_prompt_start", async (event, ctx) => {
+  // event.reason === "ui_prompt"
+  // event.kind: "select" | "confirm" | "input" | "editor" | "custom"
+  // event.title: prompt title when available
+});
+
+shuvpi.on("ui_prompt_end", async (event, ctx) => {
+  // Shuvpi is no longer waiting on that UI prompt span.
 });
 ```
 
@@ -677,7 +695,7 @@ shuvpi.on("before_provider_headers", (event, ctx) => {
   // Add or override — e.g. a session id for gateway tracing/attribution
   event.headers["x-session-id"] = ctx.sessionManager.getSessionId();
 
-  // Drop a tracking header pi adds for this call
+  // Drop a tracking header shuvpi adds for this call
   event.headers["X-OpenRouter-Title"] = null;
 });
 ```
@@ -688,7 +706,7 @@ Runs once per provider request; retries reuse the same headers rather than re-fi
 
 Fired after the provider-specific payload is built, right before the request is sent. Handlers run in extension load order. Returning `undefined` keeps the payload unchanged. Returning any other value replaces the payload for later handlers and for the actual request.
 
-This hook can rewrite provider-level system instructions or remove them entirely. Those payload-level changes are not reflected by `ctx.getSystemPrompt()`, which reports Pi's system prompt string rather than the final serialized provider payload.
+This hook can rewrite provider-level system instructions or remove them entirely. Those payload-level changes are not reflected by `ctx.getSystemPrompt()`, which reports Shuvpi's system prompt string rather than the final serialized provider payload.
 
 ```typescript
 shuvpi.on("before_provider_request", (event, ctx) => {
@@ -761,7 +779,7 @@ Use this to update extension UI when `shuvpi.setThinkingLevel()`, model changes,
 
 Fired after `tool_execution_start`, before the tool executes. **Can block.** Use `isToolCallEventType` to narrow and get typed inputs.
 
-Before `tool_call` runs, Shuvpi waits for previously emitted Agent events to finish draining through `AgentSession`. This means `ctx.sessionManager` is up to date through the current assistant tool-calling message.
+Before `tool_call` runs, shuvpi waits for previously emitted Agent events to finish draining through `AgentSession`. This means `ctx.sessionManager` is up to date through the current assistant tool-calling message.
 
 In the default parallel tool execution mode, sibling tool calls from the same assistant message are preflighted sequentially, then executed concurrently. `tool_call` is not guaranteed to see sibling tool results from that same assistant message in `ctx.sessionManager`.
 
@@ -873,7 +891,7 @@ shuvpi.on("user_bash", (event, ctx) => {
   // Option 1: Provide custom operations (e.g., SSH)
   return { operations: remoteBashOps };
 
-  // Option 2: Wrap pi's built-in local bash backend
+  // Option 2: Wrap shuvpi's built-in local bash backend
   const local = createLocalBashOperations();
   return {
     operations: {
@@ -959,7 +977,7 @@ Current run mode: `"tui"`, `"rpc"`, `"json"`, or `"print"`. Use `ctx.mode === "t
 
 Current working directory.
 
-Use `CONFIG_DIR_NAME` instead of hardcoding `.pi` when constructing project-local config paths. Rebranded distributions can use a different config directory name.
+Use `CONFIG_DIR_NAME` instead of hardcoding `.shuvpi` when constructing project-local config paths. Rebranded distributions can use a different config directory name.
 
 ```typescript
 import { CONFIG_DIR_NAME, type ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
@@ -994,7 +1012,7 @@ ctx.sessionManager.getLeafId()              // Current leaf entry ID
 
 ### ctx.modelRegistry / ctx.model / ctx.thinkingLevel / ctx.scopedModels
 
-Access to models, providers, and resolved authentication. `ctx.modelRegistry.getProvider(id)` returns the effective pi-ai provider, while `getProviderAuth(id)` resolves its current API key, headers, base URL, and provider-scoped environment without requiring a loaded model. `ctx.model` is the active model, and `ctx.thinkingLevel` is its current effective thinking level.
+Access to models, providers, and resolved authentication. `ctx.modelRegistry.getProvider(id)` returns the effective shuvpi-ai provider, while `getProviderAuth(id)` resolves its current API key, headers, base URL, and provider-scoped environment without requiring a loaded model. `ctx.model` is the active model, and `ctx.thinkingLevel` is its current effective thinking level.
 
 `ctx.scopedModels` is the read-only list of models scoped to the current session — the same set the `/scoped-models` command shows. It is resolved at session start from the `--models` CLI flag and the `enabledModels` setting (matched against the available catalogue with minimatch on `provider/modelId` or a bare `modelId`). It is empty when no scoping is configured, meaning every available model is usable. Each entry is `{ model, thinkingLevel? }`, where `thinkingLevel` is set only when a pattern pinned it (e.g. `anthropic/*:high`). Use it to populate a model picker that mirrors the built-in one instead of enumerating the whole catalogue via `ctx.modelRegistry.getAvailable()`.
 
@@ -1008,7 +1026,7 @@ Use this for abort-aware nested work started by extension handlers, for example:
 - file or process helpers that accept `AbortSignal`
 
 `ctx.signal` is typically defined during active turn events such as `tool_call`, `tool_result`, `message_update`, and `turn_end`.
-It is usually `undefined` in idle or non-turn contexts such as session events, extension commands, and shortcuts fired while pi is idle.
+It is usually `undefined` in idle or non-turn contexts such as session events, extension commands, and shortcuts fired while shuvpi is idle.
 
 ```typescript
 shuvpi.on("tool_result", async (event, ctx) => {
@@ -1025,7 +1043,7 @@ shuvpi.on("tool_result", async (event, ctx) => {
 
 ### ctx.isIdle() / ctx.abort() / ctx.hasPendingMessages()
 
-Control flow helpers. `ctx.isIdle()` is false while Pi is processing an agent run, automatic retry, auto-compaction retry, or queued continuation.
+Control flow helpers. `ctx.isIdle()` is false while Shuvpi is processing an agent run, automatic retry, auto-compaction retry, or queued continuation.
 
 ### ctx.shutdown()
 
@@ -1074,7 +1092,7 @@ ctx.compact({
 
 ### ctx.getSystemPrompt()
 
-Returns Pi's current system prompt string.
+Returns Shuvpi's current system prompt string.
 
 - During `before_agent_start`, this reflects chained system-prompt changes made so far for the current turn.
 - It does not include later `context` message mutations.
@@ -1094,7 +1112,7 @@ Command handlers receive `ExtensionCommandContext`, which extends `ExtensionCont
 
 ### ctx.getSystemPromptOptions()
 
-Returns the base inputs Pi currently uses to build the system prompt.
+Returns the base inputs Shuvpi currently uses to build the system prompt.
 
 ```typescript
 const options = ctx.getSystemPromptOptions();
@@ -1149,7 +1167,7 @@ if (result.cancelled) {
 Options:
 - `parentSession`: parent session file to record in the new session header
 - `setup`: mutate the new session's `SessionManager` before `withSession` runs
-- `withSession`: run post-switch work against a fresh replacement-session context. Do not use captured old `pi` / command `ctx`; see [Session replacement lifecycle and footguns](#session-replacement-lifecycle-and-footguns).
+- `withSession`: run post-switch work against a fresh replacement-session context. Do not use captured old `shuvpi` / command `ctx`; see [Session replacement lifecycle and footguns](#session-replacement-lifecycle-and-footguns).
 
 ### ctx.fork(entryId, options?)
 
@@ -1175,7 +1193,7 @@ if (cloneResult.cancelled) {
 Options:
 - `position`: `"before"` (default) forks before the selected user message, restoring that prompt into the editor
 - `position`: `"at"` duplicates the active path through the selected entry without restoring editor text
-- `withSession`: run post-switch work against a fresh replacement-session context. Do not use captured old `pi` / command `ctx`; see [Session replacement lifecycle and footguns](#session-replacement-lifecycle-and-footguns).
+- `withSession`: run post-switch work against a fresh replacement-session context. Do not use captured old `shuvpi` / command `ctx`; see [Session replacement lifecycle and footguns](#session-replacement-lifecycle-and-footguns).
 
 ### ctx.navigateTree(targetId, options?)
 
@@ -1212,7 +1230,7 @@ if (result.cancelled) {
 ```
 
 Options:
-- `withSession`: run post-switch work against a fresh replacement-session context. Do not use captured old `pi` / command `ctx`; see [Session replacement lifecycle and footguns](#session-replacement-lifecycle-and-footguns).
+- `withSession`: run post-switch work against a fresh replacement-session context. Do not use captured old `shuvpi` / command `ctx`; see [Session replacement lifecycle and footguns](#session-replacement-lifecycle-and-footguns).
 
 To discover available sessions, use the static `SessionManager.list()` or `SessionManager.listAll()` methods:
 
@@ -1246,7 +1264,7 @@ shuvpi.registerCommand("switch", {
 Lifecycle and footguns:
 - `withSession` runs only after the old session has emitted `session_shutdown`, the old runtime has been torn down, the replacement session has been rebound, and the new extension instance has already received `session_start`.
 - The callback still executes in the original closure, not inside the new extension instance. That means your old extension instance may already have run its shutdown cleanup before `withSession` starts.
-- Captured old `pi` / old command `ctx` session-bound objects are stale after replacement and will throw if used. Use only the `ctx` passed to `withSession` for session-bound work.
+- Captured old `shuvpi` / old command `ctx` session-bound objects are stale after replacement and will throw if used. Use only the `ctx` passed to `withSession` for session-bound work.
 - Previously extracted raw objects are still your responsibility. For example, if you capture `const sm = ctx.sessionManager` before replacement, `sm` is still the old `SessionManager` object. Do not reuse it after replacement.
 - Code in `withSession` should assume any state invalidated by your `session_shutdown` handler is already gone. Only capture plain data that survives shutdown cleanly, such as strings, ids, and serialized config.
 
@@ -1450,28 +1468,6 @@ When not streaming, the message is sent immediately and triggers a new turn. Whe
 
 See [send-user-message.ts](../examples/extensions/send-user-message.ts) for a complete example.
 
-### shuvpi.runCommand(name, args?)
-
-Run a registered extension command by name. The handler receives a real `ExtensionCommandContext`, so it can use `ctx.waitForIdle()`, `ctx.newSession()`, `ctx.fork()`, `ctx.navigateTree()`, `ctx.switchSession()`, and `ctx.reload()`.
-
-Unlike `sendUserMessage("/my-command")`, this does not append a conversation entry and does not trigger a model turn. Use it to invoke command logic from event handlers or tools.
-
-```typescript
-shuvpi.registerCommand("index-repo", {
-  description: "Index the repository",
-  handler: async (args, ctx) => {
-    await ctx.waitForIdle();
-    shuvpi.appendEntry("index-state", { args });
-  },
-});
-
-shuvpi.on("session_start", async () => {
-  await shuvpi.runCommand("index-repo", "--incremental");
-});
-```
-
-Throws if `name` is not a registered command. Errors thrown by the handler are reported through the extension error channel and rethrown to the caller.
-
 ### shuvpi.appendEntry(customType, data?)
 
 Persist extension data. Custom entries do NOT participate in LLM context. In interactive mode, they can also render inside the chat transcript when paired with `shuvpi.registerEntryRenderer()`.
@@ -1530,7 +1526,7 @@ Labels persist in the session and survive restarts. Use them to mark important p
 
 Register a command.
 
-If multiple extensions register the same command name, pi keeps them all and assigns numeric invocation suffixes in load order, for example `/review:1` and `/review:2`.
+If multiple extensions register the same command name, shuvpi keeps them all and assigns numeric invocation suffixes in load order, for example `/review:1` and `/review:2`.
 
 ```typescript
 shuvpi.registerCommand("stats", {
@@ -1707,7 +1703,7 @@ Typical `sourceInfo.source` values:
 
 ### shuvpi.setModel(model)
 
-Set the current model. Returns `false` if no API key is available for the model. See [models.md](models.md) for configuring custom models.
+Set the model for the current session. The change is recorded in session history and restored when that session is resumed, but it does not change the configured `defaultProvider` or `defaultModel` used by new sessions. Returns `false` if authentication is not configured for the model's provider. See [models.md](models.md) for configuring custom models.
 
 ```typescript
 const model = ctx.modelRegistry.find("anthropic", "claude-sonnet-4-5");
@@ -1721,10 +1717,12 @@ if (model) {
 
 ### shuvpi.getThinkingLevel() / shuvpi.setThinkingLevel(level)
 
-Get or set the thinking level. Level is clamped to model capabilities (non-reasoning models always use "off"). Changes emit `thinking_level_select`.
+Get the current thinking level. Level is clamped to model capabilities (non-reasoning models always use "off"). Changes emit `thinking_level_select`.
+
+`shuvpi.setThinkingLevel()` changes the thinking level for the current session. The change is recorded in session history and restored when that session is resumed, but it does not change the configured default used by new sessions.
 
 ```typescript
-const current = shuvpi.getThinkingLevel();  // "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra"
+const current = shuvpi.getThinkingLevel();  // "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
 shuvpi.setThinkingLevel("high");
 ```
 
@@ -1743,7 +1741,7 @@ Register or override a model provider dynamically. Useful for proxies, custom en
 
 Calls made during the extension factory function are queued and applied once the runner initialises. Calls made after that — for example from a command handler following a user setup flow — take effect immediately without requiring a `/reload`.
 
-Dynamic providers can implement `refreshModels`. Pi calls it during model refresh, publishes the returned list synchronously through the provider, and passes the canonical credential/stored-catalog/network/signal context. The extension decides whether to persist catalog metadata through generation-checked `context.publish({ persist: entry })`; live servers such as llama.cpp can return models without persisting them.
+Dynamic providers can implement `refreshModels`. Shuvpi calls it during model refresh, publishes the returned list synchronously through the provider, and passes the canonical credential/stored-catalog/network/signal context. The extension decides whether to persist catalog metadata through generation-checked `context.publish({ persist: entry })`; live servers such as llama.cpp can return models without persisting them.
 
 `context.signal` is always a concrete signal and provider callbacks must pass it to blocking I/O. Public `ModelRuntime.refresh()` and `ModelRegistry.refresh()` calls accept an optional signal and are unbounded when it is omitted; extensions and applications choose their own deadlines. Cancellation stops the caller waiting even if a provider ignores the signal, but cooperation is still required to stop the underlying work.
 
@@ -1847,7 +1845,7 @@ shuvpi.registerProvider("corporate-ai", {
 });
 ```
 
-The object form accepts a complete pi-ai `Provider`, including native `auth`, `getModels`, `refreshModels`, `filterModels`, `stream`, and `streamSimple` behavior.
+The object form accepts a complete shuvpi-ai `Provider`, including native `auth`, `getModels`, `refreshModels`, `filterModels`, `stream`, and `streamSimple` behavior.
 
 **Legacy config options:**
 - `name` - Display name for the provider in UI such as `/login`.
@@ -2014,7 +2012,7 @@ shuvpi.registerTool({
 });
 ```
 
-**Usage accounting:** If a tool makes nested LLM calls, return their combined `Usage` as `usage`. Pi persists it on the tool result and includes it in footer, `/session`, and RPC session totals. `tool_result` handlers can inspect or replace this value.
+**Usage accounting:** If a tool makes nested LLM calls, return their combined `Usage` as `usage`. Shuvpi persists it on the tool result and includes it in footer, `/session`, and RPC session totals. `tool_result` handlers can inspect or replace this value.
 
 **Signaling errors:** To mark a tool execution as failed (sets `isError: true` on the result and reports it to the LLM), throw an error from `execute`. Returning a value never sets the error flag regardless of what properties you include in the return object.
 
@@ -2032,7 +2030,7 @@ async execute(toolCallId, params) {
 
 **Important:** Use `StringEnum` from `@shuv1337/shuvpi-ai` for string enums. `Type.Union`/`Type.Literal` doesn't work with Google's API.
 
-**Argument preparation:** `prepareArguments(args)` is optional. If defined, it runs before schema validation and before `execute()`. Use it to mimic an older accepted input shape when pi resumes an older session whose stored tool call arguments no longer match the current schema. Return the object you want validated against `parameters`. Keep the public schema strict. Do not add deprecated compatibility fields to `parameters` just to keep old resumed sessions working.
+**Argument preparation:** `prepareArguments(args)` is optional. If defined, it runs before schema validation and before `execute()`. Use it to mimic an older accepted input shape when shuvpi resumes an older session whose stored tool call arguments no longer match the current schema. Return the object you want validated against `parameters`. Keep the public schema strict. Do not add deprecated compatibility fields to `parameters` just to keep old resumed sessions working.
 
 Example: an older session may contain an `edit` tool call with top-level `oldText` and `newText`, while the current schema only accepts `edits: [{ oldText, newText }]`.
 
@@ -2081,17 +2079,17 @@ shuvpi.registerTool({
 
 ### Overriding Built-in Tools
 
-Extensions can override built-in tools (`read`, `bash`, `edit`, `write`, `grep`, `find`, `ls`) by registering a tool with the same name. Interactive mode displays a warning when this happens.
+Extensions can override built-in tools (`read`, `bash`, `powershell`, `edit`, `write`, `grep`, `find`, `ls`) by registering a tool with the same name. Interactive mode displays a warning when this happens.
 
 ```bash
 # Extension's read tool replaces built-in read
-pi -e ./tool-override.ts
+shuvpi -e ./tool-override.ts
 ```
 
 Alternatively, use `--no-builtin-tools` to start without any built-in tools while keeping extension tools enabled:
 ```bash
 # No built-in tools, only extension tools
-pi --no-builtin-tools -e ./my-extension.ts
+shuvpi --no-builtin-tools -e ./my-extension.ts
 ```
 
 See [examples/extensions/tool-override.ts](../examples/extensions/tool-override.ts) for a complete example that overrides `read` with logging and access control.
@@ -2105,6 +2103,7 @@ See [examples/extensions/tool-override.ts](../examples/extensions/tool-override.
 Built-in tool implementations:
 - [read.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/tools/read.ts) - `ReadToolDetails`
 - [bash.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/tools/bash.ts) - `BashToolDetails`
+- [powershell.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/tools/powershell.ts) - `PowerShellToolDetails`
 - [edit.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/tools/edit.ts)
 - [write.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/tools/write.ts)
 - [grep.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/tools/grep.ts) - `GrepToolDetails`
@@ -2140,11 +2139,11 @@ shuvpi.registerTool({
 });
 ```
 
-**Operations interfaces:** `ReadOperations`, `WriteOperations`, `EditOperations`, `BashOperations`, `LsOperations`, `GrepOperations`, `FindOperations`
+**Operations interfaces:** `ReadOperations`, `WriteOperations`, `EditOperations`, `BashOperations`, `PowerShellOperations`, `LsOperations`, `GrepOperations`, `FindOperations`
 
-For `user_bash`, extensions can reuse pi's local shell backend via `createLocalBashOperations()` instead of reimplementing local process spawning, shell resolution, and process-tree termination.
+For `user_bash`, extensions can reuse shuvpi's local shell backend via `createLocalBashOperations()` instead of reimplementing local process spawning, shell resolution, and process-tree termination.
 
-The bash tool also supports a spawn hook to adjust the command, cwd, or env before execution:
+The `bash` and `powershell` tools also support a spawn hook to adjust the command, cwd, or env before execution:
 
 ```typescript
 import { createBashTool } from "@shuv1337/shuvpi-coding-agent";
@@ -2158,7 +2157,7 @@ const bashTool = createBashTool(cwd, {
 });
 ```
 
-`createBashTool()` exposes the current session to commands through `SHUVPI_SESSION_ID`, `SHUVPI_SESSION_FILE`, `SHUVPI_PROVIDER`, `SHUVPI_MODEL`, and `SHUVPI_REASONING_LEVEL`. Injection happens before `spawnHook`, so hooks receive these values in `env` and preserve them when they spread the existing environment as above. Set `exposeSessionEnvironment: false` to disable them:
+`createBashTool()` and `createPowerShellTool()` expose the current session to commands through `SHUVPI_SESSION_ID`, `SHUVPI_SESSION_FILE`, `SHUVPI_PROVIDER`, `SHUVPI_MODEL`, and `SHUVPI_REASONING_LEVEL`. Injection happens before `spawnHook`, so hooks receive these values in `env` and preserve them when they spread the existing environment as above. Set `exposeSessionEnvironment: false` to disable them:
 
 ```typescript
 const bashTool = createBashTool(cwd, {
@@ -2166,7 +2165,7 @@ const bashTool = createBashTool(cwd, {
 });
 ```
 
-See [Bash tool session environment](environment-variables.md#bash-tool-session-environment) for variable semantics. See [examples/extensions/ssh.ts](../examples/extensions/ssh.ts) for a complete SSH example with `--ssh` flag.
+See [Shell tool session environment](environment-variables.md#shell-tool-session-environment) for variable semantics. See [examples/extensions/ssh.ts](../examples/extensions/ssh.ts) for a complete SSH example with `--ssh` flag.
 
 ### Output Truncation
 
@@ -2374,8 +2373,8 @@ The lifecycle is:
 1. Register every tool with `shuvpi.registerTool()` so it appears in `shuvpi.getAllTools()`.
 2. Keep loader tools, such as `search_tools`, active and leave searchable tools inactive.
 3. During loader execution, call `shuvpi.setActiveTools([...currentTools, ...matchingTools])`. The change must be additive: do not remove currently active tools in the same call.
-4. Pi records which tools were added on the loader's tool result.
-5. Before the next model response, Pi exposes the added definitions using native deferred loading when supported, or the normal active tool list otherwise.
+4. Shuvpi records which tools were added on the loader's tool result.
+5. Before the next model response, Shuvpi exposes the added definitions using native deferred loading when supported, or the normal active tool list otherwise.
 
 You do not need to return provider-specific tool references or mark the loader as a special search tool. The active-tool change is the signal. Names passed to `shuvpi.setActiveTools()` must already be registered; unknown names are ignored.
 
@@ -2386,15 +2385,15 @@ You do not need to return provider-specific tool references or mark the loader a
   - **Native representation:** Deferred definitions use `defer_loading`; the load point uses `tool_reference` content.
 - **OpenAI**
   - **Models:** `gpt-5.4` and newer family
-  - **Native representation:** Pi adds completed client `tool_search_call` and `tool_search_output` items at the load point.
+  - **Native representation:** Shuvpi adds completed client `tool_search_call` and `tool_search_output` items at the load point.
 
 For a verified custom model or proxy, native handling can be enabled with `compat.supportsToolReferences: true` for `anthropic-messages`, or `compat.supportsToolSearch: true` for `openai-responses` and `openai-codex-responses`. Leave these disabled unless the endpoint and model accept the corresponding native protocol.
 
 #### Fallback behavior
 
-For all other models and providers, dynamic activation still works: Pi sends the complete current active tool list normally on the next request. The model can call the newly activated tools, but adding their definitions may invalidate the provider's cached prompt prefix.
+For all other models and providers, dynamic activation still works: Shuvpi sends the complete current active tool list normally on the next request. The model can call the newly activated tools, but adding their definitions may invalidate the provider's cached prompt prefix.
 
-Pi also uses this safe fallback when the active set is not purely additive, such as replacing one group of tools with another. Tool removals therefore work, but they do not use deferred loading.
+Shuvpi also uses this safe fallback when the active set is not purely additive, such as replacing one group of tools with another. Tool removals therefore work, but they do not use deferred loading.
 
 For the best cache behavior, keep the loader tool active for the whole session and add tools instead of replacing the active set. Also note that activating a tool with `promptSnippet` or `promptGuidelines` rebuilds the system prompt; that system-prompt change can invalidate the prefix even when the provider supports deferred schemas. Lazily loaded tools should usually rely on their tool `description` and omit active-only prompt metadata.
 
@@ -2626,7 +2625,7 @@ ctx.ui.setFooter((tui, theme) => ({
 ctx.ui.setFooter(undefined);  // Restore built-in footer
 
 // Terminal title
-ctx.ui.setTitle("pi - my-project");
+ctx.ui.setTitle("shuvpi - my-project");
 
 // Editor text
 ctx.ui.setEditorText("Prefill text");
@@ -2830,6 +2829,7 @@ export default function (shuvpi: ExtensionAPI) {
 **Key points:**
 - Extend `CustomEditor` (not base `Editor`) to get app keybindings (escape to abort, ctrl+d, model switching)
 - Call `super.handleInput(data)` for keys you don't handle
+- Custom editors keep the standalone working row by default. Pass `{ embedWorkingStatus: true }` as the fourth `CustomEditor` constructor argument to use the built-in editor-border spinner instead.
 - Factory receives `tui`, `theme`, and `keybindings` from the app
 - Use `ctx.ui.getEditorComponent()` before `setEditorComponent()` to wrap the previously configured custom editor
 - Pass `undefined` to restore default: `ctx.ui.setEditorComponent(undefined)`

@@ -1,18 +1,12 @@
-export { ShuvpiClient } from "./client.ts";
-export {
-	ShuvpiClientDisposedError,
-	ShuvpiDisconnectedError,
-	ShuvpiServerError,
-	ShuvpiSessionDetachedError,
-	ShuvpiSessionOwnershipError,
-} from "./errors.ts";
-export type { AcquireSessionOptions, SessionLease, SessionLeaseMode, ShuvpiSessionHandle } from "./session-handle.ts";
+export { Client, createClientServiceTransport } from "./client.ts";
+export { ClientDisposedError, DisconnectedError, ServerError } from "./errors.ts";
 export type { ByteTransport, ByteTransportFactory, ByteTransportHandlers } from "./transport.ts";
 export type {
+	AttachmentChangeListener,
+	ClientOptions,
 	ConnectionState,
 	ConnectionStateChange,
-	CreateSessionOptions,
 	ListenerErrorHandler,
-	ShuvpiClientOptions,
+	ServiceSubscription,
 	Unsubscribe,
 } from "./types.ts";

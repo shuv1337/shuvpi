@@ -14,7 +14,7 @@ Where `<path>` is the working directory with `/` replaced by `-`.
 
 Sessions can be removed by deleting their `.jsonl` files under `~/.shuvpi/agent/sessions/`.
 
-Pi also supports deleting sessions interactively from `/resume` (select a session and press `Ctrl+D`, then confirm). When available, pi uses the `trash` CLI to avoid permanent deletion.
+Shuvpi also supports deleting sessions interactively from `/resume` (select a session and press `Ctrl+D`, then confirm). When available, shuvpi uses the `trash` CLI to avoid permanent deletion.
 
 ## Session Version
 
@@ -28,7 +28,7 @@ Existing sessions are automatically migrated to the current version (v3) when lo
 
 ## Source Files
 
-Source on GitHub ([pi-mono](https://github.com/earendil-works/pi-mono)):
+Source on GitHub ([shuvpi-mono](https://github.com/earendil-works/pi-mono)):
 - [`packages/coding-agent/src/core/session-manager.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/session-manager.ts) - Session entry types and SessionManager
 - [`packages/coding-agent/src/core/messages.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/core/messages.ts) - Extended message types (BashExecutionMessage, CustomMessage, etc.)
 - [`packages/ai/src/types.ts`](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/types.ts) - Base message types (UserMessage, AssistantMessage, ToolResultMessage)
@@ -69,7 +69,7 @@ interface ToolCall {
 }
 ```
 
-### Base Message Types (from pi-ai)
+### Base Message Types (from shuvpi-ai)
 
 ```typescript
 interface UserMessage {
@@ -117,9 +117,9 @@ interface Usage {
 }
 ```
 
-The exported pi-ai `StopReason` type also includes `"pending"`, but that value is reserved for partial messages in streaming events. Terminal `done`/`error` messages replace it with a completion reason before pi persists the assistant message, so `"pending"` should never appear in session JSONL.
+The exported shuvpi-ai `StopReason` type also includes `"pending"`, but that value is reserved for partial messages in streaming events. Terminal `done`/`error` messages replace it with a completion reason before shuvpi persists the assistant message, so `"pending"` should never appear in session JSONL.
 
-### Extended Message Types (from pi-coding-agent)
+### Extended Message Types (from shuvpi-coding-agent)
 
 ```typescript
 interface BashExecutionMessage {

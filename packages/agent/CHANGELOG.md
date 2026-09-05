@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Merged upstream pi v0.85.0: legacy harness runtime replaced by harness v3 (bound values and lists, invocation context, lane/operation runtime, reworked reducer, sessions, and telemetry). Fork additions preserved: `ultra` thinking level and compaction timestamp normalization. Session and telemetry keys use the `shuvpi.*` namespace.
+
 ## [0.85.1] - 2026-09-02
 
 ## [0.85.0] - 2026-08-17

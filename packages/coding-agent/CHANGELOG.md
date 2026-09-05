@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Merged upstream pi v0.85.0: harness v3 agent runtime, SQLite session backend improvements, client/server protocol restructure (unix transports, experimental server/session-worker processes), settings-selector rework, persistent Anthropic thinking effort, fullscreen transcript controls, bundled CLI distribution (`dist/bundle/cli.js`), managed installer self-updates, and the new `@shuv1337/shuvpi-chord` composition runtime. Upstream changes through their 0.84.3-0.85.0 releases apply.
+
+### Fixed
+
+- Fixed configurable save keybindings in the model and thinking selectors ([#8797](https://github.com/earendil-works/pi/issues/8797)).
+
 ## [0.85.1] - 2026-09-02
 
 ### Added

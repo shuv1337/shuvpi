@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { stripBom } from "../utils/text.ts";
 
 export interface ShuvpiManifest {
 	extensions?: string[];
@@ -15,7 +16,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 export function readShuvpiManifest(packageJsonPath: string): ShuvpiManifest | null {
 	try {
-		const pkg: unknown = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+		const pkg: unknown = JSON.parse(stripBom(readFileSync(packageJsonPath, "utf-8")));
 		if (!isObject(pkg) || !isObject(pkg.shuvpi)) {
 			return null;
 		}

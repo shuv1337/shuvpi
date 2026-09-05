@@ -1,4 +1,3 @@
-import { fileURLToPath } from "node:url";
 import { defineConfig, mergeConfig } from "vitest/config";
 import baseConfig, { workspaceSourcePaths } from "../../vitest.base.ts";
 
@@ -22,18 +21,8 @@ export default mergeConfig(
 		},
 		resolve: {
 			alias: [
-				{
-					find: /^@shuv1337\/shuvpi-client$/,
-					replacement: fileURLToPath(new URL("../client/src/index.ts", import.meta.url)),
-				},
-				{
-					find: /^@shuv1337\/shuvpi-protocol$/,
-					replacement: fileURLToPath(new URL("../protocol/src/index.ts", import.meta.url)),
-				},
 				{ find: /^@shuv1337\/shuvpi-ai$/, replacement: workspaceSourcePaths.aiIndex },
-				{ find: /^@shuv1337\/shuvpi-ai\/oauth$/, replacement: workspaceSourcePaths.aiOAuth },
 				{ find: /^@shuv1337\/shuvpi-agent-core$/, replacement: workspaceSourcePaths.agentIndex },
-				{ find: /^@shuv1337\/shuvpi-tui$/, replacement: workspaceSourcePaths.tuiIndex },
 				{ find: /^@mariozechner\/pi-ai$/, replacement: workspaceSourcePaths.aiIndex },
 				{ find: /^@mariozechner\/pi-ai\/oauth$/, replacement: workspaceSourcePaths.aiOAuth },
 				{ find: /^@mariozechner\/pi-agent-core$/, replacement: workspaceSourcePaths.agentIndex },

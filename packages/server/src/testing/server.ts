@@ -1,27 +1,28 @@
-import { ShuvpiServer } from "../server.ts";
-import type { ShuvpiServerOptions, ShuvpiServerService } from "../types.ts";
-import { TestServerService } from "./service.ts";
+import { Server } from "../server.ts";
+import type { ServerHost, ServerOptions } from "../types.ts";
+import { TestServerHost } from "./host.ts";
 
-export interface TestServerOptions extends ShuvpiServerOptions {
-	service?: ShuvpiServerService;
+export interface TestServerOptions extends Omit<ServerOptions, "serverId"> {
+	host?: ServerHost;
+	serverId?: string;
 }
 
 export interface TestServer {
-	server: ShuvpiServer;
-	service: ShuvpiServerService;
+	server: Server;
+	host: ServerHost;
 }
 
-/** Create an unstarted ShuvpiServer with deterministic defaults for transport conformance tests. */
+/** Create an unstarted Server with deterministic defaults for transport conformance tests. */
 export function createTestServer(options: TestServerOptions): TestServer {
-	const service = options.service ?? new TestServerService();
+	const host = options.host ?? new TestServerHost();
 	return {
-		server: new ShuvpiServer(service, {
+		server: new Server(host, {
 			listeners: options.listeners,
 			maxFrameLength: options.maxFrameLength,
 			handshakeTimeoutMs: options.handshakeTimeoutMs,
-			serverId: options.serverId,
+			serverId: options.serverId ?? "00000000-0000-4000-8000-000000000001",
 			onError: options.onError,
 		}),
-		service,
+		host,
 	};
 }

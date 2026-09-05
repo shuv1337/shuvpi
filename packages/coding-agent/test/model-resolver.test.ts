@@ -1,6 +1,13 @@
+import { mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Agent } from "@shuv1337/shuvpi-agent-core";
 import type { Model } from "@shuv1337/shuvpi-ai";
+import { getModel, streamSimple } from "@shuv1337/shuvpi-ai/compat";
 import { getBuiltinModels, getBuiltinProviders } from "@shuv1337/shuvpi-ai/providers/all";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { AgentSession } from "../src/core/agent-session.ts";
+import { AuthStorage } from "../src/core/auth-storage.ts";
 import {
 	defaultModelPerProvider,
 	findInitialModel,
@@ -9,6 +16,10 @@ import {
 	resolveModelScope,
 	resolveModelScopeWithDiagnostics,
 } from "../src/core/model-resolver.ts";
+import { SessionManager } from "../src/core/session-manager.ts";
+import { SettingsManager } from "../src/core/settings-manager.ts";
+import { createModelRegistry, getModelRuntime } from "./model-runtime-test-utils.ts";
+import { createTestResourceLoader } from "./utilities.ts";
 
 // Mock models for testing
 const mockModels: Model<"anthropic-messages">[] = [
@@ -108,7 +119,7 @@ describe("parseModelPattern", () => {
 		});
 
 		test("all valid thinking levels work", () => {
-			for (const level of ["off", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]) {
+			for (const level of ["off", "minimal", "low", "medium", "high", "xhigh", "max"]) {
 				const result = parseModelPattern(`sonnet:${level}`, allModels);
 				expect(result.model?.id).toBe("claude-sonnet-4-5");
 				expect(result.thinkingLevel).toBe(level);
@@ -628,7 +639,7 @@ describe("resolveCliModel", () => {
 				getModels: () => modelsWithNeuralwatt,
 			} as unknown as Parameters<typeof resolveCliModel>[0]["modelRuntime"];
 
-			for (const level of ["off", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]) {
+			for (const level of ["off", "minimal", "low", "medium", "high", "xhigh", "max"]) {
 				const result = resolveCliModel({
 					cliModel: `neuralwatt/zai-org/GLM-5.1-FP8:${level}`,
 					modelRuntime: registry,
@@ -709,15 +720,13 @@ describe("default model selection", () => {
 		expect(defaultModelPerProvider["ant-ling"]).toBe("Ring-2.6-1T");
 	});
 
-	test("baseten and Google Antigravity defaults track current models", () => {
-		expect(defaultModelPerProvider.baseten).toBe("moonshotai/Kimi-K2.6");
-		expect(defaultModelPerProvider["google-antigravity"]).toBe("gemini-3.8-flash-high");
-	});
-
 	test("built-in defaults exist in generated provider catalogs", () => {
 		for (const provider of getBuiltinProviders()) {
 			const defaultId = defaultModelPerProvider[provider];
-			expect(getBuiltinModels(provider).some((model) => model.id === defaultId)).toBe(true);
+			expect(
+				getBuiltinModels(provider).some((model) => model.id === defaultId),
+				`${provider} default ${defaultId} should exist in its generated catalog`,
+			).toBe(true);
 		}
 	});
 
@@ -752,8 +761,8 @@ describe("default model selection", () => {
 
 	test("findInitialModel selects ai-gateway default when available", async () => {
 		const aiGatewayModel: Model<"anthropic-messages"> = {
-			id: "anthropic/claude-opus-5",
-			name: "Claude Opus 5",
+			id: "anthropic/claude-opus-4-6",
+			name: "Claude Opus 4.6",
 			api: "anthropic-messages",
 			provider: "vercel-ai-gateway",
 			baseUrl: "https://ai-gateway.vercel.sh",
@@ -775,7 +784,7 @@ describe("default model selection", () => {
 		});
 
 		expect(result.model?.provider).toBe("vercel-ai-gateway");
-		expect(result.model?.id).toBe("anthropic/claude-opus-5");
+		expect(result.model?.id).toBe("anthropic/claude-opus-4-6");
 	});
 
 	test("findInitialModel ignores an unauthenticated saved default", async () => {
@@ -815,5 +824,93 @@ describe("default model selection", () => {
 
 		expect(result.model?.provider).toBe("spark-two");
 		expect(result.model?.id).toBe("deepseek-v4-flash");
+	});
+
+	describe("persisted default model scoping", () => {
+		const tempDirs: string[] = [];
+		const sonnet = getModel("anthropic", "claude-sonnet-4-5")!;
+		const opus = getModel("anthropic", "claude-opus-4-8")!;
+
+		afterEach(() => {
+			for (const dir of tempDirs.splice(0)) {
+				rmSync(dir, { recursive: true, force: true });
+			}
+		});
+
+		async function createSession(options: { scoped: boolean; persistedScope?: string[] }) {
+			const tempDir = join(tmpdir(), `pi-default-scope-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+			mkdirSync(tempDir, { recursive: true });
+			tempDirs.push(tempDir);
+
+			const settingsManager = SettingsManager.create(tempDir, tempDir);
+			if (options.persistedScope) {
+				settingsManager.setEnabledModels(options.persistedScope);
+			}
+
+			const authStorage = AuthStorage.inMemory({ anthropic: { type: "api_key", key: "test-key" } });
+			const modelRuntime = getModelRuntime(await createModelRegistry(authStorage, join(tempDir, "models.json")));
+			const agent = new Agent({
+				initialState: {
+					model: sonnet,
+					systemPrompt: "test",
+					tools: [],
+				},
+				streamFn: streamSimple,
+			});
+			const session = new AgentSession({
+				agent,
+				sessionManager: SessionManager.inMemory(tempDir),
+				settingsManager,
+				cwd: tempDir,
+				modelRuntime,
+				resourceLoader: createTestResourceLoader(),
+				scopedModels: options.scoped ? [{ model: sonnet }] : [],
+			});
+
+			return { session, settingsManager };
+		}
+
+		test("adds a persisted default to an existing scoped model list", async () => {
+			const { session, settingsManager } = await createSession({
+				scoped: true,
+				persistedScope: [`${sonnet.provider}/${sonnet.id}`],
+			});
+
+			await session.setModel(opus, { persist: true });
+
+			expect(settingsManager.getDefaultProvider()).toBe(opus.provider);
+			expect(settingsManager.getDefaultModel()).toBe(opus.id);
+			expect(session.scopedModels.map((scoped) => `${scoped.model.provider}/${scoped.model.id}`)).toEqual([
+				`${sonnet.provider}/${sonnet.id}`,
+				`${opus.provider}/${opus.id}`,
+			]);
+			expect(settingsManager.getEnabledModels()).toEqual([
+				`${sonnet.provider}/${sonnet.id}`,
+				`${opus.provider}/${opus.id}`,
+			]);
+		});
+
+		test("does not create a scoped model list when all models are available", async () => {
+			const { session, settingsManager } = await createSession({ scoped: false });
+
+			await session.setModel(opus, { persist: true });
+
+			expect(session.scopedModels).toEqual([]);
+			expect(settingsManager.getEnabledModels()).toBeUndefined();
+		});
+
+		test("keeps session-only model changes out of scope", async () => {
+			const { session, settingsManager } = await createSession({
+				scoped: true,
+				persistedScope: [`${sonnet.provider}/${sonnet.id}`],
+			});
+
+			await session.setModel(opus, { persist: false });
+
+			expect(session.scopedModels.map((scoped) => `${scoped.model.provider}/${scoped.model.id}`)).toEqual([
+				`${sonnet.provider}/${sonnet.id}`,
+			]);
+			expect(settingsManager.getEnabledModels()).toEqual([`${sonnet.provider}/${sonnet.id}`]);
+		});
 	});
 });

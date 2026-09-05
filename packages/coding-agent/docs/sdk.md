@@ -1,8 +1,8 @@
-> pi can help you use the SDK. Ask it to build an integration for your use case.
+> shuvpi can help you use the SDK. Ask it to build an integration for your use case.
 
 # SDK
 
-The SDK provides programmatic access to pi's agent capabilities. Use it to embed pi in other applications, build custom interfaces, or integrate with automated workflows.
+The SDK provides programmatic access to shuvpi's agent capabilities. Use it to embed shuvpi in other applications, build custom interfaces, or integrate with automated workflows.
 
 **Example use cases:**
 - Build a custom UI (web, desktop, mobile)
@@ -392,7 +392,7 @@ const available = await modelRuntime.getAvailable();
 
 const { session } = await createAgentSession({
   model: opus,
-  thinkingLevel: "medium", // off, minimal, low, medium, high, xhigh, max, ultra
+  thinkingLevel: "medium", // off, minimal, low, medium, high, xhigh, max
   
   // Models for cycling (Ctrl+P in interactive mode)
   scopedModels: [
@@ -409,7 +409,7 @@ If no model is provided:
 2. Uses default from settings
 3. Falls back to first available model
 
-Remote catalogs are persisted locally so later runtimes can restore them without a network request. The default file is `~/.pi/agent/models-store.json`; set `modelsStorePath` to choose another location, or inject `modelsStore` to control persistence. Network refreshes are throttled to once per provider every four hours unless forced. To force an immediate refresh, call `await modelRuntime.refresh({ allowNetwork: true, force: true, signal })`. Setting `PI_OFFLINE` disables model network access.
+Remote catalogs are persisted locally so later runtimes can restore them without a network request. The default file is `~/.shuvpi/agent/models-store.json`; set `modelsStorePath` to choose another location, or inject `modelsStore` to control persistence. Network refreshes are throttled to once per provider every four hours unless forced. To force an immediate refresh, call `await modelRuntime.refresh({ allowNetwork: true, force: true, signal })`. Setting `SHUVPI_OFFLINE` disables model network access.
 
 To match CLI model parsing, use the exported resolver helpers:
 
@@ -469,7 +469,7 @@ const customRuntime = await ModelRuntime.create({
   modelsPath: "/my/app/models.json",
 });
 
-// Or inject any pi-ai CredentialStore
+// Or inject any shuvpi-ai CredentialStore
 const credentials = new InMemoryCredentialStore();
 const inMemoryRuntime = await ModelRuntime.create({ credentials });
 
@@ -519,13 +519,13 @@ const { session } = await createAgentSession({ resourceLoader: loader });
 
 Specify which built-in tools to enable:
 
-- Built-in tool names: `read`, `bash`, `edit`, `write`, `grep`, `find`, `ls`
+- Built-in tool names: `read`, `bash`, `powershell`, `edit`, `write`, `grep`, `find`, `ls`
 - Default built-ins: `read`, `bash`, `edit`, `write`
 - `noTools: "all"` disables all tools
 - `noTools: "builtin"` disables default built-ins while keeping extension and custom tools enabled
 - `excludeTools` disables specific built-in, extension, or custom tool names after any `tools` allowlist is applied
 
-The `edit` tool returns `details.diff` for Pi's TUI display and `details.patch` as a standard unified patch for SDK consumers.
+The `edit` tool returns `details.diff` for Shuvpi's TUI display and `details.patch` as a standard unified patch for SDK consumers.
 
 ```typescript
 import { createAgentSession } from "@shuv1337/shuvpi-coding-agent";
@@ -538,6 +538,11 @@ const { session } = await createAgentSession({
 // Pick specific tools
 const { session } = await createAgentSession({
   tools: ["read", "bash", "grep"],
+});
+
+// Use PowerShell instead of Bash on Windows
+const { session } = await createAgentSession({
+  tools: ["read", "powershell", "edit", "write"],
 });
 
 // Disable one tool while keeping the rest available
@@ -781,6 +786,11 @@ if (modelFallbackMessage) {
 // Open specific file
 const { session: opened } = await createAgentSession({
   sessionManager: SessionManager.open("/path/to/session.jsonl"),
+});
+
+// Resume a session kept outside the filesystem, e.g. in a database
+const { session: restored } = await createAgentSession({
+  sessionManager: SessionManager.inMemory(process.cwd(), { id: sessionId }, entries),
 });
 
 // List sessions
@@ -1142,7 +1152,7 @@ See [RPC documentation](rpc.md) for the JSON protocol.
 For subprocess-based integration without building with the SDK, use the CLI directly:
 
 ```bash
-pi --mode rpc --no-session
+shuvpi --mode rpc --no-session
 ```
 
 See [RPC documentation](rpc.md) for the JSON protocol.
@@ -1169,7 +1179,7 @@ createAgentSessionRuntime
 AgentSessionRuntime
 
 // Auth and Models
-ModelRuntime // implements pi-ai Models and owns credential storage
+ModelRuntime // implements shuvpi-ai Models and owns credential storage
 ModelRegistry // synchronous extension compatibility facade
 CredentialSynchronizationError
 resolveCliModel
@@ -1196,7 +1206,7 @@ SettingsManager
 // Tool factories
 createCodingTools
 createReadOnlyTools
-createReadTool, createBashTool, createEditTool, createWriteTool
+createReadTool, createBashTool, createPowerShellTool, createEditTool, createWriteTool
 createGrepTool, createFindTool, createLsTool
 
 // Types

@@ -4,7 +4,7 @@ Shuvpi uses environment variables in three ways:
 
 - Variables such as `SHUVPI_OFFLINE` configure the Shuvpi process.
 - Shuvpi sets process markers so child processes can identify Shuvpi as the launching agent.
-- Commands run by the LLM-callable bash tool receive `SHUVPI_*` variables describing the current session.
+- Commands run by the LLM-callable shell tools receive `SHUVPI_*` variables describing the current session.
 
 Provider API-key variables are documented separately in [Providers](providers.md#environment-variables-or-auth-file).
 
@@ -17,9 +17,9 @@ The CLI and RPC entry points set two process markers:
 
 Child processes inherit both markers. They are not session-specific and are not set automatically when Shuvpi is embedded through the SDK.
 
-## Bash Tool Session Environment
+## Shell Tool Session Environment
 
-Commands run by the bash tool receive the current Shuvpi session state:
+Commands run by the `bash` and `powershell` tools receive the current Shuvpi session state:
 
 | Variable | Description |
 |----------|-------------|
@@ -27,9 +27,9 @@ Commands run by the bash tool receive the current Shuvpi session state:
 | `SHUVPI_SESSION_FILE` | Absolute path to the current session JSONL file; unset for ephemeral sessions |
 | `SHUVPI_PROVIDER` | Currently selected model provider |
 | `SHUVPI_MODEL` | Currently selected model ID |
-| `SHUVPI_REASONING_LEVEL` | Current effective reasoning level: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, or `ultra` |
+| `SHUVPI_REASONING_LEVEL` | Current effective reasoning level: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max` |
 
-The values are resolved when each command starts. Switching models or changing the reasoning level therefore affects the next bash command without restarting Shuvpi. `SHUVPI_PROVIDER` and `SHUVPI_MODEL` identify the selected Shuvpi model, not a different upstream model that a router may choose internally.
+The values are resolved when each command starts. Switching models or changing the reasoning level therefore affects the next shell command without restarting Shuvpi. `SHUVPI_PROVIDER` and `SHUVPI_MODEL` identify the selected Shuvpi model, not a different upstream model that a router may choose internally.
 
 When asked which model or provider is running, inspect these variables instead of inferring the answer from the system prompt:
 
@@ -46,11 +46,11 @@ if [ -n "$SHUVPI_SESSION_FILE" ]; then
 fi
 ```
 
-These variables are injected into the LLM-callable bash tool. They are not injected into user-entered `!` or `!!` commands.
+These variables are injected into the LLM-callable `bash` and `powershell` tools. They are not injected into user-entered `!` or `!!` commands.
 
-### Custom Bash Tools
+### Custom Shell Tools
 
-Bash tools created with `createBashTool()` expose the session environment by default when registered with Shuvpi. Injection happens before `spawnHook`, so a hook receives the variables in `ctx.env`:
+Tools created with `createBashTool()` or `createPowerShellTool()` expose the session environment by default when registered with Shuvpi. Injection happens before `spawnHook`, so a hook receives the variables in `ctx.env`:
 
 ```typescript
 const bashTool = createBashTool(cwd, {
@@ -64,7 +64,7 @@ const bashTool = createBashTool(cwd, {
 Disable session metadata independently of the spawn hook:
 
 ```typescript
-const bashTool = createBashTool(cwd, {
+const powershellTool = createPowerShellTool(cwd, {
   exposeSessionEnvironment: false,
   spawnHook: (ctx) => ctx,
 });
@@ -81,13 +81,18 @@ These variables are read by Shuvpi itself:
 | `SHUVPI_CODING_AGENT_DIR` | Override the config directory; default is `~/.shuvpi/agent` |
 | `SHUVPI_CODING_AGENT_SESSION_DIR` | Override session storage; overridden by `--session-dir` |
 | `SHUVPI_PACKAGE_DIR` | Override the package directory, useful for Nix/Guix store paths |
+| `SHUVPI_SERVER_DIR` | Override the experimental server profile and socket directory; default is `~/.shuvpi/server` |
+| `SHUVPI_SERVER_ID` | Select the logical experimental server ID when `--server-id` is omitted |
 | `SHUVPI_OFFLINE` | Disable startup network operations, including update checks, package updates, and install/update telemetry |
-| `SHUVPI_SKIP_VERSION_CHECK` | Disable the npm registry latest-version request |
+| `SHUVPI_SKIP_VERSION_CHECK` | Disable the `pi.dev` latest-version request |
 | `SHUVPI_TELEMETRY` | Override install/update telemetry and provider attribution headers: `1`/`true`/`yes` or `0`/`false`/`no` |
 | `SHUVPI_CACHE_RETENTION` | Set to `long` for extended provider prompt caching where supported |
 | `SHUVPI_SHARE_VIEWER_URL` | Override the base URL used by `/share` |
 | `SHUVPI_HARDWARE_CURSOR` | Set to `1` to show the hardware cursor; see [Terminal setup](terminal-setup.md) |
-| `PI_TUI_ESC_TIMEOUT` | How long to wait after a lone ESC before treating it as Escape, in milliseconds; defaults to `100` over SSH and `10` otherwise. Increase if Alt-key input is misread as Escape |
+| `SHUVPI_HYPERLINKS` | Override OSC 8 hyperlink detection with `1`, `0`, or `auto` |
+| `SHUVPI_IMAGE_PROTOCOL` | Override inline image detection with `kitty`, `iterm2`, `none`, or `auto` |
+| `SHUVPI_TRUE_COLOR` | Override truecolor detection with `1`, `0`, or `auto` |
+| `SHUVPI_TUI_ESC_TIMEOUT` | How long to wait after a lone ESC before treating it as Escape, in milliseconds; defaults to `100` over SSH and `10` otherwise. Increase if Alt-key input is misread as Escape |
 | `VISUAL`, `EDITOR` | External editor fallback when `externalEditor` is unset |
 | `HTTP_PROXY`, `HTTPS_PROXY` | Proxy outbound HTTP requests |
 

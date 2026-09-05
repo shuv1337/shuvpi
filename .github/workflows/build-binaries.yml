@@ -59,6 +59,7 @@ jobs:
       - name: Build publish packages
         run: |
           # Only packages published by scripts/publish.mjs (plus deps).
+          npm run build -w packages/chord
           npm run build -w packages/tui
           npm run build -w packages/telemetry
           npm run build -w packages/ai

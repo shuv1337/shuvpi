@@ -6,7 +6,11 @@
 		"moduleResolution": "NodeNext",
 		"types": ["node", "vitest"],
 		"paths": {
-			"@shuv1337/shuvpi-protocol": ["../protocol/src/index.ts"]
+			"@shuv1337/shuvpi-agent-core": ["../agent/src/index.ts"],
+			"@shuv1337/shuvpi-ai": ["../ai/src/index.ts"],
+			"@shuv1337/shuvpi-ai/*": ["../ai/src/*.ts", "../ai/src/providers/*.ts"],
+			"@shuv1337/shuvpi-protocol": ["../protocol/src/index.ts"],
+			"@shuv1337/shuvpi-telemetry": ["../telemetry/src/index.ts"]
 		}
 	},
 	"include": ["src/**/*.ts", "test/**/*.ts"]

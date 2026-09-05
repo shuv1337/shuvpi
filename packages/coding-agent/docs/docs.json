@@ -12,7 +12,7 @@
           "path": "quickstart.md"
         },
         {
-          "title": "Using Shuvpi",
+          "title": "Using Pi",
           "path": "usage.md"
         },
         {
@@ -65,7 +65,7 @@
           "path": "themes.md"
         },
         {
-          "title": "Shuvpi Packages",
+          "title": "Pi Packages",
           "path": "packages.md"
         },
         {

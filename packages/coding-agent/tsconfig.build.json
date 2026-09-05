@@ -3,11 +3,19 @@
 	"compilerOptions": {
 		"outDir": "./dist",
 		"paths": {
+			"@shuv1337/shuvpi-chord": ["../chord/dist/index.d.ts"],
+			"@shuv1337/shuvpi-chord/bundler": ["../chord/dist/bundler.d.ts"],
+			"@shuv1337/shuvpi-chord/node": ["../chord/dist/node.d.ts"],
 			"@shuv1337/shuvpi-agent-core": ["../agent/dist/index.d.ts"],
 			"@shuv1337/shuvpi-agent-core/*": ["../agent/dist/*.d.ts"],
 			"@shuv1337/shuvpi-ai": ["../ai/dist/index.d.ts"],
 			"@shuv1337/shuvpi-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"],
 			"@shuv1337/shuvpi-client": ["../client/dist/index.d.ts"],
+			"@shuv1337/shuvpi-client/unix": ["../client/dist/unix.d.ts"],
+			"@shuv1337/shuvpi-client/*": ["../client/dist/*.d.ts"],
+			"@shuv1337/shuvpi-server": ["../server/dist/index.d.ts"],
+			"@shuv1337/shuvpi-server/unix": ["../server/dist/transports/unix/index.d.ts"],
+			"@shuv1337/shuvpi-server/*": ["../server/dist/*.d.ts", "../server/dist/transports/*/index.d.ts"],
 			"@shuv1337/shuvpi-protocol": ["../protocol/dist/index.d.ts"],
 			"@shuv1337/shuvpi-tui": ["../tui/dist/index.d.ts"],
 			"@shuv1337/shuvpi-tui/*": ["../tui/dist/*.d.ts", "../tui/dist/components/*.d.ts"]

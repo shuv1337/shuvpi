@@ -1,6 +1,17 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+	chmodSync,
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	realpathSync,
+	rmSync,
+	utimesSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
+import lockfile from "proper-lockfile";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ENV_AGENT_DIR, PACKAGE_NAME, VERSION } from "../src/config.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";
@@ -19,7 +30,7 @@ describe("package commands", () => {
 	let packageDir: string;
 	let originalCwd: string;
 	let originalAgentDir: string | undefined;
-	let originalShuvpiPackageDir: string | undefined;
+	let originalPiPackageDir: string | undefined;
 	let originalPath: string | undefined;
 	let originalExitCode: typeof process.exitCode;
 	let originalExecPath: string;
@@ -27,6 +38,77 @@ describe("package commands", () => {
 	function getNewerPatchVersion(): string {
 		const [major = "0", minor = "0", patch = "0"] = VERSION.split(".");
 		return `${major}.${minor}.${Number.parseInt(patch, 10) + 1}`;
+	}
+
+	function prepareManagedInstall(
+		targetVersion: string,
+		npmExitCode = 0,
+	): { managedRoot: string; npmRecordPath: string } {
+		const managedRoot = join(agentDir, "install");
+		const activeRelease = join(managedRoot, "releases", VERSION);
+		const selfPackageDir = join(activeRelease, "node_modules", ...PACKAGE_NAME.split("/"));
+		mkdirSync(selfPackageDir, { recursive: true });
+		writeFileSync(join(activeRelease, "active.txt"), "active");
+		writeFileSync(join(managedRoot, "current-version"), `${VERSION}\n`);
+		writeFileSync(
+			join(managedRoot, "managed-install.json"),
+			`${JSON.stringify({ kind: "shuvpi-managed-install", schemaVersion: 1, layout: "releases-v1" })}\n`,
+		);
+
+		const binDir = join(tempDir, "managed-bin");
+		const fakeNpmPath = join(tempDir, "managed-npm.cjs");
+		const npmRecordPath = join(tempDir, "managed-npm-record.json");
+		mkdirSync(binDir, { recursive: true });
+		writeFileSync(
+			fakeNpmPath,
+			`const fs = require("node:fs");
+const path = require("node:path");
+const args = process.argv.slice(2);
+fs.writeFileSync(${JSON.stringify(npmRecordPath)}, JSON.stringify(args));
+if (${npmExitCode} !== 0) process.exit(${npmExitCode});
+const binDir = path.join(process.cwd(), "node_modules", ".bin");
+fs.mkdirSync(binDir, { recursive: true });
+const piPath = path.join(binDir, process.platform === "win32" ? "shuvpi.cmd" : "shuvpi");
+fs.writeFileSync(
+	piPath,
+	process.platform === "win32"
+		? "@echo off\\r\\necho ${targetVersion}\\r\\n"
+		: "#!/bin/sh\\nprintf '%s\\n' ${targetVersion}\\n",
+);
+if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
+`,
+		);
+		const npmPath = join(binDir, process.platform === "win32" ? "npm.cmd" : "npm");
+		writeFileSync(
+			npmPath,
+			process.platform === "win32"
+				? `@echo off\r\n"${originalExecPath}" "${fakeNpmPath}" %*\r\n`
+				: `#!/bin/sh\nexec "${originalExecPath}" "${fakeNpmPath}" "$@"\n`,
+		);
+		chmodSync(npmPath, 0o755);
+
+		vi.stubEnv("SHUVPI_INSTALLER_API_BASE", "https://example.test/api/installer/releases");
+		vi.stubEnv("SHUVPI_MANAGED_INSTALL_ROOT", managedRoot);
+		process.env.SHUVPI_PACKAGE_DIR = selfPackageDir;
+		process.env.PATH = `${binDir}${delimiter}${originalPath ?? ""}`;
+		return { managedRoot, npmRecordPath };
+	}
+
+	function mockManagedUpdate(targetVersion: string): void {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (input: string | URL | Request) => {
+				const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+				if (url === `https://registry.npmjs.org/${encodeURIComponent(PACKAGE_NAME)}/latest`) {
+					return Response.json({ name: PACKAGE_NAME, version: targetVersion });
+				}
+				const releaseUrl = `https://example.test/api/installer/releases/${targetVersion}`;
+				if (url === `${releaseUrl}/package.json` || url === `${releaseUrl}/package-lock.json`) {
+					return Response.json({});
+				}
+				throw new Error(`Unexpected fetch: ${url}`);
+			}),
+		);
 	}
 
 	async function runPackageCommandDirectly(args: string[]): Promise<void> {
@@ -53,7 +135,7 @@ describe("package commands", () => {
 
 	beforeEach(() => {
 		allowNetwork();
-		tempDir = join(tmpdir(), `shuvpi-package-commands-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		tempDir = join(tmpdir(), `pi-package-commands-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		agentDir = join(tempDir, "agent");
 		projectDir = join(tempDir, "project");
 		packageDir = join(tempDir, "local-package");
@@ -63,7 +145,7 @@ describe("package commands", () => {
 
 		originalCwd = process.cwd();
 		originalAgentDir = process.env[ENV_AGENT_DIR];
-		originalShuvpiPackageDir = process.env.SHUVPI_PACKAGE_DIR;
+		originalPiPackageDir = process.env.SHUVPI_PACKAGE_DIR;
 		originalPath = process.env.PATH;
 		originalExitCode = process.exitCode;
 		originalExecPath = process.execPath;
@@ -82,6 +164,7 @@ describe("package commands", () => {
 
 	afterEach(() => {
 		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
 		vi.restoreAllMocks();
 		process.chdir(originalCwd);
 		process.exitCode = originalExitCode;
@@ -90,10 +173,10 @@ describe("package commands", () => {
 		} else {
 			process.env[ENV_AGENT_DIR] = originalAgentDir;
 		}
-		if (originalShuvpiPackageDir === undefined) {
+		if (originalPiPackageDir === undefined) {
 			delete process.env.SHUVPI_PACKAGE_DIR;
 		} else {
-			process.env.SHUVPI_PACKAGE_DIR = originalShuvpiPackageDir;
+			process.env.SHUVPI_PACKAGE_DIR = originalPiPackageDir;
 		}
 		if (originalPath === undefined) {
 			delete process.env.PATH;
@@ -230,8 +313,8 @@ describe("package commands", () => {
 			await expect(
 				main(["list"], {
 					extensionFactories: [
-						(shuvpi) => {
-							shuvpi.on("project_trust", () => ({ trusted: "yes" }));
+						(pi) => {
+							pi.on("project_trust", () => ({ trusted: "yes" }));
 						},
 					],
 				}),
@@ -267,8 +350,8 @@ describe("package commands", () => {
 			await expect(
 				main(["update", "--extensions"], {
 					extensionFactories: [
-						(shuvpi) => {
-							shuvpi.on("project_trust", () => {
+						(pi) => {
+							pi.on("project_trust", () => {
 								projectTrustCalled = true;
 								return { trusted: "yes" };
 							});
@@ -365,7 +448,7 @@ describe("package commands", () => {
 
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stdout).toContain("Usage:");
-			expect(stdout).toContain("shuvpi install <source> [-l]");
+			expect(stdout).toContain("pi install <source> [-l]");
 			expect(errorSpy).not.toHaveBeenCalled();
 			expect(process.exitCode).toBeUndefined();
 		} finally {
@@ -413,9 +496,9 @@ describe("package commands", () => {
 
 	it("cycles project package overrides in config local mode", async () => {
 		const storage = new InMemorySettingsStorage();
-		storage.withLock("global", () => JSON.stringify({ packages: ["npm:shuvpi-tools"] }));
+		storage.withLock("global", () => JSON.stringify({ packages: ["npm:pi-tools"] }));
 		const settingsManager = SettingsManager.fromStorage(storage, { projectTrusted: true });
-		const resolvedPaths = extensionPaths(join(tempDir, "pkg"), "npm:shuvpi-tools", "user", ["bar.ts"]);
+		const resolvedPaths = extensionPaths(join(tempDir, "pkg"), "npm:pi-tools", "user", ["bar.ts"]);
 		const selector = new ConfigSelectorComponent(
 			{ global: resolvedPaths, project: resolvedPaths },
 			settingsManager,
@@ -430,12 +513,12 @@ describe("package commands", () => {
 
 		selector.getResourceList().handleInput(" ");
 		expect(settingsManager.getProjectSettings().packages).toEqual([
-			{ source: "npm:shuvpi-tools", autoload: false, extensions: ["-extensions/bar.ts"] },
+			{ source: "npm:pi-tools", autoload: false, extensions: ["-extensions/bar.ts"] },
 		]);
 
 		selector.getResourceList().handleInput(" ");
 		expect(settingsManager.getProjectSettings().packages).toEqual([
-			{ source: "npm:shuvpi-tools", autoload: false, extensions: ["+extensions/bar.ts"] },
+			{ source: "npm:pi-tools", autoload: false, extensions: ["+extensions/bar.ts"] },
 		]);
 
 		selector.getResourceList().handleInput(" ");
@@ -486,7 +569,7 @@ describe("package commands", () => {
 
 			expect(fetchMock).toHaveBeenCalledOnce();
 			expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
-				`pi is already up to date (v${VERSION})`,
+				`shuvpi is already up to date (v${VERSION})`,
 			);
 			expect(errorSpy).not.toHaveBeenCalled();
 			expect(process.exitCode).toBeUndefined();
@@ -523,10 +606,103 @@ describe("package commands", () => {
 		}
 	});
 
-	it("uses the update check version for forced self updates even when current", async () => {
+	it("updates installer-managed Pi through a staged immutable release", async () => {
+		const targetVersion = getNewerPatchVersion();
+		const { managedRoot, npmRecordPath } = prepareManagedInstall(targetVersion);
+		const abandonedStage = join(managedRoot, "staging", "update-abandoned");
+		mkdirSync(abandonedStage, { recursive: true });
+		writeFileSync(join(abandonedStage, "partial"), "partial");
+		const abandonedLock = join(managedRoot, "update.lock");
+		mkdirSync(abandonedLock);
+		utimesSync(abandonedLock, new Date(0), new Date(0));
+		mockManagedUpdate(targetVersion);
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
+
+		expect(readFileSync(join(managedRoot, "current-version"), "utf8")).toBe(`${targetVersion}\n`);
+		expect(existsSync(join(managedRoot, "releases", targetVersion))).toBe(true);
+		expect(existsSync(join(managedRoot, "releases", VERSION, "active.txt"))).toBe(true);
+		expect(readdirSync(join(managedRoot, "staging"))).toEqual([]);
+		expect(JSON.parse(readFileSync(npmRecordPath, "utf8")) as string[]).toEqual(
+			expect.arrayContaining(["ci", "--ignore-scripts"]),
+		);
+		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
+			`Updated shuvpi from ${VERSION} to ${targetVersion}`,
+		);
+		expect(errorSpy).not.toHaveBeenCalled();
+		expect(process.exitCode).toBeUndefined();
+	});
+
+	it("rejects a concurrent managed update", async () => {
+		const targetVersion = getNewerPatchVersion();
+		const { managedRoot, npmRecordPath } = prepareManagedInstall(targetVersion);
+		const releaseLock = await lockfile.lock(join(managedRoot, "update"), { realpath: false });
+		mockManagedUpdate(targetVersion);
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
+		} finally {
+			await releaseLock();
+		}
+
+		expect(readFileSync(join(managedRoot, "current-version"), "utf8")).toBe(`${VERSION}\n`);
+		expect(existsSync(npmRecordPath)).toBe(false);
+		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toContain("Updated shuvpi from");
+		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
+			"Another managed shuvpi update is already running.",
+		);
+		expect(process.exitCode).toBe(1);
+	});
+
+	it("rejects forced managed reinstalls", async () => {
+		const targetVersion = getNewerPatchVersion();
+		const { npmRecordPath } = prepareManagedInstall(targetVersion);
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		await expect(runPackageCommandDirectly(["update", "--self", "--force"])).resolves.toBeUndefined();
+
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(existsSync(npmRecordPath)).toBe(false);
+		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
+			"Managed shuvpi installations do not support --force",
+		);
+		expect(process.exitCode).toBe(1);
+	});
+
+	it("keeps the managed release active when its update fails", async () => {
+		const targetVersion = getNewerPatchVersion();
+		const { managedRoot } = prepareManagedInstall(targetVersion, 23);
+		mockManagedUpdate(targetVersion);
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
+
+		expect(readFileSync(join(managedRoot, "current-version"), "utf8")).toBe(`${VERSION}\n`);
+		expect(existsSync(join(managedRoot, "releases", targetVersion))).toBe(false);
+		expect(readdirSync(join(managedRoot, "staging"))).toEqual([]);
+		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toContain("Updated shuvpi from");
+		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain("exited with code 23");
+		expect(process.exitCode).toBe(1);
+	});
+
+	it("keeps npm self-updates non-managed when the managed environment is inherited", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
 		const projectPrefix = join(tempDir, "project-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@shuv1337", "shuvpi-coding-agent");
+		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@earendil-works", "pi-coding-agent");
+		const inheritedManagedRoot = join(tempDir, "inherited-managed-install");
+		mkdirSync(join(inheritedManagedRoot, "releases"), { recursive: true });
+		writeFileSync(
+			join(inheritedManagedRoot, "managed-install.json"),
+			JSON.stringify({ kind: "shuvpi-managed-install", schemaVersion: 1, layout: "releases-v1" }),
+		);
+		vi.stubEnv("SHUVPI_MANAGED_INSTALL_ROOT", inheritedManagedRoot);
 		const fakeNpmPath = join(tempDir, "fake-npm.cjs");
 		const recordPath = join(tempDir, "self-update.json");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -578,7 +754,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 
 	it("uses the current package name when the update check omits packageName", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@shuv1337", "shuvpi-coding-agent");
+		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@mariozechner", "pi-coding-agent");
 		const fakeNpmPath = join(tempDir, "fake-npm.cjs");
 		const recordPath = join(tempDir, "self-update.json");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -624,7 +800,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 
 	it("installs the active package name from the update check during self-update", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@shuv1337", "shuvpi-coding-agent");
+		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@mariozechner", "pi-coding-agent");
 		const fakeNpmPath = join(tempDir, "fake-npm.cjs");
 		const recordPath = join(tempDir, "self-update.json");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -648,10 +824,10 @@ else {
 			value: join(selfPackageDir, "dist", "cli.js"),
 			configurable: true,
 		});
-		const activePackageName = PACKAGE_NAME === "@new-scope/shuvpi" ? "@newer-scope/shuvpi" : "@new-scope/shuvpi";
+		const activePackageName = PACKAGE_NAME === "@new-scope/pi" ? "@newer-scope/pi" : "@new-scope/pi";
 		vi.stubGlobal(
 			"fetch",
-			vi.fn(async () => Response.json({ name: activePackageName, version: "0.73.0" })),
+			vi.fn(async () => Response.json({ name: activePackageName, version: "9.9.9" })),
 		);
 
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -665,7 +841,7 @@ else {
 			const recordedCalls = JSON.parse(readFileSync(recordPath, "utf-8")) as string[][];
 			expect(recordedCalls).toEqual([
 				expect.arrayContaining(["uninstall", "-g", PACKAGE_NAME]),
-				expect.arrayContaining(["install", "-g", `${activePackageName}@0.73.0`]),
+				expect.arrayContaining(["install", "-g", `${activePackageName}@9.9.9`]),
 			]);
 		} finally {
 			logSpy.mockRestore();
@@ -675,7 +851,7 @@ else {
 
 	it("prints a pnpm metadata hint when self-update fails", async () => {
 		const globalRoot = join(tempDir, "pnpm", "global", "v11");
-		const selfPackageDir = join(globalRoot, "node_modules", "@earendil-works", "shuvpi-coding-agent");
+		const selfPackageDir = join(globalRoot, "node_modules", "@earendil-works", "pi-coding-agent");
 		const fakeBinDir = join(tempDir, "bin");
 		const fakePnpmPath = join(fakeBinDir, process.platform === "win32" ? "pnpm.cmd" : "pnpm");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -707,7 +883,7 @@ else {
 			expect(process.exitCode).toBe(1);
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).not.toContain("Updated shuvpi");
+			expect(stdout).not.toContain("Updated pi");
 			expect(stderr).toContain("exited with code 23");
 			expect(stderr).toContain("If pnpm reports missing package versions");
 			expect(stderr).toContain("Run `pnpm store prune` and retry `shuvpi update --self`.");
@@ -719,7 +895,7 @@ else {
 
 	it("fails self-update when renamed npm package installation fails", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@shuv1337", "shuvpi-coding-agent");
+		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@mariozechner", "pi-coding-agent");
 		const fakeNpmPath = join(tempDir, "fake-npm-fail.cjs");
 		const recordPath = join(tempDir, "self-update-fail.json");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -745,10 +921,10 @@ if(args.includes("install")) process.exit(23);
 			value: join(selfPackageDir, "dist", "cli.js"),
 			configurable: true,
 		});
-		const activePackageName = PACKAGE_NAME === "@new-scope/shuvpi" ? "@newer-scope/shuvpi" : "@new-scope/shuvpi";
+		const activePackageName = PACKAGE_NAME === "@new-scope/pi" ? "@newer-scope/pi" : "@new-scope/pi";
 		vi.stubGlobal(
 			"fetch",
-			vi.fn(async () => Response.json({ name: activePackageName, version: "0.73.0" })),
+			vi.fn(async () => Response.json({ name: activePackageName, version: "9.9.9" })),
 		);
 
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -760,12 +936,12 @@ if(args.includes("install")) process.exit(23);
 			expect(process.exitCode).toBe(1);
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).not.toContain(`Updated shuvpi`);
+			expect(stdout).not.toContain(`Updated pi`);
 			expect(stderr).toContain("exited with code 23");
 			const recordedCalls = JSON.parse(readFileSync(recordPath, "utf-8")) as string[][];
 			expect(recordedCalls).toEqual([
 				expect.arrayContaining(["uninstall", "-g", PACKAGE_NAME]),
-				expect.arrayContaining(["install", "-g", `${activePackageName}@0.73.0`]),
+				expect.arrayContaining(["install", "-g", `${activePackageName}@9.9.9`]),
 			]);
 		} finally {
 			logSpy.mockRestore();
@@ -775,22 +951,22 @@ if(args.includes("install")) process.exit(23);
 
 	it("suggests the configured source when update input omits the npm prefix", async () => {
 		const settingsPath = join(agentDir, "settings.json");
-		writeFileSync(settingsPath, JSON.stringify({ packages: ["npm:shuvpi-formatter"] }, null, 2));
+		writeFileSync(settingsPath, JSON.stringify({ packages: ["npm:pi-formatter"] }, null, 2));
 
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		try {
-			await expect(main(["update", "shuvpi-formatter"])).resolves.toBeUndefined();
+			await expect(main(["update", "pi-formatter"])).resolves.toBeUndefined();
 
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stderr).toContain("Did you mean npm:shuvpi-formatter?");
-			expect(stdout).not.toContain("Updated shuvpi-formatter");
+			expect(stderr).toContain("Did you mean npm:pi-formatter?");
+			expect(stdout).not.toContain("Updated pi-formatter");
 			expect(process.exitCode).toBe(1);
 
 			const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as { packages?: string[] };
-			expect(settings.packages).toContain("npm:shuvpi-formatter");
+			expect(settings.packages).toContain("npm:pi-formatter");
 		} finally {
 			errorSpy.mockRestore();
 			logSpy.mockRestore();

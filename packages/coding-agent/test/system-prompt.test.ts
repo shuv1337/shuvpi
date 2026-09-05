@@ -1,5 +1,16 @@
 import { describe, expect, test } from "vitest";
+import type { Skill } from "../src/core/skills.ts";
+import { createSyntheticSourceInfo } from "../src/core/source-info.ts";
 import { buildSystemPrompt } from "../src/core/system-prompt.ts";
+
+const testSkill: Skill = {
+	name: "test-skill",
+	description: "A test skill.",
+	filePath: "/skills/test-skill/SKILL.md",
+	baseDir: "/skills/test-skill",
+	sourceInfo: createSyntheticSourceInfo("/skills/test-skill/SKILL.md", { source: "test" }),
+	disableModelInvocation: false,
+};
 
 describe("buildSystemPrompt", () => {
 	describe("empty tools", () => {
@@ -46,7 +57,21 @@ describe("buildSystemPrompt", () => {
 			expect(prompt).toContain("- write:");
 		});
 
-		test("instructs models to resolve shuvpi docs and examples under absolute base paths", () => {
+		test.each([
+			[["powershell"], "Use PowerShell for file operations"],
+			[["bash", "powershell"], "Use bash or PowerShell for file operations"],
+		] as const)("uses shell-specific guidance for %j", (selectedTools, expected) => {
+			const prompt = buildSystemPrompt({
+				selectedTools: [...selectedTools],
+				contextFiles: [],
+				skills: [],
+				cwd: process.cwd(),
+			});
+
+			expect(prompt).toContain(expected);
+		});
+
+		test("instructs models to resolve pi docs and examples under absolute base paths", () => {
 			const prompt = buildSystemPrompt({
 				contextFiles: [],
 				skills: [],
@@ -110,6 +135,36 @@ describe("buildSystemPrompt", () => {
 			});
 
 			expect(prompt.match(/- Use dynamic_tool for summaries\./g)).toHaveLength(1);
+		});
+	});
+
+	describe("skills", () => {
+		test.each([
+			{ name: "default prompt", customPrompt: undefined },
+			{ name: "custom prompt", customPrompt: "Custom system prompt" },
+		])("includes skills with only bash in the $name", ({ customPrompt }) => {
+			const prompt = buildSystemPrompt({
+				customPrompt,
+				selectedTools: ["bash"],
+				contextFiles: [],
+				skills: [testSkill],
+				cwd: process.cwd(),
+			});
+
+			expect(prompt).toContain("<available_skills>");
+			expect(prompt).toContain("<name>test-skill</name>");
+			expect(prompt).toContain("Use bash to load a skill's file");
+		});
+
+		test("omits skills without read or bash", () => {
+			const prompt = buildSystemPrompt({
+				selectedTools: ["write"],
+				contextFiles: [],
+				skills: [testSkill],
+				cwd: process.cwd(),
+			});
+
+			expect(prompt).not.toContain("<available_skills>");
 		});
 	});
 });

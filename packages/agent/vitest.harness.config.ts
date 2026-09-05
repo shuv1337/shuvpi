@@ -22,6 +22,7 @@ export default defineConfig({
 		},
 	},
 	resolve: {
+		conditions: ["source"],
 		alias: [
 			{ find: /^@shuv1337\/shuvpi-telemetry$/, replacement: telemetrySrcIndex },
 			{ find: /^@shuv1337\/shuvpi-agent-core$/, replacement: agentSrcIndex },
@@ -29,4 +30,5 @@ export default defineConfig({
 			{ find: /^@shuv1337\/shuvpi-ai\/compat$/, replacement: aiSrcCompat },
 		],
 	},
+	ssr: { resolve: { conditions: ["source"] } },
 });

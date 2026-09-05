@@ -1,48 +1,26 @@
-import type { JsonValue, ProtocolError, ProtocolErrorCode } from "@shuv1337/shuvpi-protocol";
+import type { ProtocolError, ProtocolErrorCode } from "@shuv1337/shuvpi-protocol";
 
-export class ShuvpiServerError extends Error {
+export class ServerError extends Error {
 	readonly code: ProtocolErrorCode;
-	readonly details: JsonValue | undefined;
 
 	constructor(error: ProtocolError) {
 		super(error.message);
-		this.name = "ShuvpiServerError";
+		this.name = "ServerError";
 		this.code = error.code;
-		this.details = error.details;
 	}
 }
 
-export class ShuvpiDisconnectedError extends Error {
-	constructor(message = "Shuvpi client is disconnected") {
-		super(message);
-		this.name = "ShuvpiDisconnectedError";
+export class DisconnectedError extends Error {
+	constructor(message = "Client is disconnected", cause?: Error) {
+		super(message, cause === undefined ? undefined : { cause });
+		this.name = "DisconnectedError";
 	}
 }
 
-export class ShuvpiClientDisposedError extends Error {
+export class ClientDisposedError extends Error {
 	constructor() {
-		super("Shuvpi client is disposed");
-		this.name = "ShuvpiClientDisposedError";
-	}
-}
-
-export class ShuvpiSessionOwnershipError extends Error {
-	readonly sessionId: string;
-
-	constructor(sessionId: string, message: string) {
-		super(message);
-		this.name = "ShuvpiSessionOwnershipError";
-		this.sessionId = sessionId;
-	}
-}
-
-export class ShuvpiSessionDetachedError extends Error {
-	readonly sessionId: string;
-
-	constructor(sessionId: string) {
-		super(`Session ${sessionId} is not attached`);
-		this.name = "ShuvpiSessionDetachedError";
-		this.sessionId = sessionId;
+		super("Client is disposed");
+		this.name = "ClientDisposedError";
 	}
 }
 
@@ -50,7 +28,7 @@ export function toError(error: unknown): Error {
 	return error instanceof Error ? error : new Error(String(error));
 }
 
-export function toDisconnectedError(error: unknown): ShuvpiDisconnectedError {
+export function toDisconnectedError(error: unknown): DisconnectedError {
 	const cause = toError(error);
-	return cause instanceof ShuvpiDisconnectedError ? cause : new ShuvpiDisconnectedError(cause.message);
+	return cause instanceof DisconnectedError ? cause : new DisconnectedError(cause.message, cause);
 }

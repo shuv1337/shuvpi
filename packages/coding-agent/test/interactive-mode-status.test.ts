@@ -1191,8 +1191,8 @@ describe("InteractiveMode.showLoadedResources", () => {
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
 			cwd,
-			systemPromptSource: { path: path.join(cwd, ".pi", "SYSTEM.md") },
-			appendSystemPromptSources: [{ path: path.join(cwd, ".pi", "APPEND_SYSTEM.md") }],
+			systemPromptSource: { path: path.join(cwd, ".shuvpi", "SYSTEM.md") },
+			appendSystemPromptSources: [{ path: path.join(cwd, ".shuvpi", "APPEND_SYSTEM.md") }],
 			contextFiles: [{ path: path.join(cwd, "AGENTS.md") }],
 		});
 
@@ -1202,7 +1202,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 
 		const output = renderAll(fakeThis.loadedResourcesContainer).replace(/\\/g, "/");
 		expect(output).toContain("[Context]");
-		expect(output).toContain(".pi/SYSTEM.md, .pi/APPEND_SYSTEM.md, AGENTS.md");
+		expect(output).toContain(".shuvpi/SYSTEM.md, .shuvpi/APPEND_SYSTEM.md, AGENTS.md");
 	});
 
 	test("shows full context paths when expanded", () => {

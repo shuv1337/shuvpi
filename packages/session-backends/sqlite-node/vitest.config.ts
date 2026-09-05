@@ -5,7 +5,9 @@ const telemetryIndex = fileURLToPath(new URL("../../telemetry/src/index.ts", imp
 const aiIndex = fileURLToPath(new URL("../../ai/src/index.ts", import.meta.url));
 const agentIndex = fileURLToPath(new URL("../../agent/src/index.ts", import.meta.url));
 const agentNode = fileURLToPath(new URL("../../agent/src/node.ts", import.meta.url));
-const agentSessionTesting = fileURLToPath(new URL("../../agent/src/harness/session/testing/index.ts", import.meta.url));
+const agentSessionTesting = fileURLToPath(
+	new URL("../../agent/src/harness/session/testing/index.ts", import.meta.url),
+);
 
 export default defineConfig({
 	test: {
@@ -22,12 +24,14 @@ export default defineConfig({
 		},
 	},
 	resolve: {
+		conditions: ["source"],
 		alias: [
-			{ find: /^@earendil-works\/shuvpi-telemetry$/, replacement: telemetryIndex },
-			{ find: /^@earendil-works\/shuvpi-agent-core\/session\/testing$/, replacement: agentSessionTesting },
-			{ find: /^@earendil-works\/shuvpi-agent-core\/node$/, replacement: agentNode },
-			{ find: /^@earendil-works\/shuvpi-agent-core$/, replacement: agentIndex },
-			{ find: /^@earendil-works\/shuvpi-ai$/, replacement: aiIndex },
+			{ find: /^@shuv1337\/shuvpi-telemetry$/, replacement: telemetryIndex },
+			{ find: /^@shuv1337\/shuvpi-agent-core\/node$/, replacement: agentNode },
+			{ find: /^@shuv1337\/shuvpi-agent-core\/harness\/session\/testing$/, replacement: agentSessionTesting },
+			{ find: /^@shuv1337\/shuvpi-agent-core$/, replacement: agentIndex },
+			{ find: /^@shuv1337\/shuvpi-ai$/, replacement: aiIndex },
 		],
 	},
+	ssr: { resolve: { conditions: ["source"] } },
 });

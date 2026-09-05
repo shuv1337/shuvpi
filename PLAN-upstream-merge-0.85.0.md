@@ -1,7 +1,14 @@
 # Plan: merge upstream pi v0.85.0 into shuvpi
 
-Status: executing
-Decisions: keep web-ui (port to new client protocol as follow-up); delete mom/pods; post-merge version v0.86.0.
+Status: merge resolved and validated in working copy (jj change vpzrnqzl "Merge upstream pi v0.85.0"); not pushed.
+Decisions: keep web-ui (port to new client protocol as follow-up); keep mom/pods (long-standing fork-owned packages, reversal of the initial delete decision); post-merge release version v0.86.0 at release time (tree stays at 0.85.1 lockstep until then).
+
+Validation completed: `npm run check` green (incl. web-ui), `./test.sh` full non-e2e suite green, publish-set package builds green, bundled CLI `--version`/`--help` sanity OK, models.generated.ts + image models + telemetry docs + shrinkwrap + install-lock regenerated.
+
+Follow-ups:
+- Port web-ui to the new client/server protocol (upstream deleted web-ui; fork keeps it; it compiles but still targets pre-rewrite APIs at runtime).
+- Release as v0.86.0 (lockstep bump; release script handles example/eval versions).
+- Local release smoke test per AGENTS.md before the release.
 Upstream: `earendil-works/pi` `main` (fetched via `upstream-pi` = `~/repos/pi`, ref `upstream-pi/upstream-main`)
 Upstream head at time of writing: `Release v0.85.0` + 1 fix (2026-09-05)
 

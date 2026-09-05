@@ -1,7 +1,7 @@
 {
 	"name": "@shuv1337/shuvpi-server",
 	"version": "0.85.1",
-	"description": "experimental server package for shuvpi",
+	"description": "experimental server package for pi",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -33,21 +33,22 @@
 		"prepublishOnly": "npm run clean && npm run build"
 	},
 	"keywords": [
-		"shuvpi",
+		"pi",
 		"server"
 	],
 	"author": "Earendil Works",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/shuv1337/shuvpi.git",
+		"url": "git+https://github.com/earendil-works/pi.git",
 		"directory": "packages/server"
 	},
 	"engines": {
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-ai": "^0.85.1",
+		"@shuv1337/shuvpi-chord": "^0.85.1",
+		"@shuv1337/shuvpi-agent-core": "^0.85.1",
 		"@shuv1337/shuvpi-protocol": "^0.85.1"
 	},
 	"devDependencies": {

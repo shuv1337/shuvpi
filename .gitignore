@@ -45,3 +45,4 @@ plans/
 .shuvpi/hf-sessions-backup/
 .shuvpi/suggester/
 collect.sh
+packages/agent/docs/extensions/pi-server-artifact/index.md

@@ -15,6 +15,7 @@ import {
 	detectCapabilities,
 	encodeITerm2,
 	encodeKitty,
+	getCapabilities,
 	getKittyImageMetadata,
 	getKittyImagePlacement,
 	hyperlink,
@@ -24,6 +25,7 @@ import {
 	renderImage,
 	resetCapabilitiesCache,
 	setCapabilities,
+	setCapabilityOverrides,
 	setCellDimensions,
 } from "../src/terminal-image.ts";
 import { visibleWidth } from "../src/utils.ts";
@@ -42,9 +44,12 @@ const ENV_KEYS = [
 	"CMUX_WORKSPACE_ID",
 	"WARP_SESSION_ID",
 	"WARP_TERMINAL_SESSION_UUID",
+	"SHUVPI_HYPERLINKS",
+	"SHUVPI_IMAGE_PROTOCOL",
+	"SHUVPI_TRUE_COLOR",
 ] as const;
 
-function withEnv(overrides: Record<string, string | undefined>, fn: () => void): void {
+function withEnv<T>(overrides: Record<string, string | undefined>, fn: () => T): T {
 	const saved: Record<string, string | undefined> = {};
 	for (const key of ENV_KEYS) {
 		saved[key] = process.env[key];
@@ -55,7 +60,7 @@ function withEnv(overrides: Record<string, string | undefined>, fn: () => void):
 			if (v === undefined) delete process.env[k];
 			else process.env[k] = v;
 		}
-		fn();
+		return fn();
 	} finally {
 		for (const key of ENV_KEYS) {
 			if (saved[key] === undefined) delete process.env[key];
@@ -219,6 +224,71 @@ describe("detectCapabilities", () => {
 		});
 	});
 
+	it("applies environment overrides", () => {
+		assert.deepStrictEqual(
+			withEnv({ SHUVPI_HYPERLINKS: "1", SHUVPI_IMAGE_PROTOCOL: "kitty", SHUVPI_TRUE_COLOR: "1" }, () =>
+				detectCapabilities(),
+			),
+			{ images: "kitty", trueColor: true, hyperlinks: true },
+		);
+		assert.deepStrictEqual(
+			withEnv(
+				{
+					TERM_PROGRAM: "iterm.app",
+					SHUVPI_HYPERLINKS: "0",
+					SHUVPI_IMAGE_PROTOCOL: "none",
+					SHUVPI_TRUE_COLOR: "0",
+				},
+				() => detectCapabilities(),
+			),
+			{ images: null, trueColor: false, hyperlinks: false },
+		);
+	});
+
+	it("preserves auto-detection for auto environment overrides", () => {
+		assert.deepStrictEqual(
+			withEnv(
+				{
+					TERM_PROGRAM: "ghostty",
+					SHUVPI_HYPERLINKS: "auto",
+					SHUVPI_IMAGE_PROTOCOL: "auto",
+					SHUVPI_TRUE_COLOR: "auto",
+				},
+				() => detectCapabilities(),
+			),
+			{ images: "kitty", trueColor: true, hyperlinks: true },
+		);
+	});
+
+	it("applies and clears programmatic overrides", () => {
+		withEnv({ SHUVPI_HYPERLINKS: "1", SHUVPI_IMAGE_PROTOCOL: "kitty", SHUVPI_TRUE_COLOR: "1" }, () => {
+			setCapabilityOverrides({ images: null, trueColor: false, hyperlinks: false });
+			try {
+				assert.deepStrictEqual(getCapabilities(), { images: null, trueColor: false, hyperlinks: false });
+				setCapabilityOverrides({});
+				assert.deepStrictEqual(getCapabilities(), { images: "kitty", trueColor: true, hyperlinks: true });
+			} finally {
+				setCapabilityOverrides({});
+				resetCapabilitiesCache();
+			}
+		});
+	});
+
+	it("bypasses the tmux probe when hyperlinks are overridden", () => {
+		let probed = false;
+		const caps = withEnv(
+			{ TMUX: "/tmp/tmux-1000/default,1234,0", SHUVPI_HYPERLINKS: "1", SHUVPI_IMAGE_PROTOCOL: "kitty" },
+			() =>
+				detectCapabilities(() => {
+					probed = true;
+					return false;
+				}),
+		);
+		assert.strictEqual(probed, false);
+		assert.strictEqual(caps.hyperlinks, true);
+		assert.strictEqual(caps.images, "kitty");
+	});
+
 	it("enables hyperlinks under tmux when the client forwards them", () => {
 		withEnv({ TMUX: "/tmp/tmux-1000/default,1234,0", TERM_PROGRAM: "ghostty" }, () => {
 			const caps = detectCapabilities(() => true);
@@ -336,6 +406,12 @@ describe("detectCapabilities", () => {
 		withEnv({ TERM_PROGRAM: "vscode" }, () => {
 			const caps = detectCapabilities();
 			assert.strictEqual(caps.hyperlinks, true);
+		});
+	});
+
+	it("enables Alacritty capabilities for Zed", () => {
+		withEnv({ TERM_PROGRAM: "zed" }, () => {
+			assert.deepStrictEqual(detectCapabilities(), { images: null, trueColor: true, hyperlinks: true });
 		});
 	});
 
@@ -558,9 +634,9 @@ describe("imageFallback", () => {
 	it("shortens home-prefixed absolute paths without hyperlinks", () => {
 		setCapabilities({ images: null, trueColor: false, hyperlinks: false });
 		try {
-			const abs = join(homedir(), ".pi", "agent", "shot.png");
+			const abs = join(homedir(), ".shuvpi", "agent", "shot.png");
 			const result = imageFallback("image/png", { widthPx: 1280, heightPx: 720 }, abs);
-			assert.strictEqual(result, "[Image: ~/.pi/agent/shot.png [image/png] 1280x720]");
+			assert.strictEqual(result, "[Image: ~/.shuvpi/agent/shot.png [image/png] 1280x720]");
 		} finally {
 			resetCapabilitiesCache();
 		}
@@ -569,7 +645,7 @@ describe("imageFallback", () => {
 	it("wraps shortened absolute paths in OSC 8 file links when hyperlinks are enabled", () => {
 		setCapabilities({ images: null, trueColor: false, hyperlinks: true });
 		try {
-			const abs = join(homedir(), ".pi", "agent", "shot.png");
+			const abs = join(homedir(), ".shuvpi", "agent", "shot.png");
 			const result = imageFallback("image/png", { widthPx: 10, heightPx: 10 }, abs);
 			assert.ok(result.includes("\x1b]8;;file://"), "expected OSC 8 file link");
 			assert.ok(
@@ -578,7 +654,7 @@ describe("imageFallback", () => {
 			);
 			// Visible text must use ~/... not the expanded home path.
 			const visible = result.replace(/\x1b\]8;;.*?\x1b\\/g, "");
-			assert.strictEqual(visible, "[Image: ~/.pi/agent/shot.png [image/png] 10x10]");
+			assert.strictEqual(visible, "[Image: ~/.shuvpi/agent/shot.png [image/png] 10x10]");
 		} finally {
 			resetCapabilitiesCache();
 		}
