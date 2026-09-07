@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-server",
-	"version": "0.85.1",
+	"version": "0.86.0",
 	"description": "experimental server package for pi",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -47,9 +47,9 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-chord": "^0.85.1",
-		"@shuv1337/shuvpi-agent-core": "^0.85.1",
-		"@shuv1337/shuvpi-protocol": "^0.85.1"
+		"@shuv1337/shuvpi-chord": "^0.86.0",
+		"@shuv1337/shuvpi-agent-core": "^0.86.0",
+		"@shuv1337/shuvpi-protocol": "^0.86.0"
 	},
 	"devDependencies": {
 		"shx": "0.4.0",
