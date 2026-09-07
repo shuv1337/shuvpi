@@ -79,11 +79,27 @@ function assertPackagesAreRegisteredWithNpm() {
 		throw new Error(output ? `Failed to query npm registration for ${packageName}\n${output}` : `Failed to query npm registration for ${packageName}`);
 	}
 
+
+
 	if (unregisteredPackages.length > 0) {
-		throw new Error(`The following public workspace packages are not registered on npm:\n${unregisteredPackages.map((packageName) => `  ${packageName}`).join("\n")}\nRegister them before running a release.`);
+		// CI trusted publishing creates new packages on first publish (e.g. protocol and
+		// sqlite-node on 2026-08-10), so intentionally-new packages may be allowlisted.
+		const allowedNewPackages = new Set(
+			(process.env.SHUVPI_RELEASE_ALLOW_NEW_PACKAGES ?? "")
+				.split(",")
+				.map((name) => name.trim())
+				.filter((name) => name.length > 0),
+		);
+		const unexpectedPackages = unregisteredPackages.filter((packageName) => !allowedNewPackages.has(packageName));
+		if (unexpectedPackages.length > 0) {
+			throw new Error(`The following public workspace packages are not registered on npm:\n${unexpectedPackages.map((packageName) => `  ${packageName}`).join("\n")}\nRegister them before running a release, or list intentionally-new packages in SHUVPI_RELEASE_ALLOW_NEW_PACKAGES.`);
+		}
+		for (const packageName of unregisteredPackages) {
+			console.log(`  ${packageName} (new package; will be created on first CI publish)`);
+		}
 	}
 
-	console.log("  All public workspace packages are registered on npm\n");
+	console.log("  All public workspace packages are registered on npm or allowlisted as new\n");
 }
 
 function compareVersions(a, b) {
