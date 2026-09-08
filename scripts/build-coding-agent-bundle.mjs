@@ -149,6 +149,7 @@ for (const entry of [
 	join(codingAgentDistDir, "utils", "image-resize-worker.js"),
 	join(aiDistDir, "api", "bedrock-converse-stream.js"),
 	join(aiDistDir, "auth", "oauth", "anthropic.js"),
+	join(aiDistDir, "auth", "oauth", "google-antigravity.js"),
 ]) {
 	if (!existsSync(entry)) {
 		throw new Error(`Bundle input is missing: ${relative(repoRoot, entry)}. Build the workspace packages first.`);
@@ -190,6 +191,7 @@ const lazyResult = await build({
 		anthropic: join(aiDistDir, "auth", "oauth", "anthropic.js"),
 		"bedrock-converse-stream": join(aiDistDir, "api", "bedrock-converse-stream.js"),
 		"github-copilot": join(aiDistDir, "auth", "oauth", "github-copilot.js"),
+		"google-antigravity": join(aiDistDir, "auth", "oauth", "google-antigravity.js"),
 		"image-resize-worker": join(codingAgentDistDir, "utils", "image-resize-worker.js"),
 		"kimi-coding": join(aiDistDir, "auth", "oauth", "kimi-coding.js"),
 		"openai-codex": join(aiDistDir, "auth", "oauth", "openai-codex.js"),

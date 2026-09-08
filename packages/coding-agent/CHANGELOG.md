@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Google Antigravity OAuth refresh in the bundled npm CLI by including its lazy-loaded OAuth implementation.
+
 ## [0.86.0] - 2026-09-07
 
 ### Changed
