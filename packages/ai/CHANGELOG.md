@@ -12,6 +12,10 @@
 - Merged upstream pi v0.87.1 (upstream 0.86.0-0.87.1 releases apply): transcript-backed system messages, Meta provider, public Radius catalog, prompt-cache lifetime metadata, image-input limits, Claude Opus 5.5, GPT-6 Sol/Luna, and Grok 4.7.
 - Ported the Google Antigravity and Gemini CLI providers to `TranscriptContext`.
 
+### Fixed
+
+- Fixed GitHub Copilot Claude Opus 5.5 losing its low/medium/high thinking levels once models.dev started listing the model.
+
 ## [0.86.1] - 2026-09-08
 
 ## [0.86.0] - 2026-09-07

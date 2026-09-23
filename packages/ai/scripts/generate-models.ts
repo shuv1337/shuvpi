@@ -509,6 +509,8 @@ const GITHUB_COPILOT_THINKING_LEVEL_OVERRIDES = {
 	"claude-opus-4.7": { minimal: "low" },
 	"claude-opus-4.8": { minimal: "low" },
 	"claude-opus-5": { minimal: "low" },
+	// models.dev lists only xhigh/max; keep the levels from the 2026-09-22 Copilot catalog fallback.
+	"claude-opus-5.5": { off: null, minimal: null, low: "low", medium: "medium", high: "high" },
 	"claude-sonnet-4.6": { minimal: "low", max: "max" },
 } satisfies Record<string, NonNullable<Model<Api>["thinkingLevelMap"]>>;
 
