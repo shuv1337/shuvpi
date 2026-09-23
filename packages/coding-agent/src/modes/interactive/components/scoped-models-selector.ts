@@ -199,15 +199,18 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 		const countText = allEnabled
 			? "all enabled"
 			: `${enabledCount}/${this.allIds.length} enabled${unavailableCount ? ` · ${unavailableCount} unavailable` : ""}`;
+		const hint = (key: string, label: string) => (key ? `${key} ${label}` : undefined);
+		const reorderUp = keyDisplayText("app.models.reorderUp");
+		const reorderDown = keyDisplayText("app.models.reorderDown");
 		const parts = [
-			`${keyDisplayText("tui.select.confirm")} toggle`,
-			`${keyDisplayText("app.models.enableAll")} all`,
-			`${keyDisplayText("app.models.clearAll")} clear`,
-			`${keyDisplayText("app.models.toggleProvider")} provider`,
-			`${keyDisplayText("app.models.reorderUp")}/${keyDisplayText("app.models.reorderDown")} reorder`,
-			`${keyDisplayText("app.models.save")} save`,
+			hint(keyDisplayText("tui.select.confirm"), "toggle"),
+			hint(keyDisplayText("app.models.enableAll"), "all"),
+			hint(keyDisplayText("app.models.clearAll"), "clear"),
+			hint(keyDisplayText("app.models.toggleProvider"), "provider"),
+			hint([reorderUp, reorderDown].filter(Boolean).join("/"), "reorder"),
+			hint(keyDisplayText("app.models.save"), "save"),
 			countText,
-		];
+		].filter((part): part is string => part !== undefined);
 		return this.isDirty
 			? theme.fg("dim", `  ${parts.join(" · ")} `) + theme.fg("warning", "(unsaved)")
 			: theme.fg("dim", `  ${parts.join(" · ")}`);

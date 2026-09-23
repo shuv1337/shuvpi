@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the scoped models selector footer showing hints for unbound actions (e.g. a bare "clear" when `app.models.clearAll` is unbound).
+
 ## [0.86.1] - 2026-09-08
 
 ### Fixed
