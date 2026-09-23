@@ -21,6 +21,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WORKSPACE = {
 	"@shuv1337/shuvpi-chord": "packages/chord/src",
 	"@shuv1337/shuvpi-ai": "packages/ai/src",
+	"@shuv1337/shuvpi-durable": "packages/durable/src",
 	"@shuv1337/shuvpi-agent-core": "packages/agent/src",
 	"@shuv1337/shuvpi-telemetry": "packages/telemetry/src",
 	"@shuv1337/shuvpi-tui": "packages/tui/src",

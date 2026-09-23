@@ -17,9 +17,14 @@
 			"@shuv1337/shuvpi-ai/oauth": ["./packages/ai/src/oauth.ts"],
 			"@shuv1337/shuvpi-ai/*": ["./packages/ai/src/*.ts", "./packages/ai/src/providers/*.ts"],
 			"@shuv1337/shuvpi-ai/dist/*": ["./packages/ai/src/*"],
+			"@shuv1337/shuvpi-durable": ["./packages/durable/src/index.ts"],
+			"@shuv1337/shuvpi-durable/*": ["./packages/durable/src/*"],
 			"@shuv1337/shuvpi-agent-core": ["./packages/agent/src/index.ts"],
 			"@shuv1337/shuvpi-agent-core/harness/session/testing": [
 				"./packages/agent/src/harness/session/testing/index.ts"
+			],
+			"@shuv1337/shuvpi-agent-core/experimental/pico3": [
+				"./packages/agent/src/harness/pico3/index.ts"
 			],
 			"@shuv1337/shuvpi-agent-core/node": ["./packages/agent/src/node.ts"],
 			"@shuv1337/shuvpi-agent-core/*": [

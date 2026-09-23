@@ -1,7 +1,7 @@
 {
 	"name": "@shuv1337/shuvpi-server",
 	"version": "0.86.1",
-	"description": "experimental server package for pi",
+	"description": "experimental server package for shuvpi",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",

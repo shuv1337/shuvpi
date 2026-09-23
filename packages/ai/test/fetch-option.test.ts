@@ -8,12 +8,13 @@ import { streamSimple as streamOpenAICodexResponses } from "../src/api/openai-co
 import { streamSimple as streamOpenAICompletions } from "../src/api/openai-completions.ts";
 import { streamSimple as streamOpenAIResponses } from "../src/api/openai-responses.ts";
 import { generateImages } from "../src/api/openrouter-images.ts";
-import { streamSimple as streamPiMessages } from "../src/api/pi-messages.ts";
-import type { Api, Context, FetchFunction, ImagesModel, Model } from "../src/types.ts";
+import { streamSimple as streamShuvpiMessages } from "../src/api/pi-messages.ts";
+import type { Api, FetchFunction, ImagesModel, Model } from "../src/types.ts";
+import { normalizeContext } from "../src/utils/transcript.ts";
 
-const context: Context = {
+const context = normalizeContext({
 	messages: [{ role: "user", content: "hello", timestamp: 1 }],
-};
+});
 
 function createModel<TApi extends Api>(api: TApi): Model<TApi> {
 	return {
@@ -111,7 +112,7 @@ describe("fetch stream option", () => {
 			transport: "sse",
 			maxRetries: 0,
 		}).result();
-		await streamPiMessages(createModel("pi-messages"), context, {
+		await streamShuvpiMessages(createModel("pi-messages"), context, {
 			apiKey: "test-key",
 			fetch: custom,
 		}).result();

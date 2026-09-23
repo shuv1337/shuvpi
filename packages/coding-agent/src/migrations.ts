@@ -13,8 +13,8 @@ import { isLocalPath, resolvePath } from "./utils/paths.ts";
 import { stripBom } from "./utils/text.ts";
 
 const MIGRATION_GUIDE_URL =
-	"https://github.com/shuv1337/pi-mono/blob/main/packages/coding-agent/CHANGELOG.md#extensions-migration";
-const EXTENSIONS_DOC_URL = "https://github.com/shuv1337/pi-mono/blob/main/packages/coding-agent/docs/extensions.md";
+	"https://github.com/shuv1337/shuvpi/blob/main/packages/coding-agent/CHANGELOG.md#extensions-migration";
+const EXTENSIONS_DOC_URL = "https://github.com/shuv1337/shuvpi/blob/main/packages/coding-agent/docs/extensions.md";
 const BUNDLED_SHUV_PACKAGE_NAME = "@shuv1337/shuvpi-shuv";
 
 function getPackageSource(source: PackageSource): string {

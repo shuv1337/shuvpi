@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { AgentMessage } from "@shuv1337/shuvpi-agent-core";
-import type { Usage } from "@shuv1337/shuvpi-ai";
+import type { JsonObject, Usage } from "@shuv1337/shuvpi-ai";
 import { reconstructArtifactContents } from "../src/tools/artifacts/artifact-transcript.ts";
 
 const usage: Usage = {
@@ -13,7 +13,7 @@ const usage: Usage = {
 	cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 };
 
-function artifactToolCall(id: string, argumentsValue: Record<string, unknown>): AgentMessage {
+function artifactToolCall(id: string, argumentsValue: JsonObject): AgentMessage {
 	return {
 		role: "assistant",
 		content: [{ type: "toolCall", id, name: "artifacts", arguments: argumentsValue }],

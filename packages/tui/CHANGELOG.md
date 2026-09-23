@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Merged upstream pi v0.87.1: bundled native clipboard readers via `getNativeClipboard()`, faster fuzzy search, and LaTeX/fullscreen fixes.
+
 ## [0.86.1] - 2026-09-08
 
 ## [0.86.0] - 2026-09-07

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { streamGoogleGeminiCli } from "../src/providers/google-gemini-cli.ts";
 import type { Context, Model } from "../src/types.ts";
+import { normalizeContext } from "../src/utils/transcript.ts";
 
 const originalFetch = global.fetch;
 
@@ -77,7 +78,7 @@ describe("google-gemini-cli empty stream retry", () => {
 			messages: [{ role: "user", content: "Say hello", timestamp: Date.now() }],
 		};
 
-		const stream = streamGoogleGeminiCli(model, context, {
+		const stream = streamGoogleGeminiCli(model, normalizeContext(context), {
 			apiKey: JSON.stringify({ token: "token", projectId: "project" }),
 		});
 

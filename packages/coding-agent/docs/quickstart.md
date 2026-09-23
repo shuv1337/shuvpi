@@ -1,167 +1,122 @@
 # Quickstart
 
-This page gets you from install to a useful first shuvpi session.
+Shuvpi runs in your terminal and works with files on your machine. To use it, you need access to a model through a supported provider. This can be a subscription, an API key, or a local model.
 
-## Install
+For native Windows setup, read [Windows Setup](windows.md). For Android, read [Termux Setup](termux.md).
 
-Shuvpi is distributed as an npm package:
+## 1. Install Shuvpi
+
+On macOS or Linux, you can use the installer:
+
+```bash
+curl -fsSL https://pi.dev/install.sh | sh
+```
+
+Alternatively, install Shuvpi from npm. This requires Node.js 22.19 or newer:
 
 ```bash
 npm install -g --ignore-scripts @shuv1337/shuvpi-coding-agent
 ```
 
-`--ignore-scripts` disables dependency lifecycle scripts during install. Shuvpi does not require install scripts for normal npm installs.
+Shuvpi does not require dependency lifecycle scripts for a normal npm installation.
 
-### Uninstall
-
-Use the package manager that installed shuvpi. The curl installer uses npm globally, so curl and npm installs are removed with npm:
+Verify the installation:
 
 ```bash
-# curl installer or npm install -g
-npm uninstall -g @shuv1337/shuvpi-coding-agent
-
-# pnpm
-pnpm remove -g @shuv1337/shuvpi-coding-agent
-
-# Yarn
-yarn global remove @shuv1337/shuvpi-coding-agent
-
-# Bun
-bun uninstall -g @shuv1337/shuvpi-coding-agent
+shuvpi --version
 ```
 
-Uninstalling shuvpi leaves settings, credentials, sessions, and installed shuvpi packages in `~/.shuvpi/agent/`.
+## 2. Start Shuvpi
 
-Then start shuvpi in the project directory you want it to work on:
+Change to the folder you want Shuvpi to work with, then start it:
 
 ```bash
-cd /path/to/project
+cd /path/to/folder
 shuvpi
 ```
 
-## Authenticate
+The working folder helps Shuvpi discover relevant files, instructions, and configuration. Shuvpi also uses it to group saved sessions.
 
-Shuvpi can use subscription providers through `/login`, or API-key providers through environment variables or the auth file.
+<p align="center"><img src="images/interactive-mode.png" alt="Shuvpi running in a terminal with a conversation, input editor, and status footer" width="750"></p>
 
-### Option 1: subscription login
+The interface shows your conversation, an editor for prompts and commands, and a footer with the current folder, model, and session status. See [Use Shuvpi in the terminal](usage.md) to learn how to add files, run commands, direct ongoing work, and manage results.
 
-Start shuvpi and run:
+## 3. Choose a model
+
+A **model** generates Shuvpi's responses. A **provider** is the service or account Shuvpi uses to access that model.
+
+In Shuvpi, run:
 
 ```text
 /login
 ```
 
-Then select a provider. Built-in subscription logins include Claude Pro/Max, ChatGPT Plus/Pro (Codex), and GitHub Copilot.
+Choose a provider, then follow the prompts to use a subscription or store an API key. Run `/model` afterward if you want to select a different available model.
 
-### Option 2: API key
+See [Choose a model and provider](models.md) for supported providers, environment-variable authentication, local models, and custom endpoints.
 
-Set an API key before launching shuvpi:
+## 4. Give Shuvpi a task
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-shuvpi
-```
+Shuvpi shows each file read, search, command, and edit it performs. It does not ask before every tool call.
 
-You can also run `/login` and select an API-key provider to store the key in `~/.shuvpi/agent/auth.json`.
-
-See [Providers](providers.md) for all supported providers, environment variables, and cloud-provider setup.
-
-## First session
-
-Once shuvpi starts, type a request and press Enter:
+Enter a task that matches your work, for example:
 
 ```text
-Summarize this repository and tell me how to run its checks.
+Summarize @meeting-notes.md and save the action items to action-items.md.
 ```
-
-By default, shuvpi gives the model four tools:
-
-- `read` - read files
-- `write` - create or overwrite files
-- `edit` - patch files
-- `bash` - run shell commands
-
-Additional built-in read-only tools (`grep`, `find`, `ls`) are available through tool options. Shuvpi runs in your current working directory and can modify files there. Use git or another checkpointing workflow if you want easy rollback.
-
-## Give shuvpi project instructions
-
-Shuvpi loads context files at startup. Add an `AGENTS.md` file to tell it how to work in a project:
-
-```markdown
-# Project Instructions
-
-- Run `npm run check` after code changes.
-- Do not run production migrations locally.
-- Keep responses concise.
-```
-
-Shuvpi loads:
-
-- `~/.shuvpi/agent/AGENTS.md` for global instructions
-- `AGENTS.md` or `CLAUDE.md` from parent directories and the current directory
-
-If a directory contains `AGENTS.override.md`, Shuvpi loads it instead of `AGENTS.md` or `CLAUDE.md` from that directory.
-
-Restart shuvpi, or run `/reload`, after changing context files.
-
-## Common things to try
-
-### Reference files
-
-Type `@` in the editor to fuzzy-search files, or pass files on the command line:
-
-```bash
-shuvpi @README.md "Summarize this"
-shuvpi @src/app.ts @src/app.test.ts "Review these together"
-```
-
-Images or text can be pasted with Ctrl+V (Alt+V on Windows); images can also be dragged into supported terminals.
-
-### Run shell commands
-
-In interactive mode:
 
 ```text
-!npm run lint
+Explain how this repository is structured and how to run its checks.
 ```
 
-The command output is sent to the model. Use `!!command` to run a command without adding its output to the model context.
+```text
+Compare @previous.csv with @current.csv and summarize the important changes.
+```
 
-### Switch models
+Type `@` in the editor to search for a file instead of entering its full path. When Shuvpi finishes, review its response and any changed files. Use version control or backups for important work. For untrusted or unattended work, use a container or another sandbox. See [Security](security.md).
 
-Use `/model` or Ctrl+L to choose a model for the current session. Press Ctrl+S in the model picker to save the highlighted model as the startup default. Use `/thinking` to choose a thinking level for the current session, or Ctrl+S in that picker to save the startup default thinking level. Use Shift+Tab to cycle thinking level. Use Ctrl+P / Shift+Ctrl+P to cycle through scoped models.
+## Continue later
 
-### Continue later
-
-Sessions are saved automatically:
+Shuvpi saves sessions automatically. Exit Shuvpi, then resume the most recent session for the same working folder with:
 
 ```bash
-shuvpi -c                  # Continue most recent session
-shuvpi -r                  # Browse previous sessions
-shuvpi --name "my task"    # Set session display name at startup
-shuvpi --session <path|id> # Open a specific session
+shuvpi --continue
 ```
 
-Inside shuvpi, use `/resume`, `/new`, `/tree`, `/fork`, and `/clone` to manage sessions.
-
-### Non-interactive mode
-
-For one-shot prompts:
-
-```bash
-shuvpi -p "Summarize this codebase"
-cat README.md | shuvpi -p "Summarize this text"
-shuvpi -p @screenshot.png "What's in this image?"
-```
-
-Use `--mode json` for JSON event output or `--mode rpc` for process integration.
+Use `/resume` to choose another saved session. See [Continue or branch a session](sessions.md) for session naming, branching, compaction, export, and sharing.
 
 ## Next steps
 
-- [Using Shuvpi](usage.md) - interactive mode, slash commands, sessions, context files, and CLI reference.
-- [Providers](providers.md) - authentication and model setup.
-- [Settings](settings.md) - global and project configuration.
-- [Keybindings](keybindings.md) - shortcuts and customization.
-- [Shuvpi Packages](packages.md) - install shared extensions, skills, prompts, and themes.
+- [Use Shuvpi interactively](usage.md) to learn input, commands, shortcuts, and queued messages.
+- [Add instructions](configuration.md#context-files) that Shuvpi should follow whenever it works in a folder.
+- [Choose a model and provider](models.md).
 
-Platform notes: [Windows](windows.md), [Termux](termux.md), [tmux](tmux.md), [Terminal setup](terminal-setup.md), [Shell aliases](shell-aliases.md).
+### Choose how to customize Shuvpi
+
+Start with the least powerful mechanism that meets your need:
+
+| Need | Start with |
+|---|---|
+| Give Shuvpi persistent instructions for a folder | [`AGENTS.md`](configuration.md#context-files) |
+| Reuse a prompt from the `/` menu | [Prompt template](prompt-templates.md) |
+| Add task-specific instructions and supporting files | [Skill](skills.md) |
+| Add executable tools, commands, or event handlers | [Extension](extensions.md) |
+| Build a custom terminal component | [Terminal UI](tui.md) |
+| Connect an unsupported model service | [Custom provider](custom-provider.md) |
+| Install or distribute several resources | [Shuvpi package](packages.md) |
+
+## Uninstall Shuvpi
+
+If you installed Shuvpi with npm, run:
+
+```bash
+npm uninstall -g @shuv1337/shuvpi-coding-agent
+```
+
+If you used the installer, run it again and choose **Uninstall Shuvpi**:
+
+```bash
+curl -fsSL https://pi.dev/install.sh | sh
+```
+
+Neither method removes configuration, credentials, sessions, or installed Shuvpi packages from `~/.shuvpi/agent/`.

@@ -1,311 +1,94 @@
-# Using Shuvpi
+# Use Shuvpi in the terminal
 
-This page collects day-to-day usage details that do not fit on the quickstart page.
+Run `shuvpi` from the folder you want to work in. Shuvpi uses that folder to discover files, instructions, and configuration, and to group saved sessions. If you have not installed Shuvpi or chosen a model yet, follow the [Quickstart](quickstart.md).
 
-## Interactive Mode
+Shuvpi may ask whether you trust the working folder before loading its project resources. See [Project trust](security.md#understand-project-trust).
 
-<p align="center"><img src="images/interactive-mode.png" alt="Interactive Mode" width="600"></p>
+<p align="center"><img src="images/interactive-mode.png" alt="Shuvpi interactive mode showing a conversation, editor, and status information" width="750"></p>
 
-The interface has four main areas:
+The transcript shows your prompts, Shuvpi's responses, tool calls, results, and errors. You write prompts and commands in the editor. The footer shows the current folder, session, model, context usage, and accumulated usage and cost.
 
-- **Startup header** - shortcuts, loaded context files, prompt templates, skills, and extensions
-- **Messages** - user messages, assistant responses, tool calls, tool results, notifications, errors, and extension UI
-- **Editor** - where you type; border color indicates the current thinking level
-- **Footer** - working directory, session name, token/cache usage, cost, context usage, and current model. Totals include assistant responses, usage reported by tools, and summary generation.
+## Enter a prompt
 
-The editor can be replaced temporarily by built-in UI such as `/settings` or by custom extension UI.
+Type a request and press `Enter` to send it. Use `Shift+Enter` to add a line, or press `Ctrl+G` to work on a longer prompt in your configured external editor.
 
-### Editor Features
+To include files or images:
 
-| Feature | How |
-|---------|-----|
-| File reference | Type `@` to fuzzy-search project files |
-| Path completion | Press Tab to complete paths |
-| Multi-line input | Shift+Enter, or Ctrl+Enter on Windows Terminal |
-| Copy response | Ctrl+X copies the selected message in `/tree`; otherwise it copies the last assistant message, or the active fullscreen text selection when `fullscreenCopyOnSelect` is disabled |
-| Images | Paste with Ctrl+V, Alt+V on Windows, or drag into the terminal |
-| Shell command | `!command` runs and sends output to the model |
-| Hidden shell command | `!!command` runs without sending output to the model |
-| External editor | Ctrl+G opens `externalEditor`, `$VISUAL`, `$EDITOR`, Notepad on Windows, or `nano` elsewhere |
+- Type `@` to search for a file and add it to your prompt.
+- Press `Tab` to complete a path.
+- Paste an image or drag it into a compatible terminal.
 
-See [Keybindings](keybindings.md) for all shortcuts and customization.
+## Follow Shuvpi's work
 
-## Slash Commands
+Shuvpi shows each tool call and result while it works. Press `Ctrl+O` to expand or collapse tool output. Press `Ctrl+T` to show or hide thinking blocks.
 
-Type `/` in the editor to open command completion. Extensions can register custom commands, skills are available as `/skill:name`, and prompt templates expand via `/templatename`.
+The startup header lists the instructions and resources Shuvpi loaded. The editor border indicates the current thinking level. The footer updates as the model uses context and reports usage.
 
-| Command | Description |
-|---------|-------------|
-| `/login`, `/logout` | Manage OAuth or API-key credentials |
-| [`/llama`](llama-cpp.md) | Download, load, and unload llama.cpp router models |
-| `/model` | Switch models; Ctrl+S in the picker saves the startup default |
-| `/thinking` | Switch thinking level; Ctrl+S in the picker saves the startup default |
-| `/scoped-models` | Enable/disable models for Ctrl+P cycling |
-| `/settings` | Theme, message delivery, transport, and other preferences |
-| `/resume` | Pick from previous sessions |
-| `/new` | Start a new session |
-| `/name <name>` | Set session display name |
-| `/session` | Show session file, ID, messages, tokens, and cost |
-| `/tree` | Jump to any point in the session and continue from there |
-| `/trust` | Save project trust decision for future sessions |
-| `/fork` | Create a new session from a previous user message |
-| `/clone` | Duplicate the current active branch into a new session |
-| `/compact [prompt]` | Manually compact context, optionally with custom instructions |
-| `/copy` | Copy last assistant message to clipboard |
-| `/export [file]` | Export session to HTML or JSONL |
-| `/import <file>` | Import and resume a session from a JSONL file |
-| `/share` | Upload as private GitHub gist with shareable HTML link |
-| `/reload` | Reload keybindings, extensions, skills, prompts, themes, and context files |
-| `/hotkeys` | Show all keyboard shortcuts |
-| `/changelog` | Display version history |
-| `/quit` | Quit shuvpi |
+Shuvpi does not ask before every tool call. Review commands and changed files, and use a sandbox for untrusted or unattended work. See [Security](security.md).
 
-## Message Queue
+## Change direction
 
-You can submit messages while the agent is still working:
+You can send more input while Shuvpi is working:
 
-- **Enter** queues a steering message, delivered after the current assistant turn finishes executing its tool calls.
-- **Alt+Enter** queues a follow-up message, delivered after the agent finishes all work.
-- **Escape** aborts and restores queued messages to the editor.
-- **Alt+Up** retrieves queued messages back to the editor.
+| What you want | Action |
+|---|---|
+| Adjust the current task | Type a message and press `Enter` |
+| Add work after the current task | Type a message and press `Alt+Enter` |
+| Return queued messages to the editor | Press `Alt+Up` |
+| Stop the current task | Press `Escape` |
 
-On Windows Terminal, Alt+Enter is fullscreen by default. Remap it as described in [Terminal setup](terminal-setup.md) if you want shuvpi to receive the shortcut.
+A message sent with `Enter` waits until the current response and its tool calls finish, then guides the next response. A follow-up sent with `Alt+Enter` waits until Shuvpi finishes the current task. Aborting returns queued messages to the editor.
 
-Configure delivery in [Settings](settings.md) with `steeringMode` and `followUpMode`.
+Windows Terminal reserves some Alt shortcuts. See [Terminal Setup](terminal-setup.md) for the Windows alternatives.
 
-## Sessions
+## Change the model or settings
 
-Sessions are saved automatically to `~/.shuvpi/agent/sessions/`, organized by working directory.
+Type `/` to search the available commands. The commands you will use most often are:
 
-```bash
-shuvpi -c                  # Continue most recent session
-shuvpi -r                  # Browse and select a session
-shuvpi --no-session        # Ephemeral mode; do not save
-shuvpi --name "my task"    # Set session display name at startup
-shuvpi --session <path|id> # Use a specific session file or session ID
-shuvpi --fork <path|id>    # Fork a session into a new session file
+- `/model` selects a model. Press `Ctrl+L` to open the same selector.
+- `/thinking` selects how much reasoning the current model uses. Press `Shift+Tab` to cycle through supported levels.
+- `/login` and `/logout` manage provider access.
+- `/settings` changes common preferences.
+
+Prompt templates, skills, and extensions can add more commands to the same menu. See [Choose a Model](models.md), [Configuration](configuration.md), or the complete [Slash Commands reference](slash-commands.md).
+
+## Continue or start over
+
+Shuvpi saves sessions automatically unless session persistence is disabled.
+
+- `/new` starts a new session.
+- `/resume` opens another saved session.
+- `/name` gives the current session a recognizable name.
+- `/session` shows its file, ID, message count, token usage, and cost.
+
+Use `/tree`, `/fork`, or `/clone` when you want to explore another approach without losing existing work. Use `/compact` to reduce the conversation history sent to the model. See [Sessions and Context](sessions.md) for these workflows.
+
+After leaving Shuvpi, run `shuvpi --continue` from the same folder to resume its most recent session.
+
+## Run a terminal command
+
+Prefix a command with `!` to run it and include its output in the conversation:
+
+```text
+!git status
 ```
 
-Useful session commands:
+Use `!!` when you want to run a command without sending its output to the model.
 
-- `/session` shows the current session file and ID.
-- `/tree` navigates the in-file session tree and can summarize abandoned branches.
-- `/fork` creates a new session from an earlier user message.
-- `/clone` duplicates the current active branch into a new session file.
-- `/compact` summarizes older messages to free context.
+## Copy, export, or share results
 
-See [Sessions](sessions.md) and [Compaction](compaction.md) for details.
+Press `Ctrl+X` or run `/copy` to copy the last assistant response. Use `/export` to save the session as HTML or JSONL.
 
-## Context Files
+Use `/share` to upload the session and get a viewer link. With Radius authentication, the artifact is visible to your Radius organization. Otherwise, Shuvpi creates a private GitHub gist through the GitHub CLI. Review the session first because it can contain prompts, tool output, file contents, and credentials exposed during the conversation.
 
-Shuvpi loads `AGENTS.md` or `CLAUDE.md` at startup from:
+## Adjust the terminal
 
-- `~/.shuvpi/agent/AGENTS.md` for global instructions
-- parent directories, walking up from the current working directory
-- the current directory
+Regular mode uses the terminal's normal scrollback. Fullscreen mode keeps the editor and status area fixed while the transcript scrolls within the terminal window. Choose a mode through `/settings` or `--tui-mode`.
 
-If a directory contains `AGENTS.override.md`, Shuvpi loads it instead of `AGENTS.md` or `CLAUDE.md` from that directory. Context files from other directories still layer normally.
+Terminal support for mouse input, keyboard shortcuts, and inline images varies. See [Terminal Setup](terminal-setup.md) for platform-specific configuration and [Keybindings](keybindings.md) for every configurable shortcut. Run `/hotkeys` to inspect the shortcuts active in your current session.
 
-Use context files for project conventions, commands, safety rules, and preferences. Disable loading with `--no-context-files` or `-nc`.
+## Collect diagnostic information
 
-### System Prompt Files
+When troubleshooting terminal rendering or conversation state, run `/debug`. Shuvpi writes the rendered terminal lines and current session messages to `shuvpi-debug.log` in your [agent directory](configuration.md#agent-directory).
 
-Replace the default system prompt with:
-
-- `.shuvpi/SYSTEM.md` for a project
-- `~/.shuvpi/agent/SYSTEM.md` globally
-
-Append to the default prompt without replacing it with `APPEND_SYSTEM.md` in either location.
-
-### Project Trust
-
-On interactive startup, shuvpi asks before trusting a project folder that contains project-local settings, resources, or project `.agents/skills` and has no saved decision for the folder or a parent folder in `~/.shuvpi/agent/trust.json`. Trusting a project allows shuvpi to load `.shuvpi/settings.json` and `.shuvpi` resources, install missing project packages, and execute project extensions.
-
-Before the trust decision, shuvpi loads only context files, user/global extensions, and CLI `-e` extensions so they can handle the `project_trust` event. Project-local extensions, project package-managed extensions, and project settings are loaded only after the project is trusted. This split also applies when switching to a session from a different cwd whose trust has not been resolved in the current process.
-
-Non-interactive modes (`-p`, `--mode json`, and `--mode rpc`) do not show a trust prompt. Without an applicable saved trust decision, they use `defaultProjectTrust` from global settings: `ask` (default) and `never` ignore those project resources, while `always` trusts them. Pass `--approve`/`-a` or `--no-approve`/`-na` to override project trust for one run.
-
-If no extension or saved decision applies, `defaultProjectTrust` controls the fallback behavior. Set it to `"ask"`, `"always"`, or `"never"` in `~/.shuvpi/agent/settings.json`, or change it with `/settings`.
-
-`shuvpi config` and package commands use the same project trust flow, except `shuvpi update` never prompts. Pass `--approve` to trust project-local settings for one command or `--no-approve` to ignore them.
-
-Use `/trust` in interactive mode to save a project trust decision for future sessions, including trust for the immediate parent folder. It writes `~/.shuvpi/agent/trust.json` only; the current session is not reloaded, so restart shuvpi for changes to take effect.
-
-
-## Exporting and Sharing Sessions
-
-Use `/export [file]` to write a session to HTML.
-
-Use `/share` to upload a private GitHub gist with a shareable HTML link.
-
-If you use shuvpi for open source work and want to publish sessions for model, prompt, tool, and evaluation research, see [`badlogic/shuvpi-share-hf`](https://github.com/badlogic/shuvpi-share-hf). It publishes sessions to Hugging Face datasets.
-
-## CLI Reference
-
-```bash
-shuvpi [options] [--] [@files...] [messages...]
-```
-
-### Package Commands
-
-```bash
-shuvpi install <source> [-l]     # Install package, -l for project-local
-shuvpi remove <source> [-l]      # Remove package
-shuvpi uninstall <source> [-l]   # Alias for remove
-shuvpi update [source|self|shuvpi]   # Update shuvpi only, or one package source
-shuvpi update --all              # Update shuvpi and packages; reconcile pinned git refs
-shuvpi update --extensions       # Update packages only; reconcile pinned git refs
-shuvpi update --models           # Refresh model catalogs only
-shuvpi update --self             # Update shuvpi only
-shuvpi update --extension <src>  # Update one package
-shuvpi list                      # List installed packages
-shuvpi config                    # Enable/disable package resources
-```
-
-These commands manage shuvpi packages and `shuvpi update` can update the shuvpi CLI installation. To uninstall shuvpi itself, see [Quickstart](quickstart.md#uninstall). `shuvpi config` and project package commands accept `--approve`/`--no-approve` to trust or ignore project-local settings for one command. `shuvpi update` never prompts for project trust.
-
-See [Shuvpi Packages](packages.md) for package sources and security notes.
-
-### Modes
-
-| Flag | Description |
-|------|-------------|
-| default | Interactive mode |
-| `-p`, `--print` | Print response and exit |
-| `--mode json` | Output all events as JSON lines; see [JSON mode](json.md) |
-| `--mode rpc` | RPC mode over stdin/stdout; see [RPC mode](rpc.md) |
-| `--export <in> [out]` | Export a session to HTML |
-
-In print mode, shuvpi also reads piped stdin and merges it into the initial prompt:
-
-```bash
-cat README.md | shuvpi -p "Summarize this text"
-```
-
-### Model Options
-
-| Option | Description |
-|--------|-------------|
-| `--provider <name>` | Provider, such as `anthropic`, `openai`, or `google` |
-| `--model <pattern>` | Model pattern or ID; supports `provider/id` and optional `:<thinking>` |
-| `--api-key <key>` | API key, overriding environment variables |
-| `--thinking <level>` | `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `--models <patterns>` | Comma-separated patterns for Ctrl+P cycling |
-| `--list-models [search]` | List available models |
-
-### Session Options
-
-| Option | Description |
-|--------|-------------|
-| `-c`, `--continue` | Continue the most recent session |
-| `-r`, `--resume` | Browse and select a session |
-| `--session <path\|id>` | Use a specific session file or partial UUID |
-| `--fork <path\|id>` | Fork a session file or partial UUID into a new session |
-| `--session-dir <dir>` | Custom session storage directory |
-| `--no-session` | Ephemeral mode; do not save |
-| `--name <name>`, `-n <name>` | Set session display name at startup |
-
-### Tool Options
-
-| Option | Description |
-|--------|-------------|
-| `--tools <list>`, `-t <list>` | Allowlist specific built-in, extension, and custom tools |
-| `--exclude-tools <list>`, `-xt <list>` | Disable specific built-in, extension, and custom tools |
-| `--no-builtin-tools`, `-nbt` | Disable built-in tools but keep extension/custom tools enabled |
-| `--no-tools`, `-nt` | Disable all tools |
-
-Built-in tools: `read`, `bash`, `powershell` (Windows), `edit`, `write`, `grep`, `find`, `ls`.
-
-### Resource Options
-
-| Option | Description |
-|--------|-------------|
-| `-e`, `--extension <source>` | Load an extension from path, npm, or git; repeatable |
-| `--no-extensions` | Disable extension discovery |
-| `--skill <path>` | Load a skill; repeatable |
-| `--no-skills` | Disable skill discovery |
-| `--prompt-template <path>` | Load a prompt template; repeatable |
-| `--no-prompt-templates` | Disable prompt template discovery |
-| `--theme <path>` | Load a theme; repeatable |
-| `--no-themes` | Disable theme discovery |
-| `--no-context-files`, `-nc` | Disable `AGENTS.md` and `CLAUDE.md` discovery |
-
-Combine `--no-*` with explicit flags to load exactly what you need, ignoring settings. Example:
-
-```bash
-shuvpi --no-extensions -e ./my-extension.ts
-```
-
-### Other Options
-
-| Option | Description |
-|--------|-------------|
-| `--system-prompt <text>` | Replace default prompt; context files and skills are still appended |
-| `--append-system-prompt <text>` | Append to system prompt |
-| `--tui-mode <mode>` | TUI mode: `regular` (default) or experimental `fullscreen` |
-| `--use-theme <name[/name]>` | Set the initial interactive theme for this run without changing settings |
-| `--verbose` | Force verbose startup |
-| `-a`, `--approve` | Trust project-local files for this run |
-| `-na`, `--no-approve` | Ignore project-local files for this run |
-| `--` | Stop option parsing; remaining arguments are prompts or `@file` inputs |
-| `-h`, `--help` | Show help |
-| `-v`, `--version` | Show version |
-
-In `fullscreen` mode, the transcript scrolls inside the terminal viewport while queued messages, working status, extension widgets, editor, and footer remain fixed at the bottom. Mouse/trackpad input scrolls the region under the pointer; keyboard viewport actions always remain available. Inline images work in terminals that support the Kitty graphics protocol, including Kitty and Ghostty. In iTerm2 they render as text placeholders because its inline-image protocol cannot delete or crop placements during application-owned scrolling. In `regular` mode, shuvpi uses the main screen and terminal-owned scrollback, and iTerm2 inline images continue to render normally. See [Terminal setup](terminal-setup.md) for terminal-specific settings and workarounds.
-
-Set **TUI mode** in `/settings` to switch between `regular` and `fullscreen` immediately and choose the default for future sessions. **Fullscreen exit output** controls whether exiting fullscreen prints the final transcript or restores the previous screen and prints only the session resume hint.
-
-### File Arguments
-
-Prefix files with `@` to include them in the message:
-
-```bash
-shuvpi @prompt.md "Answer this"
-shuvpi -p @screenshot.png "What's in this image?"
-shuvpi @code.ts @test.ts "Review these files"
-```
-
-### Examples
-
-```bash
-# Interactive with initial prompt
-shuvpi "List all .ts files in src/"
-
-# Non-interactive
-shuvpi -p "Summarize this codebase"
-
-# Prompt beginning with a dash
-shuvpi -p -- "- Summarize these points"
-
-# Non-interactive with piped stdin
-cat README.md | shuvpi -p "Summarize this text"
-
-# Named one-shot session
-shuvpi --name "release audit" -p "Audit this repository"
-
-# Different model
-shuvpi --provider openai --model gpt-4o "Help me refactor"
-
-# Model with provider prefix
-shuvpi --model openai/gpt-4o "Help me refactor"
-
-# Model with thinking level shorthand
-shuvpi --model sonnet:high "Solve this complex problem"
-
-# Limit model cycling
-shuvpi --models "claude-*,gpt-4o"
-
-# Read-only mode
-shuvpi --tools read,grep,find,ls -p "Review the code"
-
-# Disable one extension or built-in tool while keeping the rest available
-shuvpi --exclude-tools ask_question
-```
-
-## Design Principles
-
-Shuvpi keeps the core small and pushes workflow-specific behavior into extensions, skills, prompt templates, and packages.
-
-It intentionally does not include built-in MCP, sub-agents, permission popups, plan mode, to-dos, or background bash. You can build or install those workflows as extensions or packages, or use external tools such as containers and tmux.
-
-For the full rationale, read the [blog post](https://mariozechner.at/posts/2025-11-30-shuvpi-coding-agent/).
+Review this file before sharing it. It can contain prompts, model responses, tool output, file contents, and terminal data.

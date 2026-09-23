@@ -11,7 +11,7 @@ import { calculateCost, clampThinkingLevel } from "../models.ts";
 import type {
 	Api,
 	AssistantMessage,
-	Context,
+	JsonObject,
 	Model,
 	SimpleStreamOptions,
 	StreamFunction,
@@ -19,11 +19,14 @@ import type {
 	TextContent,
 	ThinkingContent,
 	ToolCall,
+	TranscriptContext,
 } from "../types.ts";
 import { formatProviderError, normalizeProviderError } from "../utils/error-body.ts";
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { headersToRecord, providerHeadersToRecord } from "../utils/headers.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
+import { getSystemMessageText } from "../utils/text.ts";
+import { collapseSystemMessages, getCurrentTools, getInitialSystemMessage } from "../utils/transcript.ts";
 import {
 	antigravityUserAgent,
 	catalogModelId,
@@ -74,7 +77,7 @@ type AntigravityChunk = {
 				text?: string;
 				thought?: boolean;
 				thoughtSignature?: string;
-				functionCall?: { name: string; args?: Record<string, unknown>; id?: string };
+				functionCall?: { name: string; args?: JsonObject; id?: string };
 			}>;
 		};
 		finishReason?: string;
@@ -122,10 +125,15 @@ function resolveProjectId(options: GoogleAntigravityOptions | undefined): string
 
 function buildNativeBody(
 	model: Model<"google-antigravity">,
-	context: Context,
+	transcript: TranscriptContext,
 	options: GoogleAntigravityOptions | undefined,
 ): Record<string, unknown> {
+	// Cloud Code has no mid-conversation system messages: replay them into the leading one.
+	const context = collapseSystemMessages(transcript);
 	const contents: Content[] = convertMessages(model, context);
+	const initialSystemMessage = getInitialSystemMessage(context.messages);
+	const systemPrompt = initialSystemMessage ? getSystemMessageText(initialSystemMessage) : "";
+	const currentTools = getCurrentTools(context.messages);
 
 	const generationConfig: Record<string, unknown> = {};
 	if (options?.temperature !== undefined) generationConfig.temperature = options.temperature;
@@ -140,16 +148,19 @@ function buildNativeBody(
 		generationConfig.thinkingConfig = thinkingConfig;
 	}
 
-	const functionCallingMode = context.tools?.length
-		? resolveGoogleFunctionCallingMode(context.tools, options?.toolChoice, supportsGoogleStrictToolSampling(model.id))
-		: undefined;
+	const functionCallingMode =
+		currentTools.length > 0
+			? resolveGoogleFunctionCallingMode(
+					currentTools,
+					options?.toolChoice,
+					supportsGoogleStrictToolSampling(model.id),
+				)
+			: undefined;
 
 	return {
 		contents,
-		...(context.systemPrompt
-			? { systemInstruction: { parts: [{ text: sanitizeSurrogates(context.systemPrompt) }] } }
-			: {}),
-		...(context.tools && context.tools.length > 0 ? { tools: convertTools(context.tools) } : {}),
+		...(systemPrompt ? { systemInstruction: { parts: [{ text: sanitizeSurrogates(systemPrompt) }] } } : {}),
+		...(currentTools.length > 0 ? { tools: convertTools(currentTools) } : {}),
 		...(functionCallingMode !== undefined
 			? { toolConfig: { functionCallingConfig: { mode: functionCallingMode } } }
 			: {}),
@@ -159,7 +170,7 @@ function buildNativeBody(
 
 export const stream: StreamFunction<"google-antigravity", GoogleAntigravityOptions> = (
 	model: Model<"google-antigravity">,
-	context: Context,
+	context: TranscriptContext,
 	options?: GoogleAntigravityOptions,
 ): AssistantMessageEventStream => {
 	const stream = new AssistantMessageEventStream();
@@ -414,7 +425,7 @@ export const stream: StreamFunction<"google-antigravity", GoogleAntigravityOptio
 
 export const streamSimple: StreamFunction<"google-antigravity", SimpleStreamOptions> = (
 	model: Model<"google-antigravity">,
-	context: Context,
+	context: TranscriptContext,
 	options?: SimpleStreamOptions,
 ): AssistantMessageEventStream => {
 	const apiKey = options?.apiKey;

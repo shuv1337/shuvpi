@@ -7,7 +7,7 @@
 
 import type { AgentMessage, StreamFn } from "@shuv1337/shuvpi-agent-core";
 import type { RetryCallbacks, RetryPolicy } from "@shuv1337/shuvpi-ai";
-import { contentText } from "@shuv1337/shuvpi-ai";
+import { contentText, normalizeContext } from "@shuv1337/shuvpi-ai";
 import type { Model, SimpleStreamOptions, Usage } from "@shuv1337/shuvpi-ai/compat";
 import {
 	convertToLlm,
@@ -348,7 +348,7 @@ export async function generateBranchSummary(
 	// request behavior (timeouts, retries, attribution headers) stays consistent
 	// without running through agent state/events. Retried via completeSummarization
 	// so transient stream drops reuse the configured retry policy.
-	const context = { systemPrompt: SUMMARIZATION_SYSTEM_PROMPT, messages: summarizationMessages };
+	const context = normalizeContext({ systemPrompt: SUMMARIZATION_SYSTEM_PROMPT, messages: summarizationMessages });
 	const requestOptions: SimpleStreamOptions = { apiKey, headers, env, signal, maxTokens };
 	const response = await completeSummarization(model, context, requestOptions, streamFn, retry, callbacks);
 

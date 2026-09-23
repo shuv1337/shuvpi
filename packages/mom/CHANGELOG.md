@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated system prompt handling for the upstream pi v0.87.1 agent API.
+
 ## [0.86.1] - 2026-09-08
 
 ## [0.86.0] - 2026-09-07

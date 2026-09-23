@@ -41,7 +41,7 @@ async function createOpenAISession(options?: {
 	const requestedModelId = options?.modelId ?? "gpt-5.4";
 	const model =
 		provider === "openai-codex"
-			? getModel("openai-codex", requestedModelId as "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.5")
+			? getModel("openai-codex", requestedModelId as "gpt-5.5" | "gpt-5.6-luna" | "gpt-5.6-sol" | "gpt-5.6-terra")
 			: getModel("openai", requestedModelId);
 	if (!model) {
 		throw new Error(`${provider} model not found for test`);
@@ -134,7 +134,7 @@ describe("fast mode payload mutation", () => {
 			service_tier: "priority",
 		});
 
-		const codexSupported = await createOpenAISession({ provider: "openai-codex", modelId: "gpt-5.4" });
+		const codexSupported = await createOpenAISession({ provider: "openai-codex", modelId: "gpt-5.6-sol" });
 		cleanups.push(codexSupported.cleanup);
 		codexSupported.session.setFastMode(true);
 

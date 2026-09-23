@@ -18,7 +18,7 @@ import { calculateCost } from "../models.ts";
 import type {
 	Api,
 	AssistantMessage,
-	Context,
+	JsonObject,
 	Model,
 	SimpleStreamOptions,
 	StreamFunction,
@@ -28,10 +28,13 @@ import type {
 	ThinkingContent,
 	ThinkingLevel,
 	ToolCall,
+	TranscriptContext,
 } from "../types.ts";
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
+import { getSystemMessageText } from "../utils/text.ts";
+import { collapseSystemMessages, getCurrentTools, getInitialSystemMessage } from "../utils/transcript.ts";
 
 /**
  * Thinking level for Gemini 3 models.
@@ -298,7 +301,7 @@ interface CloudCodeAssistResponseChunk {
 					thoughtSignature?: string;
 					functionCall?: {
 						name: string;
-						args: Record<string, unknown>;
+						args: JsonObject;
 						id?: string;
 					};
 				}>;
@@ -320,7 +323,7 @@ interface CloudCodeAssistResponseChunk {
 
 export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli", GoogleGeminiCliOptions> = (
 	model: Model<"google-gemini-cli">,
-	context: Context,
+	context: TranscriptContext,
 	options?: GoogleGeminiCliOptions,
 ): AssistantMessageEventStream => {
 	const stream = new AssistantMessageEventStream();
@@ -661,7 +664,7 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli", GoogleGe
 											type: "toolCall",
 											id: toolCallId,
 											name: part.functionCall.name || "",
-											arguments: (part.functionCall.args as Record<string, unknown>) ?? {},
+											arguments: part.functionCall.args ?? {},
 											...(part.thoughtSignature && { thoughtSignature: part.thoughtSignature }),
 										};
 
@@ -819,7 +822,7 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli", GoogleGe
 
 export const streamSimpleGoogleGeminiCli: StreamFunction<"google-gemini-cli", SimpleStreamOptions> = (
 	model: Model<"google-gemini-cli">,
-	context: Context,
+	context: TranscriptContext,
 	options?: SimpleStreamOptions,
 ): AssistantMessageEventStream => {
 	const apiKey = options?.apiKey;
@@ -874,12 +877,17 @@ export const streamSimpleGoogleGeminiCli: StreamFunction<"google-gemini-cli", Si
 
 export function buildRequest(
 	model: Model<"google-gemini-cli">,
-	context: Context,
+	transcript: TranscriptContext,
 	projectId: string,
 	options: GoogleGeminiCliOptions = {},
 	isAntigravity = false,
 ): CloudCodeAssistRequest {
+	// Cloud Code has no mid-conversation system messages: replay them into the leading one.
+	const context = collapseSystemMessages(transcript);
 	const contents = convertMessages(model, context);
+	const initialSystemMessage = getInitialSystemMessage(context.messages);
+	const systemPrompt = initialSystemMessage ? getSystemMessageText(initialSystemMessage) : "";
+	const currentTools = getCurrentTools(context.messages);
 
 	const generationConfig: CloudCodeAssistRequest["request"]["generationConfig"] = {};
 	if (options.temperature !== undefined) {
@@ -912,9 +920,9 @@ export function buildRequest(
 	request.sessionId = options.sessionId;
 
 	// System instruction must be object with parts, not plain string
-	if (context.systemPrompt) {
+	if (systemPrompt) {
 		request.systemInstruction = {
-			parts: [{ text: sanitizeSurrogates(context.systemPrompt) }],
+			parts: [{ text: sanitizeSurrogates(systemPrompt) }],
 		};
 	}
 
@@ -922,11 +930,11 @@ export function buildRequest(
 		request.generationConfig = generationConfig;
 	}
 
-	if (context.tools && context.tools.length > 0) {
+	if (currentTools.length > 0) {
 		// Claude models on Cloud Code Assist need the legacy `parameters` field;
 		// the API translates it into Anthropic's `input_schema`.
 		const useParameters = model.id.startsWith("claude-");
-		request.tools = convertTools(context.tools, useParameters);
+		request.tools = convertTools(currentTools, useParameters);
 		if (options.toolChoice) {
 			request.toolConfig = {
 				functionCallingConfig: {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { streamGoogleGeminiCli } from "../src/providers/google-gemini-cli.ts";
 import type { Context, Model } from "../src/types.ts";
+import { normalizeContext } from "../src/utils/transcript.ts";
 
 const originalFetch = global.fetch;
 const apiKey = JSON.stringify({ token: "token", projectId: "project" });
@@ -65,7 +66,7 @@ describe("google-gemini-cli Claude thinking header", () => {
 			maxTokens: 8192,
 		};
 
-		const stream = streamGoogleGeminiCli(model, context, { apiKey });
+		const stream = streamGoogleGeminiCli(model, normalizeContext(context), { apiKey });
 		for await (const _event of stream) {
 			// exhaust stream
 		}
@@ -94,7 +95,7 @@ describe("google-gemini-cli Claude thinking header", () => {
 			maxTokens: 8192,
 		};
 
-		const stream = streamGoogleGeminiCli(model, context, { apiKey });
+		const stream = streamGoogleGeminiCli(model, normalizeContext(context), { apiKey });
 		for await (const _event of stream) {
 			// exhaust stream
 		}

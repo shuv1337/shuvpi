@@ -2,6 +2,7 @@ import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { streamGoogleGeminiCli } from "../src/providers/google-gemini-cli.ts";
 import type { Context, Model, ToolCall } from "../src/types.ts";
+import { normalizeContext } from "../src/utils/transcript.ts";
 
 const emptySchema = Type.Object({});
 
@@ -84,7 +85,7 @@ describe("google providers tool call missing args", () => {
 			],
 		};
 
-		const stream = streamGoogleGeminiCli(model, context, {
+		const stream = streamGoogleGeminiCli(model, normalizeContext(context), {
 			apiKey: JSON.stringify({ token: "token", projectId: "project" }),
 		});
 

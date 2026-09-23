@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Removed the inherited `shouldStopAfterTurn` agent option. Use `finishTurn` and return `{ action: "end" }` instead.
+- Added `ContextEditEntry` to the exported `SessionEntry` union. Exhaustive entry switches must handle `context_edit`.
+- Made `SessionManager` canonical for `AgentSession` provider context. Assigning `session.agent.state.messages` no longer replaces future request history.
+- Expanded `TurnEndEvent` with required boundary fields and added `AgentBeforeSettleEvent` to the exported `ExtensionEvent` union.
+- Custom providers now receive `TranscriptContext`; system prompts and tools live in transcript system messages (see the `@shuv1337/shuvpi-ai` changelog).
+
+### Changed
+
+- Merged upstream pi v0.87.1 (upstream 0.86.0-0.87.1 releases apply): prompt cache warming, mid-conversation system messages, canonical session context with append-only context edits, `turn_end`/`agent_before_settle`/`context_with_system` extension boundaries, per-model image input limits, Meta Muse provider, Claude Opus 5.5, GPT-6 Sol/Luna, Grok 4.7 as the xAI default, bundled native clipboard readers, refreshed documentation, and the stable/development CLI entrypoint split (remote harness code is development-only).
+
 ### Fixed
 
 - Fixed the scoped models selector footer showing hints for unbound actions (e.g. a bare "clear" when `app.models.clearAll` is unbound).

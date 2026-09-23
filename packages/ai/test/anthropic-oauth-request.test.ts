@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { stream as streamAnthropic } from "../src/api/anthropic-messages.ts";
 import { getModel } from "../src/compat.ts";
 import type { Context } from "../src/types.ts";
+import { normalizeContext } from "../src/utils/transcript.ts";
 
 describe("Anthropic OAuth request identity", () => {
 	const context: Context = {
@@ -27,7 +28,7 @@ describe("Anthropic OAuth request identity", () => {
 
 		const model = getModel("anthropic", "claude-opus-4-8");
 		const oauthToken = "sk-ant-oat01-test-token";
-		const stream = streamAnthropic(model, context, {
+		const stream = streamAnthropic(model, normalizeContext(context), {
 			apiKey: oauthToken,
 			sessionId: "session-test",
 		});
@@ -44,7 +45,7 @@ describe("Anthropic OAuth request identity", () => {
 		expect(request!.headers.get("authorization")).toBe(`Bearer ${oauthToken}`);
 		expect(request!.headers.get("x-api-key")).toBeNull();
 		expect(request!.headers.get("anthropic-dangerous-direct-browser-access")).toBe("true");
-		expect(request!.headers.get("user-agent")).toBe("claude-cli/2.1.251 (external, cli)");
+		expect(request!.headers.get("user-agent")).toBe("claude-cli/2.1.280 (external, cli)");
 		expect(request!.headers.get("x-app")).toBe("cli");
 		expect(request!.headers.get("x-claude-code-session-id")).toBe("session-test");
 		expect(request!.headers.get("anthropic-beta")?.split(",")).toEqual(

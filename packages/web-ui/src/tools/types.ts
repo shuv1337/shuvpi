@@ -1,4 +1,4 @@
-import type { ToolResultMessage } from "@shuv1337/shuvpi-ai";
+import type { JsonValue, ToolResultMessage } from "@shuv1337/shuvpi-ai";
 import type { TemplateResult } from "lit";
 
 export interface ToolRenderResult {
@@ -6,7 +6,7 @@ export interface ToolRenderResult {
 	isCustom: boolean; // true = no card wrapper, false = wrap in card
 }
 
-export interface ToolRenderer<TParams = any, TDetails = any> {
+export interface ToolRenderer<TParams = any, TDetails = JsonValue> {
 	render(
 		params: TParams | undefined,
 		result: ToolResultMessage<TDetails> | undefined,

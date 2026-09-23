@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated tool renderers and message handling for the JSON-only `ToolResultMessage` types from upstream pi v0.87.1.
+
 ## [0.86.1] - 2026-09-08
 
 ## [0.86.0] - 2026-09-07

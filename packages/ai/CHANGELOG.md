@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Changed provider-facing `ProviderStreams` and `StreamFunction` inputs from `Context` to normalized `TranscriptContext` values. Custom providers must read system prompts and tools with `getCurrentSystemPrompt()` and `getCurrentTools()`.
+- Restricted `ToolCall.arguments` and `ToolResultMessage.details` to JSON-compatible values, changed `ToolResultMessage` into a conditional type, and made `JsonValue` arrays readonly.
+
+### Changed
+
+- Merged upstream pi v0.87.1 (upstream 0.86.0-0.87.1 releases apply): transcript-backed system messages, Meta provider, public Radius catalog, prompt-cache lifetime metadata, image-input limits, Claude Opus 5.5, GPT-6 Sol/Luna, and Grok 4.7.
+- Ported the Google Antigravity and Gemini CLI providers to `TranscriptContext`.
+
 ## [0.86.1] - 2026-09-08
 
 ## [0.86.0] - 2026-09-07

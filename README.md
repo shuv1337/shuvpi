@@ -27,6 +27,7 @@ The installer uses a writable npm global prefix when its bin directory is alread
 | **[@shuv1337/shuvpi-chord](packages/chord)** | Standalone application-composition runtime for services, replicated state, RPC, and plugins |
 | **[@shuv1337/shuvpi-telemetry](packages/telemetry)** | Vendor-neutral telemetry contracts, reference adapter, conformance tests, and typed schemas |
 | **[@shuv1337/shuvpi-ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
+| **[@shuv1337/shuvpi-durable](packages/durable)** | Durable conversation, task, and document runtime |
 | **[@shuv1337/shuvpi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
 | **[@shuv1337/shuvpi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
 | **[@shuv1337/shuvpi-tui](packages/tui)** | Terminal UI library with differential rendering |
@@ -85,7 +86,7 @@ cd "shuvpi-${VERSION}"
 ./scripts/build-binaries.sh --offline-model-data --platform linux-x64 --out "$PWD/out"
 ```
 
-The source archive includes the generated provider model data used for the release. `--offline-model-data` builds with that snapshot instead of refreshing it from live provider catalogs. The script still installs dependencies, builds the monorepo, compiles the Bun executable, and stages its runtime assets. Package maintainers who provide dependencies separately can pass `--skip-install --skip-deps`.
+The archive includes release model data and native prebuilds. `--offline-model-data` uses that model data without refreshing provider catalogs. The script installs dependencies and builds the executable with its runtime assets; pass `--skip-install` if dependencies are already provided.
 
 ## Supply-chain hardening
 

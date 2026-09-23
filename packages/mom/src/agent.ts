@@ -424,6 +424,8 @@ async function createRunner(sandboxConfig: SandboxConfig, channelId: string, cha
 	const memory = getMemory(channelDir);
 	const skills = loadMomSkills(channelDir, workspacePath);
 	const systemPrompt = buildSystemPrompt(workspacePath, channelId, memory, sandboxConfig, [], [], skills);
+	// Read by the resource loader; AgentSession turns prompt changes into transcript system messages.
+	let currentSystemPrompt = systemPrompt;
 
 	// Create session manager and settings manager
 	// Use a fixed context.jsonl file per channel (not timestamped like coding-agent)
@@ -464,7 +466,7 @@ async function createRunner(sandboxConfig: SandboxConfig, channelId: string, cha
 		getPrompts: () => ({ prompts: [], diagnostics: [] }),
 		getThemes: () => ({ themes: [], diagnostics: [] }),
 		getAgentsFiles: () => ({ agentsFiles: [] }),
-		getSystemPrompt: () => systemPrompt,
+		getSystemPrompt: () => currentSystemPrompt,
 		getSystemPromptSource: () => undefined,
 		getAppendSystemPrompt: () => [],
 		getAppendSystemPromptSources: () => [],
@@ -682,7 +684,8 @@ async function createRunner(sandboxConfig: SandboxConfig, channelId: string, cha
 				ctx.users,
 				skills,
 			);
-			session.agent.state.systemPrompt = systemPrompt;
+			currentSystemPrompt = systemPrompt;
+			session.setActiveToolsByName(session.getActiveToolNames());
 
 			// Set up file upload function
 			setUploadFunction(async (filePath: string, title?: string) => {

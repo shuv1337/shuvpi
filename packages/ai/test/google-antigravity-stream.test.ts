@@ -4,6 +4,7 @@ import {
 	streamSimple as streamSimpleGoogleAntigravity,
 } from "../src/api/google-antigravity.ts";
 import type { Context, Model } from "../src/types.ts";
+import { normalizeContext } from "../src/utils/transcript.ts";
 
 const originalFetch = global.fetch;
 
@@ -72,7 +73,7 @@ describe("google antigravity stream", () => {
 			]);
 		}) as unknown as typeof fetch;
 
-		const events = streamGoogleAntigravity(model, context, {
+		const events = streamGoogleAntigravity(model, normalizeContext(context), {
 			apiKey: "ya29.live",
 			sessionId: "ses_wire",
 			headers: { "x-goog-antigravity-project": "canvas-wallaby-dvmxc", "x-goog-api-key": "AIza-should-be-dropped" },
@@ -128,7 +129,7 @@ describe("google antigravity stream", () => {
 			]),
 		) as unknown as typeof fetch;
 
-		const events = streamGoogleAntigravity(model, context, {
+		const events = streamGoogleAntigravity(model, normalizeContext(context), {
 			apiKey: "ya29.live",
 			projectId: "canvas-wallaby-dvmxc",
 		});
@@ -160,7 +161,7 @@ describe("google antigravity stream", () => {
 			]);
 		}) as unknown as typeof fetch;
 
-		const events = streamSimpleGoogleAntigravity(model, context, {
+		const events = streamSimpleGoogleAntigravity(model, normalizeContext(context), {
 			apiKey: "ya29.live",
 			headers: { "x-goog-antigravity-project": "canvas-wallaby-dvmxc" },
 			reasoning: "high",
@@ -185,7 +186,7 @@ describe("google antigravity stream", () => {
 			]);
 		}) as unknown as typeof fetch;
 
-		const events = streamSimpleGoogleAntigravity(model, context, {
+		const events = streamSimpleGoogleAntigravity(model, normalizeContext(context), {
 			apiKey: "ya29.live",
 			headers: { "x-goog-antigravity-project": "canvas-wallaby-dvmxc" },
 		});
@@ -198,7 +199,7 @@ describe("google antigravity stream", () => {
 	});
 
 	it("fails without an access token", async () => {
-		const events = streamGoogleAntigravity(model, context, { projectId: "p" });
+		const events = streamGoogleAntigravity(model, normalizeContext(context), { projectId: "p" });
 		for await (const _event of events) {
 			// exhaust
 		}
@@ -216,7 +217,7 @@ describe("google antigravity stream", () => {
 				}),
 		) as unknown as typeof fetch;
 
-		const events = streamGoogleAntigravity(model, context, {
+		const events = streamGoogleAntigravity(model, normalizeContext(context), {
 			apiKey: "ya29.live",
 			projectId: "canvas-wallaby-dvmxc",
 		});
@@ -246,7 +247,7 @@ describe("google antigravity stream", () => {
 				),
 		) as unknown as typeof fetch;
 
-		const events = streamGoogleAntigravity(model, context, {
+		const events = streamGoogleAntigravity(model, normalizeContext(context), {
 			apiKey: "ya29.live",
 			projectId: "canvas-wallaby-dvmxc",
 		});
