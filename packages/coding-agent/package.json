@@ -1,6 +1,6 @@
 {
 	"name": "@shuv1337/shuvpi-coding-agent",
-	"version": "0.86.1",
+	"version": "0.87.1",
 	"description": "Coding agent CLI with read, bash, edit, write tools and session management",
 	"type": "module",
 	"shuvpiConfig": {
@@ -55,10 +55,10 @@
 		"prepublishOnly": "npm run clean && npm run build && npm run shrinkwrap"
 	},
 	"dependencies": {
-		"@shuv1337/shuvpi-chord": "^0.86.1",
-		"@shuv1337/shuvpi-agent-core": "^0.86.1",
-		"@shuv1337/shuvpi-ai": "^0.86.1",
-		"@shuv1337/shuvpi-tui": "^0.86.1",
+		"@shuv1337/shuvpi-chord": "^0.87.1",
+		"@shuv1337/shuvpi-agent-core": "^0.87.1",
+		"@shuv1337/shuvpi-ai": "^0.87.1",
+		"@shuv1337/shuvpi-tui": "^0.87.1",
 		"@silvia-odwyer/photon-node": "0.3.4",
 		"chalk": "6.0.0",
 		"cross-spawn": "7.0.6",
@@ -79,9 +79,9 @@
 		"protobufjs": "7.6.6"
 	},
 	"devDependencies": {
-		"@shuv1337/shuvpi-client": "^0.86.1",
-		"@shuv1337/shuvpi-protocol": "^0.86.1",
-		"@shuv1337/shuvpi-server": "^0.86.1",
+		"@shuv1337/shuvpi-client": "^0.87.1",
+		"@shuv1337/shuvpi-protocol": "^0.87.1",
+		"@shuv1337/shuvpi-server": "^0.87.1",
 		"@anthropic-ai/claude-agent-sdk": "0.3.210",
 		"@modelcontextprotocol/client": "2.0.0-beta.5",
 		"@modelcontextprotocol/ext-apps": "1.7.5",
