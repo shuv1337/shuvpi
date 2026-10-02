@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "repository": "shuv1337/shuvpi",
+  "branch": "release/1.0",
+  "sourceCommit": "b47359d9423f1a7ecad402e28b8fbd9e9df5cac3",
+  "packages": [
+    {
+      "name": "@shuv1337/shuvpi-telemetry",
+      "version": "1.0.0"
+    },
+    {
+      "name": "@shuv1337/shuvpi-ai",
+      "version": "1.0.0"
+    },
+    {
+      "name": "@shuv1337/shuvpi-agent-core",
+      "version": "1.0.0"
+    },
+    {
+      "name": "@shuv1337/shuvpi-chord",
+      "version": "1.0.0"
+    },
+    {
+      "name": "@shuv1337/shuvpi-codemode",
+      "version": "1.0.0"
+    },
+    {
+      "name": "@shuv1337/shuvpi-durable",
+      "version": "1.0.0"
+    },
+    {
+      "name": "@shuv1337/shuvpi-mcp",
+      "version": "1.0.0"
+    },
+    {
+      "name": "@shuv1337/shuvpi-tui",
+      "version": "1.0.0"
+    },
+    {
+      "name": "@shuv1337/shuvpi-coding-agent",
+      "version": "1.0.0"
+    }
+  ],
+  "notes": "release-notes/1.0.0.md"
+}
