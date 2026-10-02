@@ -9,7 +9,7 @@ function fixture(t, scenario = {}) {
 	const root = mkdtempSync(join(tmpdir(), "initial-release-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	mkdirSync(join(root, "scripts"));
-	for (const name of ["release.mjs", "release-packages.mjs", "release-target.mjs", "package-workspaces.mjs"]) copyFileSync(new URL(name, import.meta.url), join(root, "scripts", name));
+	for (const name of ["release.mjs", "release-packages.mjs", "release-target.mjs", "package-workspaces.mjs", "npm-registry.mjs"]) copyFileSync(new URL(name, import.meta.url), join(root, "scripts", name));
 	const published = "## [1.0.0] - 2026-10-01\n\nExisting upstream history must remain exact.\n";
 	for (const [directory, name, dependencies] of [
 		["ai", "@shuv1337/shuvpi-ai", {}],
@@ -58,7 +58,7 @@ childProcess.spawnSync = (command, args) => {
    if (scenario.registryError) return result("", 1, "ETIMEDOUT");
    if (exact) return scenario.published ? result(JSON.stringify("1.0.0")) : result("", 1, "E404");
    if (scenario.newPackage && args[1].endsWith("coding-agent")) return result("", 1, "E404");
-   return result(JSON.stringify("0.87.1"));
+   return result(JSON.stringify(scenario.registryVersion ?? "0.87.1"));
   }
   if (args[0] === "version") {
    for (const directory of readdirSync("packages")) { const path = join("packages", directory, "package.json"); const pkg = JSON.parse(readFileSync(path, "utf8")); pkg.version = args[1]; writeFileSync(path, JSON.stringify(pkg)); }
@@ -109,6 +109,16 @@ test("ordinary patch/minor releases stay on main and update every workspace with
 		assert.ok(changelog.endsWith(harness.published));
 		assert.match(changelog, new RegExp(`## \\[${version.replaceAll(".", "\\.")}\\] - \\d{4}-\\d{2}-\\d{2}`));
 		assert.deepEqual(harness.calls().at(-1).args, ["push", "--atomic", "origin", "HEAD:refs/heads/main", `refs/tags/v${version}`]);
+	}
+});
+
+test("initial release accepts npm 12 single-result version arrays but rejects ambiguous or malformed registry versions before mutation", (t) => {
+	const valid = fixture(t, { registryVersion: ["0.87.1"] });
+	assert.equal(valid.run().status, 0);
+	for (const registryVersion of [[], ["0.87.1", "0.87.2"], ["invalid"], { version: "0.87.1" }]) {
+		const harness = fixture(t, { registryVersion });
+		assert.notEqual(harness.run().status, 0);
+		assert.ok(harness.calls().every((call) => call.command === "git" ? !["add", "commit", "tag", "push"].includes(call.args[0]) : call.command === "npm" && call.args[0] === "view"));
 	}
 });
 

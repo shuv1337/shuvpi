@@ -9,7 +9,7 @@ function fixture(t, scenario = {}) {
 	const root = mkdtempSync(join(tmpdir(), "publish-fixture-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	mkdirSync(join(root, "scripts"));
-	for (const name of ["publish.mjs", "release-packages.mjs", "package-workspaces.mjs", "npm-pack.mjs", "release-target.mjs"]) copyFileSync(new URL(name, import.meta.url), join(root, "scripts", name));
+	for (const name of ["publish.mjs", "release-packages.mjs", "package-workspaces.mjs", "npm-pack.mjs", "npm-registry.mjs", "release-target.mjs"]) copyFileSync(new URL(name, import.meta.url), join(root, "scripts", name));
 	for (const [directory, name, dependencies] of [
 		["ai", "@shuv1337/shuvpi-ai", {}],
 		["coding-agent", "@shuv1337/shuvpi-coding-agent", { "@shuv1337/shuvpi-ai": "1.0.0" }],
@@ -30,7 +30,7 @@ childProcess.spawnSync = (command, args, options = {}) => {
   if (command !== "npm") throw new Error("Unexpected external command");
   if (args[0] === "view") {
     if (scenario.registryFailure) return { status: 1, stdout: "", stderr: "ETIMEDOUT" };
-    if (scenario.published?.includes(args[1])) return { status: 0, stdout: JSON.stringify(scenario.wrongVersion ? "9.9.9" : "1.0.0"), stderr: "" };
+    if (scenario.published?.includes(args[1])) return { status: 0, stdout: JSON.stringify(scenario.registryVersion ?? (scenario.wrongVersion ? "9.9.9" : "1.0.0")), stderr: "" };
     return { status: 1, stdout: "", stderr: "E404" };
   }
   if (args[0] === "pack") {
@@ -68,6 +68,17 @@ test("dry run and invalid pack metadata never publish", (t) => {
 		const harness = fixture(t, scenario);
 		const result = harness.run(args);
 		assert.equal(result.status === 0, success, result.stderr);
+		assert.ok(harness.calls().every((call) => call.args[0] !== "publish"));
+	}
+});
+
+test("npm 12 version arrays skip an existing release while ambiguous or mismatched versions stop publication", (t) => {
+	const valid = fixture(t, { published: ["@shuv1337/shuvpi-ai@1.0.0"], registryVersion: ["1.0.0"] });
+	assert.equal(valid.run().status, 0);
+	assert.equal(valid.calls().filter((call) => call.args[0] === "publish").length, 1);
+	for (const registryVersion of [[], ["1.0.0", "1.0.1"], ["9.9.9"], ["invalid"]]) {
+		const harness = fixture(t, { published: ["@shuv1337/shuvpi-ai@1.0.0"], registryVersion });
+		assert.notEqual(harness.run().status, 0);
 		assert.ok(harness.calls().every((call) => call.args[0] !== "publish"));
 	}
 });

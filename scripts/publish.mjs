@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { parsePackResult } from "./npm-pack.mjs";
+import { parseRegistryVersion } from "./npm-registry.mjs";
 import { getReleasePackages } from "./release-packages.mjs";
 import { assertReleaseTarget } from "./release-target.mjs";
 
@@ -56,7 +57,7 @@ function isPublished(name, version) {
 	});
 
 	if (result.status === 0 && result.stdout.trim()) {
-		const publishedVersion = JSON.parse(result.stdout);
+		const publishedVersion = parseRegistryVersion(result.stdout);
 		if (publishedVersion !== version) throw new Error(`Registry returned an unexpected version for ${name}@${version}`);
 		return true;
 	}

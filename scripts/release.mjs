@@ -3,6 +3,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { parseRegistryVersion } from "./npm-registry.mjs";
 import { findPackageDirectories } from "./package-workspaces.mjs";
 import { getPublicWorkspacePackages, getReleasePackages } from "./release-packages.mjs";
 import { assertReleaseTarget, RELEASE_REPOSITORY } from "./release-target.mjs";
@@ -58,8 +59,7 @@ for (const pkg of packages) {
 	if (result.status === 0 || !/E404|404 Not Found/.test(`${result.stdout ?? ""}\n${result.stderr ?? ""}`)) throw new Error(`Release version ${pkg.name}@${version} already exists or its absence could not be verified`);
 	const registered = command("npm", ["view", pkg.name, "version", "--json"], { capture: true, allowFailure: true });
 	if (registered.status === 0) {
-		const registeredVersion = JSON.parse(registered.stdout);
-		if (typeof registeredVersion !== "string" || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(registeredVersion)) throw new Error(`Malformed registry version for ${pkg.name}`);
+		parseRegistryVersion(registered.stdout);
 		continue;
 	}
 	if (registered.status !== 0 && /E404|404 Not Found/.test(`${registered.stdout ?? ""}\n${registered.stderr ?? ""}`) && allowedNew.has(pkg.name)) continue;
