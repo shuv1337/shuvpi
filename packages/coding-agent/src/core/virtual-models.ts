@@ -9,7 +9,7 @@
  * separately and adds them to the provider's catalog with `withVirtualModels()`, so any provider,
  * including one with physical models, can list several virtual models.
  */
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import type { AgentMessage } from "@shuv1337/shuvpi-agent-core";
 import {
 	type AnyModel,
 	type Api,
@@ -22,7 +22,7 @@ import {
 	type ModelThinkingLevel,
 	type Provider,
 	type ThinkingLevelMap,
-} from "@earendil-works/pi-ai";
+} from "@shuv1337/shuvpi-ai";
 import type { SessionEntry } from "./session-manager.ts";
 
 /** API id of virtual catalog entries. Requests for it fail unless routed first. */
@@ -38,7 +38,16 @@ export interface VirtualModelStateData<TState = unknown> {
 	state: TState;
 }
 
-const THINKING_LEVELS: readonly ModelThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
+const THINKING_LEVELS: readonly ModelThinkingLevel[] = [
+	"off",
+	"minimal",
+	"low",
+	"medium",
+	"high",
+	"xhigh",
+	"max",
+	"ultra",
+];
 
 /**
  * Why a request is being routed.

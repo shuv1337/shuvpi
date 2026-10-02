@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
+import "../src/experimental/source-resolver.ts";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { readFacetBundleManifest } from "@earendil-works/chord/node";
+import { BACKGROUND_CONTEXT } from "@shuv1337/shuvpi-chord/context";
+import { readFacetBundleManifest } from "@shuv1337/shuvpi-chord/node";
 import { afterEach, describe, expect, test } from "vitest";
 import {
 	activateBuiltinClientServices,
@@ -62,15 +63,15 @@ describe("server-selected presentation facets", () => {
 				name: "@earendil-works/test-plugin",
 				version: "1.0.0",
 				peerDependencies: {
-					"@earendil-works/chord": "^0.84.4",
-					"@earendil-works/pi-coding-agent": "^0.84.4",
+					"@shuv1337/shuvpi-chord": "^0.84.4",
+					"@shuv1337/shuvpi-coding-agent": "^0.84.4",
 				},
 			})}\n`,
 		);
 		const sourcePath = join(packagePath, "src", "tui.ts");
 		await writeFile(
 			sourcePath,
-			'import { defineFacet } from "@earendil-works/chord"; import { SlashCommands } from "@earendil-works/pi-coding-agent/experimental/plugin"; export default defineFacet({ id: "built-a", setup(env) { env.use(SlashCommands); } });\n',
+			'import { defineFacet } from "@shuv1337/shuvpi-chord"; import { SlashCommands } from "@shuv1337/shuvpi-coding-agent/experimental/plugin"; export default defineFacet({ id: "built-a", setup(env) { env.use(SlashCommands); } });\n',
 		);
 		const plugin = createServerPluginPackage(directory, serverId, packagePath);
 
@@ -86,7 +87,7 @@ describe("server-selected presentation facets", () => {
 
 		await writeFile(
 			sourcePath,
-			'import { defineFacet } from "@earendil-works/chord"; import { SlashCommands } from "@earendil-works/pi-coding-agent/experimental/plugin"; export default defineFacet({ id: "built-b", setup(env) { env.use(SlashCommands); } });\n',
+			'import { defineFacet } from "@shuv1337/shuvpi-chord"; import { SlashCommands } from "@shuv1337/shuvpi-coding-agent/experimental/plugin"; export default defineFacet({ id: "built-b", setup(env) { env.use(SlashCommands); } });\n',
 		);
 		const second = await plugin.build();
 		expect(second[0]?.source).not.toBe(first[0]?.source);
@@ -102,12 +103,12 @@ describe("server-selected presentation facets", () => {
 				`${JSON.stringify({
 					name: "@earendil-works/second-test-plugin",
 					version: "1.0.0",
-					peerDependencies: { "@earendil-works/chord": "^0.84.4" },
+					peerDependencies: { "@shuv1337/shuvpi-chord": "^0.84.4" },
 				})}\n`,
 			),
 			writeFile(
 				join(secondPackagePath, "src", "tui.ts"),
-				'import { defineFacet } from "@earendil-works/chord"; export default defineFacet({ id: "second-built", setup() {} });\n',
+				'import { defineFacet } from "@shuv1337/shuvpi-chord"; export default defineFacet({ id: "second-built", setup() {} });\n',
 			),
 		]);
 		const running = await startServer({
@@ -137,7 +138,7 @@ describe("server-selected presentation facets", () => {
 
 		await writeFile(
 			sourcePath,
-			'import { defineFacet } from "@earendil-works/chord"; import { SlashCommands } from "@earendil-works/pi-coding-agent/experimental/plugin"; export default defineFacet({ id: "built-c", setup(env) { env.use(SlashCommands); } });\n',
+			'import { defineFacet } from "@shuv1337/shuvpi-chord"; import { SlashCommands } from "@shuv1337/shuvpi-coding-agent/experimental/plugin"; export default defineFacet({ id: "built-c", setup(env) { env.use(SlashCommands); } });\n',
 		);
 		const services = runtime.servers[0]!.server.open({
 			services: [PresentationPlugins],

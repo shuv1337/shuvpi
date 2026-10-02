@@ -6,8 +6,8 @@ import {
 	type ModelsSimpleStreamOptions,
 	type SimpleStreamOptions,
 	type Usage,
-} from "@earendil-works/pi-ai";
-import { getProviderEnvValue } from "@earendil-works/pi-ai/utils/provider-env";
+} from "@shuv1337/shuvpi-ai";
+import { getProviderEnvValue } from "@shuv1337/shuvpi-ai/utils/provider-env";
 import type { ModelRuntime } from "./model-runtime.ts";
 import type { SessionEntry, SessionManager, UsageEntry } from "./session-manager.ts";
 import type { CacheWarmingMode } from "./settings-manager.ts";
@@ -39,7 +39,7 @@ export function getCacheWarmingDelayMs(ttlMs: number): number | undefined {
 export function getPromptCacheTtlMs(model: Model<Api>, options: SimpleStreamOptions | undefined): number | undefined {
 	const retention =
 		options?.cacheRetention ??
-		(getProviderEnvValue("PI_CACHE_RETENTION", options?.env) === "long" ? "long" : "short");
+		(getProviderEnvValue("SHUVPI_CACHE_RETENTION", options?.env) === "long" ? "long" : "short");
 	if (retention === "none") return undefined;
 	const seconds = model.promptCache?.[retention];
 	return seconds === undefined ? undefined : seconds * 1000;

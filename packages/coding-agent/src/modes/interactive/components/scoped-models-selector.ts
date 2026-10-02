@@ -1,4 +1,4 @@
-import type { Model } from "@earendil-works/pi-ai";
+import type { Model } from "@shuv1337/shuvpi-ai";
 import {
 	Container,
 	type Focusable,
@@ -9,7 +9,7 @@ import {
 	matchesKey,
 	Spacer,
 	Text,
-} from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import { getModelSearchText } from "../model-search.ts";
 import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
@@ -135,8 +135,9 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));
 		this.addChild(new Text(theme.fg("accent", theme.bold("Model Configuration")), 0, 0));
+		const saveKey = keyDisplayText("app.models.save");
 		this.addChild(
-			new Text(theme.fg("muted", `Session-only. ${keyDisplayText("app.models.save")} to save to settings.`), 0, 0),
+			new Text(theme.fg("muted", saveKey ? `Session-only. ${saveKey} to save to settings.` : "Session-only."), 0, 0),
 		);
 		this.addChild(new Spacer(1));
 
@@ -199,15 +200,19 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 		const countText = allEnabled
 			? "all enabled"
 			: `${enabledCount}/${this.allIds.length} enabled${unavailableCount ? ` · ${unavailableCount} unavailable` : ""}`;
+		const hint = (key: string, label: string) => (key ? `${key} ${label}` : undefined);
+		const reorderKeys = [keyDisplayText("app.models.reorderUp"), keyDisplayText("app.models.reorderDown")].filter(
+			Boolean,
+		);
 		const parts = [
-			`${keyDisplayText("tui.select.confirm")} toggle`,
-			`${keyDisplayText("app.models.enableAll")} all`,
-			`${keyDisplayText("app.models.clearAll")} clear`,
-			`${keyDisplayText("app.models.toggleProvider")} provider`,
-			`${keyDisplayText("app.models.reorderUp")}/${keyDisplayText("app.models.reorderDown")} reorder`,
-			`${keyDisplayText("app.models.save")} save`,
+			hint(keyDisplayText("tui.select.confirm"), "toggle"),
+			hint(keyDisplayText("app.models.enableAll"), "all"),
+			hint(keyDisplayText("app.models.clearAll"), "clear"),
+			hint(keyDisplayText("app.models.toggleProvider"), "provider"),
+			hint(reorderKeys.join("/"), "reorder"),
+			hint(keyDisplayText("app.models.save"), "save"),
 			countText,
-		];
+		].filter((part): part is string => part !== undefined);
 		return this.isDirty
 			? theme.fg("dim", `  ${parts.join(" · ")} `) + theme.fg("warning", "(unsaved)")
 			: theme.fg("dim", `  ${parts.join(" · ")}`);

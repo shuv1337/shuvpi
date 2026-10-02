@@ -404,8 +404,15 @@ export {
 // Built-in extensions. The CLI loads them; SDK sessions add them to their extension factories.
 export { type CodemodeExtensionOptions, createCodemodeExtension } from "./extensions/codemode/index.ts";
 export type { CodemodeStoreEntryData, CodemodeToolDetails } from "./extensions/codemode/tool.ts";
+export { createFastModeExtension, type FastModeOptions, supportsFastMode } from "./extensions/fast-mode/index.ts";
 export type { LoadedMcpConfig, McpExposure, McpServerConfig, McpServerEntry } from "./extensions/mcp/config.ts";
 export { createMcpExtension, type McpExtensionOptions, type McpTransportFactory } from "./extensions/mcp/index.ts";
+export {
+	createPreferredModelsExtension,
+	PREFERRED_MODELS,
+	type PreferredModelsOptions,
+	selectPreferredModel,
+} from "./extensions/preferred-models/index.ts";
 export { createToolSearchExtension } from "./extensions/tool-search/index.ts";
 // Main entry point
 export { type MainOptions, main } from "./main.ts";

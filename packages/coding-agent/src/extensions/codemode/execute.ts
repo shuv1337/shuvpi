@@ -7,7 +7,7 @@ import { randomBytes } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentTool, AgentToolCallOutcome, AgentToolResult } from "@earendil-works/pi-agent-core";
+import type { AgentTool, AgentToolCallOutcome, AgentToolResult } from "@shuv1337/shuvpi-agent-core";
 import type {
 	AnyModel,
 	ClassifierContext,
@@ -17,7 +17,7 @@ import type {
 	ModelTypeMap,
 	TextContent,
 	Usage,
-} from "@earendil-works/pi-ai";
+} from "@shuv1337/shuvpi-ai";
 import {
 	type CodemodeResult,
 	CodemodeSandbox,
@@ -26,7 +26,7 @@ import {
 	parseCodemodeSource,
 	renderToolSample,
 	toCodemodeIdentifier,
-} from "@earendil-works/pi-codemode";
+} from "@shuv1337/shuvpi-codemode";
 import { getCodemodeWorkerSpecifier, getQuickJSWasmPath } from "../../config.ts";
 import type { ExtensionToolContext, ToolNamespace } from "../../core/extensions/types.ts";
 import type { SessionEntry } from "../../core/session-manager.ts";
@@ -325,6 +325,42 @@ export async function executeCodemode(
 	ctx: ExtensionToolContext | undefined,
 	options: CodemodeToolOptions = {},
 ): Promise<AgentToolResult<CodemodeToolDetails>> {
+	return executeCodemodeWithHost(
+		toolCallId,
+		input,
+		signal,
+		onUpdate,
+		{
+			tools: ctx?.tools ?? [],
+			executeTool: async (name, args, callOptions) => {
+				if (!ctx) throw new Error("Tool calls need a session");
+				return ctx.executeTool(name, args, callOptions);
+			},
+			readStore: () => (ctx ? readCodemodeStore(ctx.sessionManager.getBranch()) : {}),
+			writeStore: (writes) => options.appendEntry?.(CODEMODE_STORE_ENTRY_TYPE, writes),
+			modelRuntime: ctx?.modelRegistry,
+		},
+		options,
+	);
+}
+
+/** The sandbox needs these capabilities, independently of a coding-agent session or durable Harness. */
+export interface CodemodeExecutionHost {
+	tools: readonly AgentTool[];
+	executeTool: ExtensionToolContext["executeTool"];
+	readStore(): Record<string, unknown> | Promise<Record<string, unknown>>;
+	writeStore(writes: CodemodeStoreEntryData): void | Promise<void>;
+	modelRuntime?: CodemodeModelRuntime;
+}
+
+export async function executeCodemodeWithHost(
+	toolCallId: string,
+	input: CodemodeToolInput,
+	signal: AbortSignal | undefined,
+	onUpdate: ((result: AgentToolResult<CodemodeToolDetails>) => void) | undefined,
+	host: CodemodeExecutionHost,
+	options: CodemodeToolOptions = {},
+): Promise<AgentToolResult<CodemodeToolDetails>> {
 	const startedAt = performance.now();
 	const { code, options: sourceOptions } = parseCodemodeSource(input.code);
 	const calls: CodemodeNestedCall[] = [];
@@ -342,7 +378,7 @@ export async function executeCodemode(
 	const snapshot = (): CodemodeToolDetails => ({ calls: calls.map((call) => ({ ...call })) });
 	const publish = () => onUpdate?.({ content: [], details: snapshot() });
 
-	const callable = ctx ? getCodemodeCallableTools(ctx.tools) : [];
+	const callable = getCodemodeCallableTools(host.tools);
 	// ALL_TOOLS entries carry the declaration.
 	const samples = new Map(callable.map((tool) => [tool.name, renderToolSample(toCodemodeDeclaration(tool))]));
 	const sandboxTools: CodemodeTool[] = callable.map((tool) => ({
@@ -358,9 +394,7 @@ export async function executeCodemode(
 			calls.push(record);
 			publish();
 			const callStartedAt = performance.now();
-			// Only tools from ctx.tools are callable, so ctx is set here.
-			if (!ctx) throw new Error("Tool calls need a session");
-			const outcome = await ctx.executeTool(tool.name, args, { signal: callSignal });
+			const outcome = await host.executeTool(tool.name, args, { signal: callSignal });
 			record.id = outcome.toolCall.id;
 			record.durationMs = performance.now() - callStartedAt;
 			if (outcome.isError) {
@@ -378,8 +412,8 @@ export async function executeCodemode(
 		tools: sandboxTools,
 		globals: [
 			...createDiscoveryGlobals(callable, samples, options),
-			...(options.models && ctx
-				? createModelGlobals(ctx.modelRegistry, toolCallId, calls, publish, addModelUsage, addGeneratedImages)
+			...(options.models && host.modelRuntime
+				? createModelGlobals(host.modelRuntime, toolCallId, calls, publish, addModelUsage, addGeneratedImages)
 				: []),
 		],
 		timeoutMs: sourceOptions.timeoutMs ?? Number.POSITIVE_INFINITY,
@@ -390,7 +424,7 @@ export async function executeCodemode(
 
 	let result: CodemodeResult;
 	try {
-		const store = ctx ? readCodemodeStore(ctx.sessionManager.getBranch()) : {};
+		const store = await host.readStore();
 		result = await sandbox.execute(code, { signal, store });
 	} finally {
 		await sandbox.close();
@@ -406,7 +440,7 @@ export async function executeCodemode(
 	if (result.ok) {
 		const { set, delete: deleted } = result.storeWrites;
 		if (Object.keys(set).length > 0 || deleted.length > 0) {
-			options.appendEntry?.(CODEMODE_STORE_ENTRY_TYPE, { set, delete: deleted });
+			await host.writeStore({ set, delete: deleted });
 		}
 		// pi extension: a returned value is appended like text().
 		if (result.value !== undefined) items.push({ type: "text", text: valueText(result.value) });

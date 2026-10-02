@@ -1,5 +1,5 @@
-import type { AttachedReplicatedState, Context, JsonValue } from "@earendil-works/chord";
-import { withAbortSignal, withoutAbortSignal } from "@earendil-works/chord/context";
+import type { AttachedReplicatedState, Context, JsonValue } from "@shuv1337/shuvpi-chord";
+import { withAbortSignal, withoutAbortSignal } from "@shuv1337/shuvpi-chord/context";
 import { ResetEntry } from "../entries.ts";
 import type { ExecutionEnv } from "../env/index.ts";
 import { SessionImpl } from "../session/session.ts";
@@ -179,6 +179,7 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 		const now = options.now ?? Date.now;
 		const settings = () => resolveSettings(options.settings);
 		this.#tasks = new TaskScheduler({
+			toolPolicies: options.toolPolicies,
 			session: this,
 			storage,
 			registry: options.registry,

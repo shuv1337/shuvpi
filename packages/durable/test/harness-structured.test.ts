@@ -1,7 +1,6 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Context, JsonValue } from "@earendil-works/chord";
 import {
 	fauxAssistantMessage,
 	fauxText,
@@ -9,7 +8,8 @@ import {
 	type Models,
 	type ToolResultMessage,
 	Type,
-} from "@earendil-works/pi-ai";
+} from "@shuv1337/shuvpi-ai";
+import type { Context, JsonValue } from "@shuv1337/shuvpi-chord";
 import {
 	type AgentEvent,
 	type Conversation,
@@ -25,6 +25,7 @@ import {
 	MemoryStorage,
 	type NextTaskState,
 	type Registry,
+	readToolEffects,
 	type Storage,
 	StorageRejected,
 	type TaskId,
@@ -34,7 +35,7 @@ import {
 	ToolResultEntry,
 	type Tx,
 	watchEvents,
-} from "@earendil-works/pi-durable";
+} from "@shuv1337/shuvpi-durable";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { allEntries, chatSetup, openChat, waitFor } from "./chat-support.ts";
@@ -1670,43 +1671,63 @@ describe("tool rounds and events", () => {
 		await harness.close(context);
 	});
 
-	it("holds a faulted tool's slot and task_failed until the work it owns drained", async () => {
-		const setup = chatSetup();
-		addTask(setup.registry, Node);
-		script("held", {
-			abort: async (runtime, ctx) => {
-				await gate("abort.held").promise;
-				await runtime.commit(() => ({ status: "terminal", outcome: { status: "aborted" } }), ctx);
-			},
-		});
-		addTool(
-			setup.registry,
-			defineTool({
-				name: "broken",
-				description: "Starts owned work, then returns a result that is not strict JSON",
-				parameters: Type.Object({}),
-				execute: async (_args, api, callContext) => {
-					await api.commit((tx) => tx.createTask(Node, { name: "held" }, owned(api.taskId)), callContext);
-					return { content: [], details: { fn: (() => 1) as unknown as JsonValue } };
+	it.each(["read", "mutation"] as const)(
+		"holds a faulted %s tool's slot and task_failed until its owned work drains",
+		async (effect) => {
+			const setup = chatSetup();
+			addTask(setup.registry, Node);
+			script("held", {
+				abort: async (runtime, ctx) => {
+					await gate("abort.held").promise;
+					await runtime.commit(() => ({ status: "terminal", outcome: { status: "aborted" } }), ctx);
 				},
-			}),
-		);
-		setup.faux.setResponses([toolCalls(["broken", "c1"]), fauxAssistantMessage([fauxText("done")])]);
-		const { harness, root } = await openChat(new MemoryStorage(), setup);
-		const { stream, events } = await listen(harness, root);
-		const submission = await root.submit({ type: "input", content: "go" }, context);
-		await waitFor(() => log.includes("abort:held"));
-		const live = (await harness.snapshot(LiveDoc, root.id, context))!;
-		const tool = live.tools![0]!.taskId!;
-		expect(await state(harness, tool)).toMatchObject({ status: "completing", outcome: { status: "faulted" } });
-		expect(live.tools![0]!.status).not.toBe("done");
-		expect(events.some((event) => event.type === "task_failed")).toBe(false);
-		open("abort.held");
-		expect((await submission.wait(context)).status).toBe("done");
-		expect(await outcomeOf(harness, tool)).toBe("faulted");
-		await waitFor(() => events.some((event) => event.type === "task_failed"));
-		expect(labels(events)).toContain("end:c1:false");
-		await stream.stop();
-		await harness.close(context);
-	});
+			});
+			addTool(
+				setup.registry,
+				defineTool({
+					name: "broken",
+					description: "Starts owned work, then returns a result that is not strict JSON",
+					parameters: Type.Object({}),
+					effect,
+					execute: async (_args, api, callContext) => {
+						await api.commit((tx) => tx.createTask(Node, { name: "held" }, owned(api.taskId)), callContext);
+						return { content: [], details: { fn: (() => 1) as unknown as JsonValue } };
+					},
+				}),
+			);
+			setup.faux.setResponses([toolCalls(["broken", "c1"]), fauxAssistantMessage([fauxText("done")])]);
+			const { harness, root } = await openChat(new MemoryStorage(), setup);
+			const { stream, events } = await listen(harness, root);
+			const submission = await root.submit({ type: "input", content: "go" }, context);
+			await waitFor(() => log.includes("abort:held"));
+			const live = (await harness.snapshot(LiveDoc, root.id, context))!;
+			const tool = live.tools![0]!.taskId!;
+			expect(await state(harness, tool)).toMatchObject({ status: "completing", outcome: { status: "faulted" } });
+			expect(live.tools![0]!.status).not.toBe("done");
+			expect(events.some((event) => event.type === "task_failed")).toBe(false);
+			expect(await settled(submission.wait(context))).toBe(false);
+			expect(setup.faux.state.callCount).toBe(1);
+			open("abort.held");
+			const result = await submission.wait(context);
+			const effects = await readToolEffects(harness, `conversation:${root.id}`, context);
+			if (effect === "mutation") {
+				// Result persistence failed after execution, so its intent remains unresolved.
+				// Draining owned work must not authorize another model turn or clear that intent.
+				expect(result).toMatchObject({ status: "unanswered", reason: "unresolved_effect" });
+				expect(effects?.effects[String(tool)]).toMatchObject({ status: "pending", taskId: tool, tool: "broken" });
+				expect(effects?.blocked?.taskId).toBe(tool);
+				expect(setup.faux.state.callCount).toBe(1);
+			} else {
+				expect(result.status).toBe("done");
+				expect(effects?.effects[String(tool)]).toBeUndefined();
+				expect(effects?.blocked).toBeUndefined();
+				expect(setup.faux.state.callCount).toBe(2);
+			}
+			expect(await outcomeOf(harness, tool)).toBe("faulted");
+			await waitFor(() => events.some((event) => event.type === "task_failed"));
+			expect(labels(events)).toContain("end:c1:false");
+			await stream.stop();
+			await harness.close(context);
+		},
+	);
 });

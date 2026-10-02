@@ -2,8 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 
 interface CodingAgentPackageJson {
-	bin: { pi: string };
+	bin: { shuvpi: string };
 	main: string;
+	repository: { url: string };
+	scripts: { "build:binary": string };
 	exports: {
 		".": { import: string; types: string };
 		"./client": { source: string };
@@ -18,7 +20,9 @@ const packageJson = JSON.parse(
 
 describe("package distribution entrypoints", () => {
 	test("uses the bundle for executables and modular output for libraries", () => {
-		expect(packageJson.bin.pi).toBe("dist/bundle/cli.js");
+		expect(packageJson.bin.shuvpi).toBe("dist/bundle/cli.js");
+		expect(packageJson.scripts["build:binary"]).toContain("--outfile dist/shuvpi");
+		expect(packageJson.repository.url).toBe("git+https://github.com/shuv1337/shuvpi.git");
 		expect(packageJson.main).toBe("./dist/index.js");
 		expect(packageJson.exports["."].import).toBe("./dist/index.js");
 		expect(packageJson.exports["./rpc-entry"].import).toBe("./dist/bundle/rpc-entry.js");

@@ -1,7 +1,8 @@
-import type { AttachedReplicatedState, Context, Draft, JsonValue } from "@earendil-works/chord";
-import type { Op } from "@earendil-works/chord/delta";
-import type { Message, Models } from "@earendil-works/pi-ai";
+import type { Message, Models } from "@shuv1337/shuvpi-ai";
+import type { AttachedReplicatedState, Context, Draft, JsonValue } from "@shuv1337/shuvpi-chord";
+import type { Op } from "@shuv1337/shuvpi-chord/delta";
 import type { ExecutionEnv } from "./env/index.ts";
+import type { ToolBoundary } from "./harness/tool.ts";
 import type {
 	Agent,
 	ContextView,
@@ -168,6 +169,8 @@ export interface HookRunner<H extends object> {
  * stop at invocation end.
  */
 export interface TaskRuntime<I, S, R, H extends object> extends DocumentObserver, DocumentReader {
+	/** Shared execution boundary of this Harness, also used by nested tool tasks. */
+	readonly toolBoundary: ToolBoundary;
 	readonly taskId: TaskId<R>;
 	readonly conversationId: ConversationId;
 	/**

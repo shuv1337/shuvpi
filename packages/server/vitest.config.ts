@@ -1,13 +1,11 @@
-import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
-
-const src = (path: string): string => fileURLToPath(new URL(path, import.meta.url));
+import { defineConfig, mergeConfig } from "vitest/config";
+import baseConfig from "../../vitest.base.ts";
 
 /**
  * Exact matches for bare specifiers, plus one rule per package for subpath exports such as
- * `@earendil-works/pi-ai/utils/uuid`. A prefix alias would rewrite those onto `index.ts/utils/uuid`.
+ * `@shuv1337/shuvpi-ai/utils/uuid`. A prefix alias would rewrite those onto `index.ts/utils/uuid`.
  */
-export default defineConfig({
+export default mergeConfig(baseConfig, defineConfig({
 	test: {
 		globals: true,
 		environment: "node",
@@ -15,14 +13,6 @@ export default defineConfig({
 	},
 	resolve: {
 		conditions: ["source"],
-		alias: [
-			{ find: /^@earendil-works\/pi-agent-core$/, replacement: src("../agent/src/index.ts") },
-			{ find: /^@earendil-works\/pi-agent-core\/(.+)$/, replacement: `${src("../agent/src/")}$1.ts` },
-			{ find: /^@earendil-works\/pi-ai$/, replacement: src("../ai/src/index.ts") },
-			{ find: /^@earendil-works\/pi-ai\/(.+)$/, replacement: `${src("../ai/src/")}$1.ts` },
-			{ find: /^@earendil-works\/pi-telemetry$/, replacement: src("../telemetry/src/index.ts") },
-			{ find: /^@earendil-works\/pi-protocol$/, replacement: src("../protocol/src/index.ts") },
-		],
 	},
 	ssr: { resolve: { conditions: ["source"] } },
-});
+}));

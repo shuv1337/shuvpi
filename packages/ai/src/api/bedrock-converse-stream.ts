@@ -811,13 +811,13 @@ function mapThinkingLevelToEffort(
 
 /**
  * Resolve cache retention preference.
- * Defaults to "short" and uses PI_CACHE_RETENTION for backward compatibility.
+ * Defaults to "short" and uses SHUVPI_CACHE_RETENTION for backward compatibility.
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEnv): CacheRetention {
 	if (cacheRetention) {
 		return cacheRetention;
 	}
-	if (getProviderEnvValue("PI_CACHE_RETENTION", env) === "long") {
+	if (getProviderEnvValue("SHUVPI_CACHE_RETENTION", env) === "long") {
 		return "long";
 	}
 	return "short";
@@ -1258,10 +1258,11 @@ function buildAdditionalModelRequestFields(
 						high: 16384,
 						xhigh: 16384, // Budget-based Claude clamps extended levels to high
 						max: 16384,
+						ultra: 16384,
 					};
 
 					// Custom budgets only cover token-based levels through high.
-					const level = options.reasoning === "xhigh" || options.reasoning === "max" ? "high" : options.reasoning;
+					const level = clampReasoning(options.reasoning)!;
 					const budget = options.thinkingBudgets?.[level] ?? defaultBudgets[options.reasoning];
 
 					return {

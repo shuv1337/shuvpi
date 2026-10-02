@@ -45,8 +45,8 @@ import {
 	type ToolCall,
 	type ToolResultMessage,
 	type TranscriptContext,
-} from "@earendil-works/pi-ai";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+} from "@shuv1337/shuvpi-ai";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
 // =============================================================================
 // OAuth implementation adapted for the legacy extension compatibility interface.

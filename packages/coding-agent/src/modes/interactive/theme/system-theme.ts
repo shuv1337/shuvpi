@@ -29,7 +29,7 @@ import {
 	oklchColor,
 	type RgbColor,
 	rgbColor,
-} from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import type { ThemeAppearance, ThemeBg, ThemeColor, ThemeToken } from "./theme.ts";
 
 export const SYSTEM_THEME_NAME = "system";

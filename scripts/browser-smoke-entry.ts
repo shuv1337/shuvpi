@@ -1,8 +1,8 @@
-import { Client } from "@earendil-works/pi-client";
-import { createAssistantMessageEventStream, Type } from "@earendil-works/pi-ai";
-import { complete, getModel, getProviders, streamSimple } from "@earendil-works/pi-ai/compat";
-import { Agent, streamProxy } from "@earendil-works/pi-agent-core";
-import { decodeCbor, encodeCbor, PROTOCOL_VERSION } from "@earendil-works/pi-protocol";
+import { Client } from "@shuv1337/shuvpi-client";
+import { createAssistantMessageEventStream, Type } from "@shuv1337/shuvpi-ai";
+import { complete, getModel, getProviders, streamSimple } from "@shuv1337/shuvpi-ai/compat";
+import { Agent, streamProxy } from "@shuv1337/shuvpi-agent-core";
+import { decodeCbor, encodeCbor, PROTOCOL_VERSION } from "@shuv1337/shuvpi-protocol";
 
 // Keep this entry browser-safe. It is bundled by scripts/check-browser-smoke.mjs
 // to catch accidental Node-only runtime imports in browser-facing package exports.

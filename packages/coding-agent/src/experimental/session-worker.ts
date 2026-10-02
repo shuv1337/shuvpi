@@ -10,23 +10,23 @@ import {
 	type RemoteServiceErrorCode,
 	type ServiceCall,
 	type ServiceProviderUpdate,
-} from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT, TODO_CONTEXT, withCancel } from "@earendil-works/chord/context";
-import { Harness, ROOT_CONVERSATION_ID, type TaskGraph } from "@earendil-works/pi-durable";
-import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
+} from "@shuv1337/shuvpi-chord";
+import { BACKGROUND_CONTEXT, TODO_CONTEXT, withCancel } from "@shuv1337/shuvpi-chord/context";
+import { Harness, ROOT_CONVERSATION_ID, type TaskGraph } from "@shuv1337/shuvpi-durable";
+import { openNodeSqliteStorage } from "@shuv1337/shuvpi-durable/storage/sqlite/node";
 import lockfile from "proper-lockfile";
 import Type, { type Static } from "typebox";
 import { Check } from "typebox/value";
-import { ModelRuntime } from "../core/model-runtime.ts";
-import { SettingsManager } from "../core/settings-manager.ts";
-import { COORDINATOR_PROTOCOL_VERSION } from "./coordinator.ts";
 import {
 	configureHarnessHttp,
 	createCodingRegistry,
 	createHarnessSettings,
 	ExecutionEnvs,
 	findInitialAgentModel,
-} from "./durable/harness-setup.ts";
+} from "../core/durable-workflows/harness-setup.ts";
+import { ModelRuntime } from "../core/model-runtime.ts";
+import { SettingsManager } from "../core/settings-manager.ts";
+import { COORDINATOR_PROTOCOL_VERSION } from "./coordinator.ts";
 import { createSessionPluginFacetLoader } from "./plugins/bundled.ts";
 import {
 	consumeInternalProcessRole,
@@ -61,10 +61,10 @@ const RemoteServiceErrorCodeSchema = Type.Unsafe<RemoteServiceErrorCode>(
 	Type.String({ pattern: `^(?:${REMOTE_SERVICE_ERROR_CODES.join("|")})$` }),
 );
 
-export const SESSION_WORKER_CONTROL_ADDRESS_ENV = "PI_SESSION_WORKER_CONTROL_ADDRESS";
-export const SESSION_WORKER_CONTROL_TOKEN_ENV = "PI_SESSION_WORKER_CONTROL_TOKEN";
-export const SESSION_WORKER_SESSION_KEY_ENV = "PI_SESSION_WORKER_SESSION_KEY_BASE64";
-export const SESSION_WORKER_PEER_ID_ENV = "PI_SESSION_WORKER_PEER_ID";
+export const SESSION_WORKER_CONTROL_ADDRESS_ENV = "SHUVPI_SESSION_WORKER_CONTROL_ADDRESS";
+export const SESSION_WORKER_CONTROL_TOKEN_ENV = "SHUVPI_SESSION_WORKER_CONTROL_TOKEN";
+export const SESSION_WORKER_SESSION_KEY_ENV = "SHUVPI_SESSION_WORKER_SESSION_KEY_BASE64";
+export const SESSION_WORKER_PEER_ID_ENV = "SHUVPI_SESSION_WORKER_PEER_ID";
 
 export const SessionWorkerMetadataSchema = StrictObject({
 	id: Type.String({ minLength: 1 }),
@@ -306,8 +306,8 @@ export class WorkerLifecycle {
 
 const DEFAULT_INITIAL_DEMAND_GRACE_MS = 10_000;
 const DEFAULT_ORPHAN_DEMAND_GRACE_MS = 30_000;
-export const SESSION_WORKER_INITIAL_DEMAND_GRACE_ENV = "__PI_SESSION_WORKER_INITIAL_DEMAND_GRACE_MS";
-export const SESSION_WORKER_ORPHAN_DEMAND_GRACE_ENV = "__PI_SESSION_WORKER_ORPHAN_DEMAND_GRACE_MS";
+export const SESSION_WORKER_INITIAL_DEMAND_GRACE_ENV = "__SHUVPI_SESSION_WORKER_INITIAL_DEMAND_GRACE_MS";
+export const SESSION_WORKER_ORPHAN_DEMAND_GRACE_ENV = "__SHUVPI_SESSION_WORKER_ORPHAN_DEMAND_GRACE_MS";
 
 const CoordinatorInputSchema = Type.Union([
 	Type.Object({

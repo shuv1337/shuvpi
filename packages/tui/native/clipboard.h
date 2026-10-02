@@ -1,5 +1,5 @@
-#ifndef PI_CLIPBOARD_H
-#define PI_CLIPBOARD_H
+#ifndef SHUVPI_CLIPBOARD_H
+#define SHUVPI_CLIPBOARD_H
 
 #include "napi.h"
 #ifndef _WIN32
@@ -48,7 +48,7 @@ static void clipboard_free(void* data) {
 #endif
 }
 
-#ifdef PI_CLIPBOARD_WRITE
+#ifdef SHUVPI_CLIPBOARD_WRITE
 static void clipboard_copy(clipboard_job* job, const void* data, size_t length, clipboard_format format) {
     job->data = clipboard_alloc(length ? length : 1);
     if (!job->data) {
@@ -67,7 +67,7 @@ static void clipboard_copy(clipboard_job* job, const void* data, size_t length, 
 }
 #endif
 
-static void PI_NAPI_CALL execute_clipboard_work(napi_env env, void* data) {
+static void SHUVPI_NAPI_CALL execute_clipboard_work(napi_env env, void* data) {
     (void)env;
     clipboard_execute(data);
 }
@@ -99,7 +99,7 @@ static int create_clipboard_paths_value(
     return 0;
 }
 
-static void PI_NAPI_CALL complete_clipboard_work(napi_env env, int status, void* data) {
+static void SHUVPI_NAPI_CALL complete_clipboard_work(napi_env env, int status, void* data) {
     clipboard_job* job = data;
     napi_create_string_utf8_fn create_string = (napi_create_string_utf8_fn)node_symbol("napi_create_string_utf8");
     napi_value result = undefined_value(env);
@@ -150,7 +150,7 @@ static napi_value queue_clipboard(napi_env env, napi_callback_info info, clipboa
     clipboard_job* job = clipboard_alloc(sizeof(*job));
     if (!job) return fail(env, "Out of memory");
     job->operation = operation;
-#ifdef PI_CLIPBOARD_WRITE
+#ifdef SHUVPI_CLIPBOARD_WRITE
     if (operation == CLIPBOARD_WRITE) {
         napi_get_cb_info_fn get_info = (napi_get_cb_info_fn)node_symbol("napi_get_cb_info");
 #ifdef _WIN32
@@ -191,16 +191,16 @@ static napi_value queue_clipboard(napi_env env, napi_callback_info info, clipboa
     return promise;
 }
 
-static napi_value PI_NAPI_CALL get_clipboard_text(napi_env env, napi_callback_info info) {
+static napi_value SHUVPI_NAPI_CALL get_clipboard_text(napi_env env, napi_callback_info info) {
     return queue_clipboard(env, info, CLIPBOARD_TEXT);
 }
 
-static napi_value PI_NAPI_CALL get_clipboard_image(napi_env env, napi_callback_info info) {
+static napi_value SHUVPI_NAPI_CALL get_clipboard_image(napi_env env, napi_callback_info info) {
     return queue_clipboard(env, info, CLIPBOARD_IMAGE);
 }
 
-#ifdef PI_CLIPBOARD_WRITE
-static napi_value PI_NAPI_CALL set_clipboard_text(napi_env env, napi_callback_info info) {
+#ifdef SHUVPI_CLIPBOARD_WRITE
+static napi_value SHUVPI_NAPI_CALL set_clipboard_text(napi_env env, napi_callback_info info) {
     return queue_clipboard(env, info, CLIPBOARD_WRITE);
 }
 #endif

@@ -10,7 +10,7 @@ This reference lists user-configurable settings, their types, defaults, and purp
 |---|---|---|---|
 | `defaultProvider` | string | Automatic | Startup AI provider. |
 | `defaultModel` | string | Automatic | Startup model ID. |
-| `defaultThinkingLevel` | `"off" \| "minimal" \| "low" \| "medium" \| "high" \| "xhigh" \| "max"` | `"medium"` | Startup thinking level. |
+| `defaultThinkingLevel` | `"off" \| "minimal" \| "low" \| "medium" \| "high" \| "xhigh" \| "max" \| "ultra"` | `"medium"` | Startup thinking level, clamped to the selected model's supported levels. |
 | `modelThinkingLevels` | object | None | Per-model startup thinking levels keyed by exact `provider/modelId`. |
 | `thinkingBudgets` | object | Built-in budgets | Token budgets for `minimal`, `low`, `medium`, and `high` thinking levels. |
 | `enabledModels` | `string[]` | All available models | Model patterns used for startup selection and model cycling. Uses the same format as `--models`. |
@@ -61,7 +61,7 @@ CLI tool options override this setting for one invocation; `--tools` does not ac
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `sessionDir` | string | Agent session directory | Session storage directory. Relative paths resolve from the working directory. `PI_CODING_AGENT_SESSION_DIR` and `--session-dir` override this setting. |
+| `sessionDir` | string | Agent session directory | Session storage directory. Relative paths resolve from the working directory. `SHUVPI_CODING_AGENT_SESSION_DIR` and `--session-dir` override this setting. |
 
 ### Compaction
 
@@ -144,7 +144,7 @@ See [Shell aliases](shell-aliases.md) for shell setup and [Pi Packages](packages
 
 ## Resources
 
-Resource paths in user settings resolve from the agent directory. Paths in project settings resolve from the project `.pi` directory. Absolute paths and `~` are supported.
+Resource paths in user settings resolve from the agent directory. Paths in project settings resolve from the project `.shuvpi` directory. Absolute paths and `~` are supported.
 
 | Setting | Type | Default | Description |
 |---|---|---|---|

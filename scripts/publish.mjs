@@ -3,9 +3,11 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { getPublicWorkspacePackages } from "./release-packages.mjs";
+import { parsePackResult } from "./npm-pack.mjs";
+import { getReleasePackages } from "./release-packages.mjs";
+import { assertReleaseTarget } from "./release-target.mjs";
 
-const packages = getPublicWorkspacePackages();
+const packages = getReleasePackages();
 
 const dryRun = process.argv.includes("--dry-run");
 const unknownArgs = process.argv.slice(2).filter((arg) => arg !== "--dry-run");
@@ -43,7 +45,7 @@ function assertBuildOutputExists(directory) {
 
 function validatePack(directory) {
 	const result = run("npm", ["pack", "--dry-run", "--ignore-scripts", "--json"], { capture: true, cwd: directory });
-	const packed = JSON.parse(result.stdout)[0];
+	const packed = parsePackResult(result.stdout);
 	console.log(`  ${packed.filename}: ${packed.files.length} files, ${packed.size} bytes packed, ${packed.unpackedSize} bytes unpacked`);
 }
 
@@ -54,6 +56,8 @@ function isPublished(name, version) {
 	});
 
 	if (result.status === 0 && result.stdout.trim()) {
+		const publishedVersion = JSON.parse(result.stdout);
+		if (publishedVersion !== version) throw new Error(`Registry returned an unexpected version for ${name}@${version}`);
 		return true;
 	}
 
@@ -65,19 +69,14 @@ function isPublished(name, version) {
 	throw new Error(output ? `Failed to query ${name}@${version}\n${output}` : `Failed to query ${name}@${version}`);
 }
 
-const packageVersions = new Map(packages.map((pkg) => [pkg.name, pkg.version]));
+const version = assertReleaseTarget(packages);
 
-const versions = [...new Set(packageVersions.values())];
-if (versions.length !== 1) {
-	throw new Error(`Publish packages are not lockstep versioned: ${versions.join(", ")}`);
-}
-
-console.log(`Publishing pi packages at ${versions[0]}${dryRun ? " (dry run)" : ""}\n`);
+console.log(`Publishing Shuvpi packages at ${version}${dryRun ? " (dry run)" : ""}\n`);
 
 const packageStates = packages.map((pkg) => ({
 	...pkg,
 	published: false,
-	version: packageVersions.get(pkg.name),
+	version,
 }));
 
 for (const pkg of packageStates) {

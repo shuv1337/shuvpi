@@ -2,8 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { type AddressInfo, createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
-import type { ToolResultMessage } from "@earendil-works/pi-ai/compat";
+import { fauxAssistantMessage, fauxToolCall } from "@shuv1337/shuvpi-ai";
+import type { ToolResultMessage } from "@shuv1337/shuvpi-ai/compat";
 import { afterEach, describe, expect, it } from "vitest";
 import { InMemoryAuthStorageBackend } from "../../src/core/auth-storage.ts";
 import { runMcpCommand } from "../../src/extensions/mcp/cli.ts";
@@ -157,7 +157,7 @@ describe("AgentSession MCP OAuth", () => {
 
 		const fallback = await setup("follow");
 		await fallback.harness.session.prompt("/mcp login issues");
-		expect(fallback.server.registrations.map((metadata) => metadata.client_name)).toEqual(["pi"]);
+		expect(fallback.server.registrations.map((metadata) => metadata.client_name)).toEqual(["shuvpi"]);
 	});
 
 	it("adds the listening port to a callback URL without one", async () => {

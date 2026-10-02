@@ -1,6 +1,6 @@
 # durable
 
-A small local coding agent on `@earendil-works/pi-durable`. One process owns the model runtime, the durable
+A small local coding agent on `@shuv1337/shuvpi-durable`. One process owns the model runtime, the durable
 Harness, its SQLite storage, and the TUI. It reuses pi's model runtime, auth, settings, system prompt, keybindings,
 theme, and interactive components; the agent itself is the durable Harness with its built-in `CodingTools`.
 
@@ -11,7 +11,7 @@ node --import ./packages/coding-agent/src/experimental/source-resolver.ts packag
 
 A new session starts with pi's default model and thinking level from `settings.json`. `--continue` opens the newest
 session for the current directory. Sessions live under
-`~/.pi/agent/experimental/durable-sessions/<cwd-hash>/<session>/session.sqlite`; a lock keeps a second process out
+`~/.shuvpi/agent/experimental/durable-sessions/<cwd-hash>/<session>/session.sqlite`; a lock keeps a second process out
 (a lock left by a crash goes stale after 10 seconds, and the next start waits for that). Log in with pi itself;
 credentials are shared.
 

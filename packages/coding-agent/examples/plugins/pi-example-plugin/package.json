@@ -4,7 +4,7 @@
 	"private": true,
 	"type": "module",
 	"peerDependencies": {
-		"@earendil-works/chord": "^0.84.4",
-		"@earendil-works/pi-coding-agent": "^0.84.4"
+		"@shuv1337/shuvpi-chord": "^0.84.4",
+		"@shuv1337/shuvpi-coding-agent": "^0.84.4"
 	}
 }

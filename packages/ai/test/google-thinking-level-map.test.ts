@@ -120,10 +120,11 @@ describe("Google thinking level maps", () => {
 			HIGH: "high",
 		} as const;
 		for (const [mapped, expected] of Object.entries(mappedExpectations)) {
-			const model = googleModel("gemini-3.7-flash", { high: mapped, xhigh: mapped, max: mapped });
+			const model = googleModel("gemini-3.7-flash", { high: mapped, xhigh: mapped, max: mapped, ultra: mapped });
 			expect(resolveGoogleThinkingLevel(model, "high")).toBe(expected);
 			expect(resolveGoogleThinkingLevel(model, "xhigh")).toBe(expected);
 			expect(resolveGoogleThinkingLevel(model, "max")).toBe(expected);
+			expect(resolveGoogleThinkingLevel(model, "ultra")).toBe(expected);
 		}
 
 		const invalidModel = googleModel("gemini-3.7-flash", { xhigh: "extreme" });
@@ -166,14 +167,19 @@ describe("Google thinking level maps", () => {
 		expect(payload.config?.thinkingConfig).toEqual({ thinkingBudget: 0 });
 	});
 
-	it.each(["xhigh", "max"] as const)("maps Google Generative AI %s to a supported level", async (reasoning) => {
-		const payload = await captureGooglePayload(
-			googleModel("gemini-3.7-flash", { xhigh: "high", max: "high" }),
-			reasoning,
-		);
+	it.each(["xhigh", "max", "ultra"] as const)(
+		"maps Google Generative AI %s to a supported level",
+		async (reasoning) => {
+			const payload = await captureGooglePayload(
+				googleModel("gemini-3.7-flash", { xhigh: "high", max: "high", ultra: "high" }),
+				reasoning,
+			);
 
-		expect(payload).toMatchObject({ config: { thinkingConfig: { includeThoughts: true, thinkingLevel: "HIGH" } } });
-	});
+			expect(payload).toMatchObject({
+				config: { thinkingConfig: { includeThoughts: true, thinkingLevel: "HIGH" } },
+			});
+		},
+	);
 
 	it("honors uppercase provider values for standard Google Generative AI levels", async () => {
 		const payload = await captureGooglePayload(googleModel("gemini-3.7-flash", { high: "LOW" }), "high");
@@ -189,8 +195,11 @@ describe("Google thinking level maps", () => {
 		expect(payload).toMatchObject({ config: { thinkingConfig: { thinkingBudget: 1234 } } });
 	});
 
-	it("maps Google Vertex extended levels", async () => {
-		const payload = await captureVertexPayload(vertexModel("gemini-3.7-flash", { xhigh: "high" }), "xhigh");
+	it.each(["xhigh", "ultra"] as const)("maps Google Vertex %s to a supported level", async (reasoning) => {
+		const payload = await captureVertexPayload(
+			vertexModel("gemini-3.7-flash", { xhigh: "high", ultra: "high" }),
+			reasoning,
+		);
 
 		expect(payload).toMatchObject({ config: { thinkingConfig: { includeThoughts: true, thinkingLevel: "HIGH" } } });
 	});

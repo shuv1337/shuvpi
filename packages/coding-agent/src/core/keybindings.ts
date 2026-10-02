@@ -5,13 +5,29 @@ import {
 	type KeyId,
 	TUI_KEYBINDINGS,
 	KeybindingsManager as TuiKeybindingsManager,
-} from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { getAgentDir } from "../config.ts";
 import { stripBom } from "../utils/text.ts";
 
 export interface AppKeybindings {
+	"app.editor.copyDraft": true;
+	"app.editor.cutDraft": true;
+	"app.promptStash.toggle": true;
+	"app.promptStash.history": true;
+	"app.bashMode.toggle": true;
+	"app.openEditor": true;
+	"app.questionnaire.toggle": true;
+	"app.head.close": true;
+	"app.head.up": true;
+	"app.head.down": true;
+	"app.head.pageUp": true;
+	"app.head.pageDown": true;
+	"app.head.top": true;
+	"app.head.bottom": true;
+	"app.skillBrowser.favorite": true;
+	"app.activeSkills.toggle": true;
 	"app.interrupt": true;
 	"app.clear": true;
 	"app.exit": true;
@@ -66,7 +82,7 @@ export function useWindowsKeybindings(
 	return platform === "win32" || (platform === "linux" && Boolean(env.WSL_DISTRO_NAME || env.WSL_INTEROP));
 }
 
-declare module "@earendil-works/pi-tui" {
+declare module "@shuv1337/shuvpi-tui" {
 	interface Keybindings extends AppKeybindings {}
 }
 
@@ -74,6 +90,22 @@ const windowsKeybindings = useWindowsKeybindings();
 
 export const KEYBINDINGS = {
 	...TUI_KEYBINDINGS,
+	"app.editor.copyDraft": { defaultKeys: "ctrl+alt+c", description: "Copy the current draft" },
+	"app.editor.cutDraft": { defaultKeys: "ctrl+alt+x", description: "Cut the current draft" },
+	"app.promptStash.toggle": { defaultKeys: "alt+s", description: "Stash or restore the current prompt" },
+	"app.promptStash.history": { defaultKeys: "ctrl+alt+h", description: "Open prompt history" },
+	"app.bashMode.toggle": { defaultKeys: "ctrl+shift+b", description: "Toggle the persistent shell editor" },
+	"app.openEditor": { defaultKeys: "ctrl+shift+o", description: "Open a referenced file in an editor" },
+	"app.questionnaire.toggle": { defaultKeys: "space", description: "Toggle questionnaire choice" },
+	"app.head.close": { defaultKeys: ["escape", "q"], description: "Close last response viewer" },
+	"app.head.up": { defaultKeys: ["up", "k"], description: "Scroll last response up" },
+	"app.head.down": { defaultKeys: ["down", "j"], description: "Scroll last response down" },
+	"app.head.pageUp": { defaultKeys: ["pageUp", "b"], description: "Page last response up" },
+	"app.head.pageDown": { defaultKeys: ["pageDown", "space", "f"], description: "Page last response down" },
+	"app.head.top": { defaultKeys: ["home", "g"], description: "Jump to start of last response" },
+	"app.head.bottom": { defaultKeys: ["end", "shift+g"], description: "Jump to end of last response" },
+	"app.skillBrowser.favorite": { defaultKeys: "ctrl+f", description: "Toggle skill favorite" },
+	"app.activeSkills.toggle": { defaultKeys: "space", description: "Toggle active skill" },
 	"tui.editor.undo": {
 		...TUI_KEYBINDINGS["tui.editor.undo"],
 		defaultKeys: process.platform === "win32" ? "ctrl+z" : windowsKeybindings ? "alt+z" : "ctrl+-",

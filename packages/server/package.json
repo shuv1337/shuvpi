@@ -1,5 +1,5 @@
 {
-	"name": "@earendil-works/pi-server",
+	"name": "@shuv1337/shuvpi-server",
 	"version": "1.0.0",
 	"description": "experimental server package for pi",
 	"type": "module",
@@ -40,15 +40,15 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/earendil-works/pi.git",
+		"url": "git+https://github.com/shuv1337/shuvpi.git",
 		"directory": "packages/server"
 	},
 	"engines": {
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@earendil-works/chord": "^1.0.0",
-		"@earendil-works/pi-protocol": "^1.0.0"
+		"@shuv1337/shuvpi-chord": "^1.0.0",
+		"@shuv1337/shuvpi-protocol": "^1.0.0"
 	},
 	"devDependencies": {
 		"shx": "0.4.0",

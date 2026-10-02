@@ -1,6 +1,6 @@
-import { type Context, copyJson, type JsonValue } from "@earendil-works/chord";
-import { awaitWithContext, withAbortSignal } from "@earendil-works/chord/context";
-import type { Models } from "@earendil-works/pi-ai";
+import type { Models } from "@shuv1337/shuvpi-ai";
+import { type Context, copyJson, type JsonValue } from "@shuv1337/shuvpi-chord";
+import { awaitWithContext, withAbortSignal } from "@shuv1337/shuvpi-chord/context";
 import type { ExecutionEnv } from "../env/index.ts";
 import type { SessionImpl } from "../session/session.ts";
 import type { Transaction } from "../session/transaction.ts";
@@ -24,6 +24,7 @@ import type {
 } from "../types.ts";
 import { agentHooks } from "./agent.ts";
 import { readContext } from "./context.ts";
+import { ToolBoundary, type ToolPolicy } from "./tool.ts";
 import type {
 	Agent,
 	AnyTask,
@@ -130,6 +131,7 @@ type Overlay = {
 type Scope = { readonly conversation: ConversationId } | { readonly roots: true };
 
 export type TaskSchedulerOptions = {
+	readonly toolPolicies?: readonly ToolPolicy[];
 	readonly session: SessionImpl;
 	readonly storage: Storage;
 	readonly registry: RegistryReader;
@@ -172,6 +174,7 @@ export type TaskSchedulerOptions = {
  * step that decides its end, so a runtime commit it queued either lands before that decision or is rejected.
  */
 export class TaskScheduler {
+	readonly #toolBoundary: ToolBoundary;
 	readonly #session: SessionImpl;
 	readonly #storage: Storage;
 	readonly #registry: RegistryReader;
@@ -212,6 +215,7 @@ export class TaskScheduler {
 	#draining = false;
 
 	constructor(options: TaskSchedulerOptions) {
+		this.#toolBoundary = new ToolBoundary(options.toolPolicies);
 		this.#session = options.session;
 		this.#storage = options.storage;
 		this.#registry = options.registry;
@@ -1073,6 +1077,7 @@ export class TaskScheduler {
 		const settings = this.#settings;
 		return {
 			taskId: invocation.taskId as TaskId<JsonValue>,
+			toolBoundary: this.#toolBoundary,
 			conversationId: invocation.conversationId,
 			signal: invocation.controller.signal,
 			models: this.#models,

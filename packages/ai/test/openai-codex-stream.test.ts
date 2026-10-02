@@ -1,6 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { arch, platform, release, tmpdir } from "node:os";
 import { join } from "node:path";
+import * as zlib from "node:zlib";
 import { zstdDecompressSync } from "node:zlib";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -11,17 +12,19 @@ import {
 	stream as streamOpenAICodexResponses,
 	streamSimple as streamSimpleOpenAICodexResponses,
 } from "../src/api/openai-codex-responses.ts";
-import type { Api, Context, Model } from "../src/types.ts";
+import * as callbackServer from "../src/auth/oauth/callback-server.ts";
+import { openaiCodexOAuth } from "../src/auth/oauth/openai-codex.ts";
+import type { Api, Context, Model, ProviderHeaders } from "../src/types.ts";
 import { normalizeContext } from "../src/utils/transcript.ts";
 
-const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+const originalAgentDir = process.env.SHUVPI_CODING_AGENT_DIR;
 
 afterEach(() => {
 	vi.unstubAllGlobals();
 	if (originalAgentDir === undefined) {
-		delete process.env.PI_CODING_AGENT_DIR;
+		delete process.env.SHUVPI_CODING_AGENT_DIR;
 	} else {
-		process.env.PI_CODING_AGENT_DIR = originalAgentDir;
+		process.env.SHUVPI_CODING_AGENT_DIR = originalAgentDir;
 	}
 	closeOpenAICodexWebSocketSessions();
 	resetOpenAICodexWebSocketDebugStats();
@@ -97,10 +100,258 @@ function buildSSEPayload({
 	return `${events.join("\n\n")}\n\n`;
 }
 
+describe("openai-codex account and request compatibility", () => {
+	const model: Model<"openai-codex-responses"> = {
+		id: "gpt-5.1-codex",
+		name: "GPT-5.1 Codex",
+		api: "openai-codex-responses",
+		provider: "openai-codex",
+		baseUrl: "https://chatgpt.com/backend-api",
+		reasoning: true,
+		input: ["text"],
+		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+		contextWindow: 400000,
+		maxTokens: 128000,
+	};
+	const context = normalizeContext({ messages: [{ role: "user", content: "Hello", timestamp: 1 }] });
+	const unicodePayload = JSON.stringify({
+		"https://api.openai.com/auth": { chatgpt_account_id: "acc_é" },
+		note: "\uffff\ufffe",
+	});
+	const malformedTokens = [
+		"opaque-token",
+		"aaa..bbb",
+		"aaa.@@@.bbb",
+		...[
+			"{",
+			"null",
+			"{}",
+			JSON.stringify({ "https://api.openai.com/auth": {} }),
+			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "" } }),
+			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: 42 } }),
+		].map((payload) => `aaa.${Buffer.from(payload).toString("base64url")}.bbb`),
+	];
+
+	it.each([false, true])("decodes base64url UTF-8 accounts with padding=%s in inference and OAuth", async (padded) => {
+		const encoded = Buffer.from(unicodePayload).toString("base64url");
+		expect(encoded).toMatch(/[-_]/);
+		const payload = padded ? encoded + "=".repeat((4 - (encoded.length % 4)) % 4) : encoded;
+		const token = `aaa.${payload}.bbb`;
+		let headers: Headers | undefined;
+		const fetchMock = vi.fn(async (_input: string | Request | URL, init?: RequestInit) => {
+			headers = new Headers(init?.headers);
+			return new Response(buildSSEPayload({ status: "completed" }));
+		});
+		const result = await streamOpenAICodexResponses(model, context, {
+			apiKey: token,
+			transport: "sse",
+			fetch: fetchMock,
+		}).result();
+		expect(result.stopReason).toBe("stop");
+		expect(headers?.get("chatgpt-account-id")).toBe("acc_é");
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => Response.json({ access_token: token, refresh_token: "new", expires_in: 3600 })),
+		);
+		const refreshed = await openaiCodexOAuth.refresh(
+			{ type: "oauth", access: "old", refresh: "fake-refresh", expires: 0 },
+			new AbortController().signal,
+		);
+		expect(refreshed.accountId).toBe("acc_é");
+	});
+
+	it.each(malformedTokens)(
+		"rejects an invalid or missing token account without inference dispatch: %s",
+		async (token) => {
+			const fetchMock = vi.fn(async () => new Response("unexpected dispatch"));
+			const result = await streamOpenAICodexResponses(model, context, {
+				apiKey: token,
+				transport: "sse",
+				fetch: fetchMock,
+			}).result();
+			expect(result.stopReason).toBe("error");
+			expect(result.errorMessage).toBe("Failed to extract accountId from token");
+			expect(fetchMock).not.toHaveBeenCalled();
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => Response.json({ access_token: token, refresh_token: "new", expires_in: 3600 })),
+			);
+			await expect(
+				openaiCodexOAuth.refresh(
+					{ type: "oauth", access: "old", refresh: "fake-refresh", expires: 0 },
+					new AbortController().signal,
+				),
+			).rejects.toThrow("Failed to extract accountId from token");
+		},
+	);
+
+	it.each<{
+		name: string;
+		token: string;
+		modelHeaders?: Record<string, string>;
+		requestHeaders?: ProviderHeaders;
+		expected?: string;
+	}>([
+		{
+			name: "JWT wins",
+			token: mockToken(),
+			modelHeaders: { "chatgpt-account-id": "model" },
+			requestHeaders: { "ChatGPT-Account-ID": "request" },
+			expected: "acc_test",
+		},
+		{
+			name: "request wins with mixed case",
+			token: "opaque",
+			modelHeaders: { "chatgpt-account-id": "model" },
+			requestHeaders: { "ChatGPT-Account-ID": " request " },
+			expected: "request",
+		},
+		{ name: "model fallback", token: "opaque", modelHeaders: { "CHATGPT-ACCOUNT-ID": " model " }, expected: "model" },
+		{
+			name: "blank request falls back",
+			token: "opaque",
+			modelHeaders: { "chatgpt-account-id": "model" },
+			requestHeaders: { "chatgpt-account-id": " " },
+			expected: "model",
+		},
+		{
+			name: "null request falls back",
+			token: "opaque",
+			modelHeaders: { "chatgpt-account-id": "model" },
+			requestHeaders: { "chatgpt-account-id": null },
+			expected: "model",
+		},
+		{
+			name: "missing claim falls back",
+			token: "aaa.e30.bbb",
+			requestHeaders: { "chatgpt-account-id": "request" },
+			expected: "request",
+		},
+		{ name: "blank model is rejected", token: "opaque", modelHeaders: { "chatgpt-account-id": " " } },
+		{ name: "missing headers are rejected", token: "opaque" },
+	])("resolves account headers: $name", async ({ token, modelHeaders, requestHeaders, expected }) => {
+		let headers: Headers | undefined;
+		let body: Record<string, unknown> | null = null;
+		const fetchMock = vi.fn(async (_input: string | Request | URL, init?: RequestInit) => {
+			headers = new Headers(init?.headers);
+			body = decodeCodexRequestBody(init?.body);
+			return new Response(buildSSEPayload({ status: "completed" }));
+		});
+		const result = await streamOpenAICodexResponses({ ...model, headers: modelHeaders }, context, {
+			apiKey: token,
+			headers: requestHeaders,
+			serviceTier: "priority",
+			transport: "sse",
+			fetch: fetchMock,
+		}).result();
+		if (expected) {
+			expect(result.stopReason).toBe("stop");
+			expect(headers?.get("chatgpt-account-id")).toBe(expected);
+			expect(headers?.get("originator")).toBe("codex_cli_rs");
+			expect(body).toHaveProperty("service_tier", "priority");
+		} else {
+			expect(result.stopReason).toBe("error");
+			expect(fetchMock).not.toHaveBeenCalled();
+		}
+	});
+
+	it("uses shuvpi for browser login originator", async () => {
+		vi.spyOn(callbackServer, "startOAuthCallbackServer").mockRejectedValue(new Error("fake occupied port"));
+		let authorizationUrl: URL | undefined;
+		const fetchMock = vi.fn(async () =>
+			Response.json({ access_token: mockToken(), refresh_token: "new", expires_in: 3600 }),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+		const credential = await openaiCodexOAuth.login({
+			signal: new AbortController().signal,
+			prompt: async (prompt) => (prompt.type === "select" ? "browser" : "fake-code"),
+			notify(event) {
+				if (event.type === "auth_url") authorizationUrl = new URL(event.url);
+			},
+		});
+		expect(credential.accountId).toBe("acc_test");
+		expect(authorizationUrl?.searchParams.get("originator")).toBe("shuvpi");
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("copies compressed bytes into an independent fetch-compatible body", async () => {
+		const originalGetBuiltinModule = process.getBuiltinModule;
+		let compressedView: Buffer | undefined;
+		vi.spyOn(process, "getBuiltinModule").mockImplementation((id) =>
+			id === "node:zlib"
+				? {
+						...zlib,
+						zstdCompressSync(input: string) {
+							const compressed = zlib.zstdCompressSync(input);
+							const backing = Buffer.alloc(compressed.length + 16);
+							compressed.copy(backing, 8);
+							compressedView = backing.subarray(8, 8 + compressed.length);
+							return compressedView;
+						},
+					}
+				: originalGetBuiltinModule(id),
+		);
+		let transmitted: Record<string, unknown> | undefined;
+		const fetchMock = vi.fn(async (input: string | Request | URL, init?: RequestInit) => {
+			const body = init?.body;
+			expect(body).toBeInstanceOf(Uint8Array);
+			if (!(body instanceof Uint8Array)) throw new Error("Expected compressed body");
+			expect(body.buffer).not.toBe(compressedView?.buffer);
+			expect(body.byteOffset).toBe(0);
+			expect(body.buffer.byteLength).toBe(body.byteLength);
+			const request = new Request(input, init);
+			expect(request.headers.get("content-encoding")).toBe("zstd");
+			transmitted = JSON.parse(
+				zlib.zstdDecompressSync(new Uint8Array(await request.arrayBuffer())).toString("utf8"),
+			) as Record<string, unknown>;
+			return new Response(buildSSEPayload({ status: "completed" }));
+		});
+		const result = await streamOpenAICodexResponses(model, context, {
+			apiKey: mockToken(),
+			transport: "sse",
+			fetch: fetchMock,
+		}).result();
+		expect(result.stopReason).toBe("stop");
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(transmitted).toHaveProperty("input.0.content.0.text", "Hello");
+	});
+
+	it.each(["unavailable", "throws"] as const)("sends plain JSON when zstd %s", async (mode) => {
+		const originalGetBuiltinModule = process.getBuiltinModule;
+		vi.spyOn(process, "getBuiltinModule").mockImplementation((id) =>
+			id === "node:zlib"
+				? {
+						...zlib,
+						zstdCompressSync:
+							mode === "unavailable"
+								? undefined
+								: () => {
+										throw new Error("fake compression failure");
+									},
+					}
+				: originalGetBuiltinModule(id),
+		);
+		const fetchMock = vi.fn(async (input: string | Request | URL, init?: RequestInit) => {
+			expect(typeof init?.body).toBe("string");
+			const request = new Request(input, init);
+			expect(request.headers.has("content-encoding")).toBe(false);
+			expect(await request.json()).toHaveProperty("input.0.content.0.text", "Hello");
+			return new Response(buildSSEPayload({ status: "completed" }));
+		});
+		const result = await streamOpenAICodexResponses(model, context, {
+			apiKey: mockToken(),
+			transport: "sse",
+			fetch: fetchMock,
+		}).result();
+		expect(result.stopReason).toBe("stop");
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+});
+
 describe("openai-codex streaming", () => {
 	it("streams SSE responses and forwards raw provider events", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
-		process.env.PI_CODING_AGENT_DIR = tempDir;
+		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
 		const payload = Buffer.from(
 			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
@@ -160,7 +411,7 @@ describe("openai-codex streaming", () => {
 				expect(headers?.get("Authorization")).toBe(`Bearer ${token}`);
 				expect(headers?.get("chatgpt-account-id")).toBe("acc_test");
 				expect(headers?.get("OpenAI-Beta")).toBe("responses=experimental");
-				expect(headers?.get("originator")).toBe("pi");
+				expect(headers?.get("originator")).toBe("codex_cli_rs");
 				expect(headers?.get("User-Agent")).toBe(`pi (${platform()} ${release()}; ${arch()})`);
 				expect(headers?.get("accept")).toBe("text/event-stream");
 				expect(headers?.has("x-api-key")).toBe(false);
@@ -260,7 +511,7 @@ describe("openai-codex streaming", () => {
 
 	it("completes after response.completed even when the SSE body stays open", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
-		process.env.PI_CODING_AGENT_DIR = tempDir;
+		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 		const token = mockToken();
 		const encoder = new TextEncoder();
 		const sse = buildSSEPayload({ status: "completed", includeDone: true, endTurn: false });
@@ -321,7 +572,7 @@ describe("openai-codex streaming", () => {
 
 	it("maps response.incomplete to stopReason length even when the SSE body stays open", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
-		process.env.PI_CODING_AGENT_DIR = tempDir;
+		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 		const token = mockToken();
 		const encoder = new TextEncoder();
 		const sse = buildSSEPayload({ status: "incomplete" });
@@ -545,7 +796,7 @@ describe("openai-codex streaming", () => {
 
 	it("sets session-id/x-client-request-id headers and prompt_cache_key when sessionId is provided", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
-		process.env.PI_CODING_AGENT_DIR = tempDir;
+		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
 		const payload = Buffer.from(
 			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
@@ -799,7 +1050,7 @@ describe("openai-codex streaming", () => {
 
 	it("preserves gpt-5.5 xhigh reasoning effort from simple options", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
-		process.env.PI_CODING_AGENT_DIR = tempDir;
+		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 		const token = mockToken();
 		const sse = buildSSEPayload({ status: "completed" });
 		const encoder = new TextEncoder();
@@ -984,7 +1235,7 @@ describe("openai-codex streaming", () => {
 
 	it.each(["gpt-5.3-codex", "gpt-5.4", "gpt-5.5"])("clamps %s minimal reasoning effort to low", async (modelId) => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
-		process.env.PI_CODING_AGENT_DIR = tempDir;
+		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
 		const payload = Buffer.from(
 			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
@@ -1091,7 +1342,7 @@ describe("openai-codex streaming", () => {
 		"uses the client-sent %s service tier for %s when Codex echoes default",
 		async (modelId, serviceTier, multiplier) => {
 			const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
-			process.env.PI_CODING_AGENT_DIR = tempDir;
+			process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 			const token = mockToken();
 			const sse = `${[
 				`data: ${JSON.stringify({
@@ -1183,7 +1434,7 @@ describe("openai-codex streaming", () => {
 
 	it("does not set session-id/x-client-request-id headers when sessionId is not provided", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "pi-codex-stream-"));
-		process.env.PI_CODING_AGENT_DIR = tempDir;
+		process.env.SHUVPI_CODING_AGENT_DIR = tempDir;
 
 		const payload = Buffer.from(
 			JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_test" } }),
@@ -1402,6 +1653,8 @@ describe("openai-codex streaming", () => {
 		]);
 		expect(providerEventModels).toEqual([model, model, model, model, model]);
 		expect(capturedWebSocketHeaders?.["session-id"]).toBe("session-auto");
+		expect(capturedWebSocketHeaders?.originator).toBe("codex_cli_rs");
+		expect(capturedWebSocketHeaders?.["chatgpt-account-id"]).toBe("acc_test");
 		expect(capturedWebSocketHeaders?.session_id).toBeUndefined();
 		expect(capturedWebSocketHeaders?.["x-client-request-id"]).toBe("session-auto");
 		expect(global.fetch).not.toHaveBeenCalled();

@@ -1,5 +1,5 @@
-import { type Context, defineFacet, type Facet } from "@earendil-works/chord";
-import type { Conversation } from "@earendil-works/pi-durable";
+import { type Context, defineFacet, type Facet } from "@shuv1337/shuvpi-chord";
+import type { Conversation } from "@shuv1337/shuvpi-durable";
 import { Transcript } from "./transcript.ts";
 
 /** Serve the conversation's durable view state. The facet owns and disposes the attached state. */

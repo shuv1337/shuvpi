@@ -77,7 +77,7 @@ const CODEX_RESPONSE_STATUSES = new Set<CodexResponseStatus>([
 // ============================================================================
 
 export interface OpenAICodexResponsesOptions extends StreamOptions {
-	reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
 	reasoningSummary?: "auto" | "concise" | "detailed" | "off" | "on" | null;
 	serviceTier?: ResponseCreateParamsStreaming["service_tier"];
 	textVerbosity?: "low" | "medium" | "high";
@@ -267,7 +267,7 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 				throw new Error(`No API key for provider: ${model.provider}`);
 			}
 
-			const accountId = extractAccountId(apiKey);
+			const accountId = resolveCodexAccountId(apiKey, model.headers, options?.headers);
 			const grammarToolInputProperties = createGrammarToolInputProperties(
 				getDeclaredTools(normalizedContext.messages),
 				model.compat?.supportsOpenAIGrammarTools ?? false,
@@ -380,7 +380,7 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 			if (compressedBody) {
 				sseHeaders.set("content-encoding", "zstd");
 			}
-			const sseBody: Uint8Array | string = compressedBody ?? bodyJson;
+			const sseBody = compressedBody ? Uint8Array.from(compressedBody) : bodyJson;
 
 			// Fetch with retry logic for rate limits and transient errors
 			let response: Response | undefined;
@@ -472,7 +472,10 @@ export const stream: StreamFunction<"openai-codex-responses", OpenAICodexRespons
 				startEmitted = true;
 				stream.push({ type: "start", partial: output });
 			}
-			await processStream(response, output, stream, model, grammarToolInputProperties, options);
+			await processStream(response, output, stream, model, grammarToolInputProperties, {
+				...options,
+				serviceTier: body.service_tier,
+			});
 
 			if (options?.signal?.aborted) {
 				throw new Error("Request was aborted");
@@ -1554,7 +1557,7 @@ async function processWebSocketStream(
 			stream,
 			model,
 			{
-				serviceTier: options?.serviceTier,
+				serviceTier: requestBody.service_tier,
 				grammarToolInputProperties,
 				resolveServiceTier: resolveCodexServiceTier,
 				applyServiceTierPricing: (usage, serviceTier) => applyServiceTierPricing(usage, serviceTier, model),
@@ -1624,17 +1627,46 @@ async function parseErrorResponse(response: Response): Promise<{ message: string
 // Auth & Headers
 // ============================================================================
 
-function extractAccountId(token: string): string {
+function extractAccountIdFromToken(token: string): string | undefined {
 	try {
 		const parts = token.split(".");
-		if (parts.length !== 3) throw new Error("Invalid token");
-		const payload = JSON.parse(atob(parts[1]));
+		if (parts.length !== 3 || !parts[1]) return undefined;
+		const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+		const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+		const binary = atob(padded);
+		const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+		const payload = JSON.parse(new TextDecoder().decode(bytes)) as {
+			[JWT_CLAIM_PATH]?: { chatgpt_account_id?: unknown };
+		};
 		const accountId = payload?.[JWT_CLAIM_PATH]?.chatgpt_account_id;
-		if (!accountId) throw new Error("No account ID in token");
-		return accountId;
+		return typeof accountId === "string" && accountId.length > 0 ? accountId : undefined;
 	} catch {
-		throw new Error("Failed to extract accountId from token");
+		return undefined;
 	}
+}
+
+function getProviderHeader(headers: ProviderHeaders | undefined, name: string): string | undefined {
+	if (!headers) return undefined;
+	const expected = name.toLowerCase();
+	for (const [key, value] of Object.entries(headers)) {
+		if (key.toLowerCase() === expected && value !== null && value.trim().length > 0) {
+			return value.trim();
+		}
+	}
+	return undefined;
+}
+
+function resolveCodexAccountId(
+	token: string,
+	modelHeaders: Record<string, string> | undefined,
+	requestHeaders: ProviderHeaders | undefined,
+): string {
+	const accountId =
+		extractAccountIdFromToken(token) ??
+		getProviderHeader(requestHeaders, "chatgpt-account-id") ??
+		getProviderHeader(modelHeaders, "chatgpt-account-id");
+	if (!accountId) throw new Error("Failed to extract accountId from token");
+	return accountId;
 }
 
 function buildBaseCodexHeaders(
@@ -1653,7 +1685,7 @@ function buildBaseCodexHeaders(
 	}
 	headers.set("Authorization", `Bearer ${token}`);
 	headers.set("chatgpt-account-id", accountId);
-	headers.set("originator", "pi");
+	headers.set("originator", "codex_cli_rs");
 	headers.set("User-Agent", getPiUserAgent());
 	return headers;
 }

@@ -1,10 +1,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { findPackageDirectories } from "./package-workspaces.mjs";
 
 const dependencySections = ["dependencies", "devDependencies", "optionalDependencies"];
 const exactVersionPattern = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const ignoredDirectories = new Set([".git", "dist", "node_modules"]);
-const internalPackageNames = new Set(["@earendil-works/chord"]);
+const internalPackageNames = new Set(findPackageDirectories().map((directory) => JSON.parse(readFileSync(join(directory, "package.json"), "utf8")).name));
 const packageJsonFiles = [];
 
 function collectPackageJsonFiles(directory) {
@@ -23,7 +24,7 @@ function collectPackageJsonFiles(directory) {
 }
 
 function isInternalWorkspaceDependency(name) {
-	return name.startsWith("@earendil-works/pi-") || internalPackageNames.has(name);
+	return internalPackageNames.has(name);
 }
 
 function isNonRegistrySpecifier(specifier) {

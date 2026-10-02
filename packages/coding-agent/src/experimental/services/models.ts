@@ -1,5 +1,5 @@
-import { type Context, defineService, type ReplicatedState } from "@earendil-works/chord";
-import type { ModelThinkingLevel } from "@earendil-works/pi-ai";
+import type { ModelThinkingLevel } from "@shuv1337/shuvpi-ai";
+import { type Context, defineService, type ReplicatedState } from "@shuv1337/shuvpi-chord";
 
 export interface ModelRef {
 	provider: string;

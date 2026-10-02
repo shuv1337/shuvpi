@@ -1,6 +1,6 @@
-import type { Context } from "@earendil-works/chord";
-import type { Message, SystemMessage, Tool, ToolReference } from "@earendil-works/pi-ai";
-import { declarationsEqual, getCurrentTools, toToolDeclaration } from "@earendil-works/pi-ai/utils/transcript";
+import type { Message, SystemMessage, Tool, ToolReference } from "@shuv1337/shuvpi-ai";
+import { declarationsEqual, getCurrentTools, toToolDeclaration } from "@shuv1337/shuvpi-ai/utils/transcript";
+import type { Context } from "@shuv1337/shuvpi-chord";
 import { SystemEntry } from "../entries.ts";
 import type { ContextEdit, TypedEntryDraft } from "../types.ts";
 import type { ContextView, PromptInput, PromptSection, ToolRegistration } from "./types.ts";
@@ -66,9 +66,13 @@ type ToolChanges = { readonly toolsRemoved: ToolReference[]; readonly toolsAdded
 export function planSystemEntries(
 	view: ContextView,
 	desired: ReadonlyMap<string, string>,
-	tools: readonly Tool[],
+	tools: readonly (Tool & { readonly exposure?: "direct" | "model-only" | "codemode" | "deferred" | "hidden" })[],
 	timestamp: number,
 ): SystemDraft[] {
+	// Discovery-only tools remain executable through the host boundary but are not direct model declarations.
+	tools = tools.filter(
+		(tool) => tool.exposure === undefined || tool.exposure === "direct" || tool.exposure === "model-only",
+	);
 	const head = view.head;
 	if (head !== undefined && !view.entries.some((entry) => SystemEntry.is(entry) && entry.id > head.id)) {
 		const edits: ContextEdit[] = view.entries

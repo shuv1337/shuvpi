@@ -1,9 +1,9 @@
 import * as os from "node:os";
-import type { AgentMessage, StreamFn, ThinkingLevel } from "@earendil-works/pi-agent-core";
-import { contentText, normalizeContext, type RetryPolicy, uuidv7 } from "@earendil-works/pi-ai";
-import type { Api, Model, Provider, SimpleStreamOptions } from "@earendil-works/pi-ai/compat";
+import type { AgentMessage, StreamFn, ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
+import { contentText, normalizeContext, type RetryPolicy, uuidv7 } from "@shuv1337/shuvpi-ai";
+import type { Api, Model, Provider, SimpleStreamOptions } from "@shuv1337/shuvpi-ai/compat";
 import { VERSION } from "../config.ts";
-import { getPiUserAgent } from "../utils/pi-user-agent.ts";
+import { getShuvpiUserAgent } from "../utils/shuvpi-user-agent.ts";
 import { writeZipArchive } from "../utils/zip.ts";
 import { completeSummarization, estimateTokens, getSummarizationFailure } from "./compaction/compaction.ts";
 import { serializeConversation } from "./compaction/utils.ts";
@@ -67,7 +67,7 @@ function collectEnvironment() {
 	const env = (name: string): string | null => process.env[name] || null;
 	return {
 		version: VERSION,
-		userAgent: getPiUserAgent(VERSION),
+		userAgent: getShuvpiUserAgent(VERSION),
 		runtime: process.versions.bun ? `bun/${process.versions.bun}` : `node/${process.version}`,
 		platform: process.platform,
 		arch: process.arch,
@@ -84,8 +84,8 @@ function collectEnvironment() {
 			ci: Boolean(process.env.CI),
 		},
 		// Names help diagnose configuration; values never leave the machine.
-		piEnvironmentVariables: Object.keys(process.env)
-			.filter((name) => name.startsWith("PI_"))
+		shuvpiEnvironmentVariables: Object.keys(process.env)
+			.filter((name) => name.startsWith("SHUVPI_"))
 			.sort(),
 	};
 }

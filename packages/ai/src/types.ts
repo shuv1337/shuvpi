@@ -1,7 +1,8 @@
-import type { TelemetryContext } from "@earendil-works/pi-telemetry";
+import type { TelemetryContext } from "@shuv1337/shuvpi-telemetry";
 import type { AnthropicOptions } from "./api/anthropic-messages.ts";
 import type { AzureOpenAIResponsesOptions } from "./api/azure-openai-responses.ts";
 import type { BedrockOptions } from "./api/bedrock-converse-stream.ts";
+import type { GoogleAntigravityOptions } from "./api/google-antigravity.ts";
 import type { GoogleOptions } from "./api/google-generative-ai.ts";
 import type { GoogleVertexOptions } from "./api/google-vertex.ts";
 import type { MistralOptions } from "./api/mistral-conversations.ts";
@@ -23,6 +24,7 @@ export type KnownApi =
 	| "anthropic-messages"
 	| "bedrock-converse-stream"
 	| "google-generative-ai"
+	| "google-antigravity"
 	| "google-vertex"
 	| "pi-messages";
 
@@ -41,6 +43,7 @@ export type KnownProvider =
 	| "ant-ling"
 	| "anthropic"
 	| "google"
+	| "google-antigravity"
 	| "google-vertex"
 	| "openai"
 	| "azure-openai-responses"
@@ -82,7 +85,7 @@ export type KnownProvider =
 export type ProviderId = KnownProvider | string;
 
 export type ToolChoice = "auto" | "none";
-export type ThinkingLevel = "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+export type ThinkingLevel = "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
 export type ModelThinkingLevel = "off" | ThinkingLevel;
 export type ThinkingLevelMap = Partial<Record<ModelThinkingLevel, string | null>>;
 export type ChatTemplateKwargValue =
@@ -261,6 +264,7 @@ export interface ApiOptionsMap {
 	"openai-codex-responses": OpenAICodexResponsesOptions;
 	"azure-openai-responses": AzureOpenAIResponsesOptions;
 	"google-generative-ai": GoogleOptions;
+	"google-antigravity": GoogleAntigravityOptions;
 	"google-vertex": GoogleVertexOptions;
 	"mistral-conversations": MistralOptions;
 	"bedrock-converse-stream": BedrockOptions;
@@ -602,6 +606,8 @@ export type ToolResultMessage<TDetails = JsonValue> = IsJsonCompatible<TDetails>
 			usage?: Usage;
 			/** Calls this tool made to other tools. Kept for the session record; not sent to the model. */
 			nestedCalls?: NestedToolCalls;
+			/** Structured tool output for host integrations; persisted with the tool result, not sent as model text. */
+			structuredContent?: JsonValue;
 			isError: boolean;
 			timestamp: number; // Unix timestamp in milliseconds
 		}

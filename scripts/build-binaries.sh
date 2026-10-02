@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Build pi binaries for all platforms locally.
-# Mirrors .github/workflows/build-binaries.yml
+# Build Shuvpi binaries for all supported platforms locally.
+# CI publishes npm packages; this helper preserves the standalone binary matrix.
 #
 # Usage:
 #   ./scripts/build-binaries.sh [--skip-install] [--skip-build] [--offline-model-data] [--platform <platform>] [--out <dir>]
@@ -15,16 +15,19 @@
 #
 # Output:
 #   packages/coding-agent/binaries/
-#     pi-darwin-arm64.tar.gz
-#     pi-darwin-x64.tar.gz
-#     pi-linux-x64.tar.gz
-#     pi-linux-arm64.tar.gz
-#     pi-windows-x64.zip
-#     pi-windows-arm64.zip
+#     <cli>-darwin-arm64.tar.gz
+#     <cli>-darwin-x64.tar.gz
+#     <cli>-linux-x64.tar.gz
+#     <cli>-linux-arm64.tar.gz
+#     <cli>-windows-x64.zip
+#     <cli>-windows-arm64.zip
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+CLI_NAME=$(node -p 'Object.keys(require("./packages/coding-agent/package.json").bin)[0]')
+[[ "$CLI_NAME" =~ ^[a-z0-9-]+$ ]] || { echo "Invalid CLI executable name" >&2; exit 1; }
 
 SKIP_INSTALL=false
 SKIP_BUILD=false
@@ -47,10 +50,12 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --platform)
+            [[ $# -ge 2 ]] || { echo "--platform requires a name" >&2; exit 1; }
             PLATFORM="$2"
             shift 2
             ;;
         --out)
+            [[ $# -ge 2 && -n "$2" ]] || { echo "--out requires a directory" >&2; exit 1; }
             OUTPUT_DIR="$2"
             shift 2
             ;;
@@ -77,9 +82,7 @@ fi
 if [[ -z "$OUTPUT_DIR" ]]; then
     OUTPUT_DIR="packages/coding-agent/binaries"
 fi
-if [[ "$OUTPUT_DIR" != /* ]]; then
-    OUTPUT_DIR="$(pwd)/$OUTPUT_DIR"
-fi
+OUTPUT_DIR=$(node scripts/release-output.mjs "$OUTPUT_DIR")
 
 if [[ "$SKIP_INSTALL" == "false" ]]; then
     echo "==> Installing dependencies..."
@@ -91,10 +94,10 @@ fi
 if [[ "$SKIP_BUILD" == "false" ]]; then
     if [[ "$OFFLINE_MODEL_DATA" == "true" ]]; then
         echo "==> Building all packages with bundled model data..."
-        npm run build:offline
+        node scripts/build-release-packages.mjs --offline-model-data
     else
         echo "==> Building all packages..."
-        npm run build
+        node scripts/build-release-packages.mjs
     fi
 else
     echo "==> Skipping package build (--skip-build)"
@@ -127,11 +130,11 @@ for platform in "${PLATFORMS[@]}"; do
     # for the worker specifiers in the runtime to resolve.
     #
     # Disable cwd bunfig.toml autoload so project preload scripts cannot crash the
-    # standalone binary before pi starts (see #7684).
+    # standalone binary before the CLI starts (see #7684).
     if [[ "$platform" == windows-* ]]; then
-        bun build --compile --no-compile-autoload-bunfig --target="$bun_target" ./dist/bun/cli.js ./src/utils/image-resize-worker.ts ./src/extensions/codemode/worker.ts --outfile "$OUTPUT_DIR/$platform/pi.exe"
+        bun build --compile --no-compile-autoload-bunfig --target="$bun_target" ./dist/bun/cli.js ./src/utils/image-resize-worker.ts ./src/extensions/codemode/worker.ts --outfile "$OUTPUT_DIR/$platform/$CLI_NAME.exe"
     else
-        bun build --compile --no-compile-autoload-bunfig --target="$bun_target" ./dist/bun/cli.js ./src/utils/image-resize-worker.ts ./src/extensions/codemode/worker.ts --outfile "$OUTPUT_DIR/$platform/pi"
+        bun build --compile --no-compile-autoload-bunfig --target="$bun_target" ./dist/bun/cli.js ./src/utils/image-resize-worker.ts ./src/extensions/codemode/worker.ts --outfile "$OUTPUT_DIR/$platform/$CLI_NAME"
     fi
 done
 
@@ -164,12 +167,12 @@ cd "$OUTPUT_DIR"
 for platform in "${PLATFORMS[@]}"; do
     if [[ "$platform" == windows-* ]]; then
         # Windows (zip)
-        echo "Creating pi-$platform.zip..."
-        (cd "$platform" && zip -r ../pi-$platform.zip .)
+        echo "Creating $CLI_NAME-$platform.zip..."
+        (cd "$platform" && zip -r "../$CLI_NAME-$platform.zip" .)
     else
         # Unix platforms (tar.gz) - use wrapper directory for mise compatibility
-        echo "Creating pi-$platform.tar.gz..."
-        mv "$platform" pi && tar -czf pi-$platform.tar.gz pi && mv pi "$platform"
+        echo "Creating $CLI_NAME-$platform.tar.gz..."
+        mv "$platform" "$CLI_NAME" && tar -czf "$CLI_NAME-$platform.tar.gz" "$CLI_NAME" && mv "$CLI_NAME" "$platform"
     fi
 done
 
@@ -178,9 +181,9 @@ echo "==> Extracting archives for testing..."
 for platform in "${PLATFORMS[@]}"; do
     rm -rf "$platform"
     if [[ "$platform" == windows-* ]]; then
-        mkdir -p "$platform" && (cd "$platform" && unzip -q ../pi-$platform.zip)
+        mkdir -p "$platform" && (cd "$platform" && unzip -q "../$CLI_NAME-$platform.zip")
     else
-        tar -xzf pi-$platform.tar.gz && mv pi "$platform"
+        tar -xzf "$CLI_NAME-$platform.tar.gz" && mv "$CLI_NAME" "$platform"
     fi
 done
 
@@ -192,8 +195,8 @@ echo ""
 echo "Extracted directories for testing:"
 for platform in "${PLATFORMS[@]}"; do
     if [[ "$platform" == windows-* ]]; then
-        echo "  $OUTPUT_DIR/$platform/pi.exe"
+        echo "  $OUTPUT_DIR/$platform/$CLI_NAME.exe"
     else
-        echo "  $OUTPUT_DIR/$platform/pi"
+        echo "  $OUTPUT_DIR/$platform/$CLI_NAME"
     fi
 done

@@ -1,5 +1,5 @@
-import type { JsonValue } from "@earendil-works/chord";
-import type { TSchema } from "@earendil-works/pi-ai";
+import type { TSchema } from "@shuv1337/shuvpi-ai";
+import type { JsonValue } from "@shuv1337/shuvpi-chord";
 import type { AnyTask, Extension, HookRegistration, HooksOf, PromptSection, ToolRegistration, Wrap } from "./types.ts";
 
 /** Identity function that types an extension. */

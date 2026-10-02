@@ -2,24 +2,15 @@
 
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { installCodingAgentConsumer, packReleasePackages, smokeTestCodingAgentConsumer } from "./coding-agent-consumer.mjs";
+import { getReleasePackages } from "./release-packages.mjs";
+import { releaseOutputDirectory } from "./release-output.mjs";
 
-const packages = [
-	{ directory: "packages/chord", name: "@earendil-works/chord" },
-	{ directory: "packages/telemetry", name: "@earendil-works/pi-telemetry" },
-	{ directory: "packages/codemode", name: "@earendil-works/pi-codemode" },
-	{ directory: "packages/mcp", name: "@earendil-works/pi-mcp" },
-	{ directory: "packages/ai", name: "@earendil-works/pi-ai" },
-	{ directory: "packages/durable", name: "@earendil-works/pi-durable" },
-	{ directory: "packages/tui", name: "@earendil-works/pi-tui" },
-	{ directory: "packages/agent", name: "@earendil-works/pi-agent-core" },
-	{ directory: "packages/protocol", name: "@earendil-works/pi-protocol" },
-	{ directory: "packages/client", name: "@earendil-works/pi-client" },
-	{ directory: "packages/server", name: "@earendil-works/pi-server" },
-	{ directory: "packages/coding-agent", name: "@earendil-works/pi-coding-agent" },
-];
+const packages = getReleasePackages();
+const appName = Object.keys(readPackageJson("packages/coding-agent").bin)[0];
+if (!/^[a-z0-9-]+$/.test(appName ?? "")) throw new Error("Invalid CLI executable name");
 
 function printUsage() {
 	console.log(`Usage: node scripts/local-release.mjs [options]
@@ -113,21 +104,12 @@ function commandExists(command) {
 	return spawnSync(command, ["--version"], { stdio: "ignore" }).status === 0;
 }
 
-function isInsidePath(child, parent) {
-	const relativePath = relative(parent, child);
-	return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
 function prepareOutputDirectory(options, repoRoot) {
 	if (!options.outDir) {
-		return mkdtempSync(join(tmpdir(), "pi-local-release-"));
+		return mkdtempSync(join(tmpdir(), `${appName}-local-release-`));
 	}
 
-	const outDir = resolve(options.outDir);
-
-	if (isInsidePath(outDir, repoRoot)) {
-		throw new Error(`Output directory must be outside the repository: ${outDir}`);
-	}
+	const outDir = releaseOutputDirectory(options.outDir, repoRoot);
 
 	if (existsSync(outDir)) {
 		if (!options.force) {
@@ -163,31 +145,31 @@ function buildBunBinaryRelease(targetDirectory, archiveDirectory) {
 	]);
 	rmSync(targetDirectory, { force: true, recursive: true });
 	cpSync(join(binaryBuildDirectory, platform), targetDirectory, { recursive: true });
-	const archiveName = platform.startsWith("windows-") ? `pi-${platform}.zip` : `pi-${platform}.tar.gz`;
+	const archiveName = platform.startsWith("windows-") ? `${appName}-${platform}.zip` : `${appName}-${platform}.tar.gz`;
 	cpSync(join(binaryBuildDirectory, archiveName), join(archiveDirectory, archiveName));
 	return platform;
 }
 
-function createPiShim(installDirectory) {
+function createAppShim(installDirectory) {
 	const binDirectory = join(installDirectory, "node_modules", ".bin");
 	if (process.platform === "win32") {
-		if (existsSync(join(binDirectory, "pi.cmd"))) {
-			writeFileSync(join(installDirectory, "pi.cmd"), '@ECHO off\r\n"%~dp0node_modules\\.bin\\pi.cmd" %*\r\n');
-			writeFileSync(join(installDirectory, "pi.ps1"), '& "$PSScriptRoot/node_modules/.bin/pi.ps1" @args\n');
+		if (existsSync(join(binDirectory, `${appName}.cmd`))) {
+			writeFileSync(join(installDirectory, `${appName}.cmd`), `@ECHO off\r\n"%~dp0node_modules\\.bin\\${appName}.cmd" %*\r\n`);
+			writeFileSync(join(installDirectory, `${appName}.ps1`), `& "$PSScriptRoot/node_modules/.bin/${appName}.ps1" @args\n`);
 			return;
 		}
-		writeFileSync(join(installDirectory, "pi.cmd"), '@ECHO off\r\n"%~dp0node_modules\\.bin\\pi.exe" %*\r\n');
-		writeFileSync(join(installDirectory, "pi.ps1"), '& "$PSScriptRoot/node_modules/.bin/pi.exe" @args\n');
+		writeFileSync(join(installDirectory, `${appName}.cmd`), `@ECHO off\r\n"%~dp0node_modules\\.bin\\${appName}.exe" %*\r\n`);
+		writeFileSync(join(installDirectory, `${appName}.ps1`), `& "$PSScriptRoot/node_modules/.bin/${appName}.exe" @args\n`);
 		return;
 	}
-	symlinkSync(join("node_modules", ".bin", "pi"), join(installDirectory, "pi"));
+	symlinkSync(join("node_modules", ".bin", appName), join(installDirectory, appName));
 }
 
 const options = parseArgs();
 const repoRoot = process.cwd();
 const rootPackageJson = readPackageJson(repoRoot);
 
-if (rootPackageJson.name !== "pi-monorepo") {
+if (!Array.isArray(rootPackageJson.workspaces) || !packages.some((pkg) => pkg.directory === "packages/coding-agent")) {
 	throw new Error("Run this script from the repository root");
 }
 
@@ -223,7 +205,7 @@ if (!options.skipInstall) {
 
 	installCodingAgentConsumer(nodeInstallDirectory, tarballs);
 	smokeTestCodingAgentConsumer(nodeInstallDirectory);
-	createPiShim(nodeInstallDirectory);
+	createAppShim(nodeInstallDirectory);
 
 	if (!options.skipBunInstall) {
 		if (!commandExists("bun")) {
@@ -231,7 +213,7 @@ if (!options.skipInstall) {
 		}
 		installCodingAgentConsumer(bunInstallDirectory, tarballs, "bun");
 		smokeTestCodingAgentConsumer(bunInstallDirectory, "bun");
-		createPiShim(bunInstallDirectory);
+		createAppShim(bunInstallDirectory);
 	}
 }
 
@@ -245,19 +227,19 @@ for (const tarball of tarballs.values()) {
 if (!options.skipInstall) {
 	console.log("\nLocal Bun binary release:");
 	console.log(`  ${binaryDirectory}`);
-	console.log(`  ${join(outDir, `pi-${binaryPlatform}.${String(binaryPlatform).startsWith("windows-") ? "zip" : "tar.gz"}`)}`);
+	console.log(`  ${join(outDir, `${appName}-${binaryPlatform}.${String(binaryPlatform).startsWith("windows-") ? "zip" : "tar.gz"}`)}`);
 	console.log("\nRun the local Bun binary release from outside the repository:");
-	console.log(`  ${join(binaryDirectory, String(binaryPlatform).startsWith("windows-") ? "pi.exe" : "pi")} --help`);
+	console.log(`  ${join(binaryDirectory, String(binaryPlatform).startsWith("windows-") ? `${appName}.exe` : appName)} --help`);
 
 	console.log("\nIsolated npm install:");
 	console.log(`  ${nodeInstallDirectory}`);
 	console.log("\nRun the locally packed npm CLI from outside the repository:");
-	console.log(`  ${join(nodeInstallDirectory, process.platform === "win32" ? "pi.cmd" : "pi")} --help`);
+	console.log(`  ${join(nodeInstallDirectory, process.platform === "win32" ? `${appName}.cmd` : appName)} --help`);
 
 	if (!options.skipBunInstall) {
 		console.log("\nIsolated Bun package install:");
 		console.log(`  ${bunInstallDirectory}`);
 		console.log("\nRun the locally packed Bun package CLI from outside the repository:");
-		console.log(`  ${join(bunInstallDirectory, process.platform === "win32" ? "pi.cmd" : "pi")} --help`);
+		console.log(`  ${join(bunInstallDirectory, process.platform === "win32" ? `${appName}.cmd` : appName)} --help`);
 	}
 }

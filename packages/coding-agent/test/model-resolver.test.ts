@@ -1,10 +1,10 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Agent } from "@earendil-works/pi-agent-core";
-import type { Model } from "@earendil-works/pi-ai";
-import { getModel, streamSimple } from "@earendil-works/pi-ai/compat";
-import { getBuiltinModels, getBuiltinProviders } from "@earendil-works/pi-ai/providers/all";
+import { Agent } from "@shuv1337/shuvpi-agent-core";
+import type { Model } from "@shuv1337/shuvpi-ai";
+import { getModel, streamSimple } from "@shuv1337/shuvpi-ai/compat";
+import { getBuiltinModels, getBuiltinProviders } from "@shuv1337/shuvpi-ai/providers/all";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";

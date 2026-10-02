@@ -279,9 +279,9 @@ Set the reasoning/thinking level for models that support it.
 {"type": "set_thinking_level", "level": "high"}
 ```
 
-Levels: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"`
+Levels: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"`, `"ultra"`
 
-`"xhigh"` and `"max"` are exposed only when supported by the selected model. Some models, including GPT-5.6, expose both.
+`"xhigh"`, `"max"`, and `"ultra"` are exposed only when advertised by the selected model. Query `get_available_thinking_levels` for that model's list.
 
 Response:
 ```json
@@ -806,7 +806,7 @@ Response:
         "description": "Fix failing tests",
         "source": "prompt",
         "sourceInfo": {
-          "path": "/home/user/myproject/.pi/agent/prompts/fix-tests.md",
+          "path": "/home/user/myproject/.shuvpi/agent/prompts/fix-tests.md",
           "source": "local",
           "scope": "project",
           "origin": "top-level"
@@ -857,4 +857,4 @@ Model commands return the complete configured model definition. Costs are in US 
 }
 ```
 
-For model configuration, see [Configure a compatible endpoint](models.md#configure-a-compatible-endpoint). For TypeScript, use the exported `Model` type from `@earendil-works/pi-ai`.
+For model configuration, see [Configure a compatible endpoint](models.md#configure-a-compatible-endpoint). For TypeScript, use the exported `Model` type from `@shuv1337/shuvpi-ai`.

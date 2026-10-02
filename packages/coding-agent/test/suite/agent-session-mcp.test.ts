@@ -1,7 +1,7 @@
-import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
-import type { SystemMessage, ToolResultMessage } from "@earendil-works/pi-ai/compat";
-import { type JsonRpcRequest, LATEST_PROTOCOL_VERSION } from "@earendil-works/pi-mcp";
-import { createInMemoryTransportPair } from "@earendil-works/pi-mcp/testing";
+import { fauxAssistantMessage, fauxToolCall } from "@shuv1337/shuvpi-ai";
+import type { SystemMessage, ToolResultMessage } from "@shuv1337/shuvpi-ai/compat";
+import { type JsonRpcRequest, LATEST_PROTOCOL_VERSION } from "@shuv1337/shuvpi-mcp";
+import { createInMemoryTransportPair } from "@shuv1337/shuvpi-mcp/testing";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionFactory } from "../../src/core/extensions/types.ts";

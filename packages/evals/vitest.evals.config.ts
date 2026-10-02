@@ -38,9 +38,9 @@ const localConfig = mergeConfig(
 	baseConfig,
 	defineConfig({
 		resolve: {
-			alias: [{ find: /^@earendil-works\/pi-coding-agent$/, replacement: workspaceSourcePaths.codingAgentIndex }],
+			alias: [{ find: /^@shuv1337\/shuvpi-coding-agent$/, replacement: workspaceSourcePaths.codingAgentIndex }],
 		},
 	}),
 );
 
-export default process.env.PI_EVAL_CONTAINER === "1" ? evalConfig : mergeConfig(localConfig, evalConfig);
+export default process.env.SHUVPI_EVAL_CONTAINER === "1" ? evalConfig : mergeConfig(localConfig, evalConfig);

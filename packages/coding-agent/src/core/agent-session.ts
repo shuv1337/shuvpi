@@ -30,8 +30,8 @@ import {
 	type PrepareNextTurnContext,
 	runToolCall,
 	type ThinkingLevel,
-} from "@earendil-works/pi-agent-core";
-import { contentText, getCurrentSystemMessage, retryDelayMs } from "@earendil-works/pi-ai";
+} from "@shuv1337/shuvpi-agent-core";
+import { contentText, getCurrentSystemMessage, retryDelayMs } from "@shuv1337/shuvpi-ai";
 import type {
 	AssistantMessage,
 	AuthResult,
@@ -42,7 +42,7 @@ import type {
 	TextContent,
 	ToolResultMessage,
 	Usage,
-} from "@earendil-works/pi-ai/compat";
+} from "@shuv1337/shuvpi-ai/compat";
 import {
 	clampThinkingLevel,
 	cleanupSessionResources,
@@ -54,7 +54,7 @@ import {
 	type RetryCallbacks,
 	resetApiProviders,
 	streamSimple,
-} from "@earendil-works/pi-ai/compat";
+} from "@shuv1337/shuvpi-ai/compat";
 import { getThemeByName, theme } from "../modes/interactive/theme/theme.ts";
 import { stripFrontmatter } from "../utils/frontmatter.ts";
 import { processImage } from "../utils/image-process.ts";
@@ -3373,6 +3373,7 @@ export class AgentSession {
 					this.sessionManager.appendLabelChange(entryId, label);
 				},
 				getActiveTools: () => this.getActiveToolNames(),
+				getToolCallHandlerExtensions: () => runner.getToolCallHandlerExtensions(),
 				getAllTools: () => this.getAllTools(),
 				getSettings: () => this.settingsManager.getSettings(),
 				setActiveTools: (toolNames) => this.setActiveToolsByName(toolNames),
@@ -3387,6 +3388,12 @@ export class AgentSession {
 				setThinkingLevel: (level) => this.setThinkingLevel(level),
 			},
 			{
+				appendCustomMessageEntry: (customType, content, display, details) => {
+					const entryId = this.sessionManager.appendCustomMessageEntry(customType, content, display, details);
+					const entry = this.sessionManager.getEntry(entryId);
+					if (entry) this._emit({ type: "entry_appended", entry });
+					return entryId;
+				},
 				getModel: () => this.model,
 				getScopedModels: () => this._scopedModels,
 				isIdle: () => this.isIdle,

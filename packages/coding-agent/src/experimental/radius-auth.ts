@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { normalizeRadiusGatewayUrl } from "@earendil-works/pi-ai/providers/radius-config";
+import { normalizeRadiusGatewayUrl } from "@shuv1337/shuvpi-ai/providers/radius-config";
 import { getAuthCredential } from "../cli/auth-command.ts";
 import type { AuthInput } from "../cli/experimental/command-options.ts";
 import { ModelRuntime } from "../core/model-runtime.ts";
@@ -33,7 +33,7 @@ export class RadiusRelayAuthResolver {
 		readonly signal?: AbortSignal;
 	}): Promise<RadiusRelayAuth | undefined> {
 		options.signal?.throwIfAborted();
-		if (process.env.PI_OFFLINE !== undefined) {
+		if (process.env.SHUVPI_OFFLINE !== undefined) {
 			if (options.required) throw new Error("Radius relay connections are unavailable in offline mode");
 			return undefined;
 		}

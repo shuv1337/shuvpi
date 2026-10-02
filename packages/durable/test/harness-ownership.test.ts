@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type AssistantMessage, fauxAssistantMessage, fauxText, fauxToolCall, Type } from "@earendil-works/pi-ai";
+import { type AssistantMessage, fauxAssistantMessage, fauxText, fauxToolCall, Type } from "@shuv1337/shuvpi-ai";
 import {
 	type Conversation,
 	type ConversationHandle,
@@ -15,11 +15,13 @@ import {
 	type Harness,
 	LiveDoc,
 	MemoryStorage,
+	readToolEffects,
+	resolveToolEffect,
 	type Storage,
 	StorageRejected,
 	type Submission,
 	type TaskId,
-} from "@earendil-works/pi-durable";
+} from "@shuv1337/shuvpi-durable";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { chatSetup, openChat } from "./chat-support.ts";
@@ -782,7 +784,7 @@ describe("owned conversations from tools and supervisors", () => {
 		await harness.close(context);
 	});
 
-	it("aborts the children of a tool call that throws or is interrupted, while the run continues", async () => {
+	it("aborts the children of a tool call that throws or is interrupted and stops its run", async () => {
 		const directory = await mkdtemp(join(tmpdir(), "pi-durable-tool-children-"));
 		directories.add(directory);
 		const path = join(directory, "session.sqlite");
@@ -814,16 +816,16 @@ describe("owned conversations from tools and supervisors", () => {
 		);
 		const call = (mode: string, id: string) =>
 			fauxAssistantMessage([fauxToolCall("spawn", { mode }, { id })], { stopReason: "toolUse" });
-		setup.faux.setResponses([
-			call("throw", "c1"),
-			fauxAssistantMessage([fauxText("after throw")]),
-			call("hang", "c2"),
-		]);
+		setup.faux.setResponses([call("throw", "c1"), call("hang", "c2")]);
 		let opened = await openChat(await openNodeSqliteStorage(path), setup);
 		expect((await (await opened.root.submit({ type: "input", content: "one" }, context)).wait(context)).status).toBe(
-			"done",
+			"unanswered",
 		);
 		expect((await opened.harness.waitForTask(children[0]!, context)).state.outcome.status).toBe("aborted");
+		const scope = `conversation:${opened.root.id}`;
+		const effects = await readToolEffects(opened.harness, scope, context);
+		const effect = Object.values(effects!.effects)[0]!;
+		await resolveToolEffect(opened.harness, scope, effect.taskId, "reconciled", "Owned child was aborted", context);
 
 		// The second call hangs until the process stops; on reopen it is interrupted.
 		const second = (await opened.root.submit({ type: "input", content: "two" }, context)).id;
@@ -833,7 +835,7 @@ describe("owned conversations from tools and supervisors", () => {
 		opened = await openChat(await openNodeSqliteStorage(path), setup);
 		opened.harness.resume();
 		expect((await opened.harness.waitForTask(children[1]!, context)).state.outcome.status).toBe("aborted");
-		expect((await (await opened.harness.submission(second, context))!.wait(context)).status).toBe("done");
+		expect((await (await opened.harness.submission(second, context))!.wait(context)).status).toBe("unanswered");
 		const tools = (await opened.harness.commit((tx) => tx.scanTasks({ kind: "pi.tool" }, 10), context)).items;
 		expect(tools.map((task) => task.state.status === "terminal" && task.state.outcome.status)).toEqual([
 			"failed",
@@ -855,6 +857,7 @@ describe("owned conversations from tools and supervisors", () => {
 				description: "Delegates",
 				parameters: Type.Object({}),
 				replay: "safe",
+				compatibility: "test-v1",
 				execute: async (_args, api, callContext) => {
 					const child = await api.commit(async (tx) => {
 						const existing = (await tx.scanConversations({ ownerTaskId: api.taskId }, 1)).items[0];

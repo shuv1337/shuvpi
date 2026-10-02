@@ -1,11 +1,11 @@
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { BACKGROUND_CONTEXT } from "@shuv1337/shuvpi-chord/context";
 import {
 	encodeCbor,
 	encodeFrame,
 	encodeServerMessage,
 	PROTOCOL_VERSION,
 	ProtocolValidationError,
-} from "@earendil-works/pi-protocol";
+} from "@shuv1337/shuvpi-protocol";
 import { describe, expect, test, vi } from "vitest";
 import {
 	type ByteTransportFactory,

@@ -1,5 +1,5 @@
 import { join, resolve } from "node:path";
-import { resetCapabilitiesCache, setCapabilities, Text, type TUI, type TuiMouseEvent } from "@earendil-works/pi-tui";
+import { resetCapabilitiesCache, setCapabilities, Text, type TUI, type TuiMouseEvent } from "@shuv1337/shuvpi-tui";
 import { Type } from "typebox";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
@@ -632,17 +632,17 @@ describe("ToolExecutionComponent parity", () => {
 		},
 		{
 			title: "AGENTS.md",
-			path: join(process.cwd(), ".pi", "AGENTS.md"),
+			path: join(process.cwd(), ".shuvpi", "AGENTS.md"),
 			content: "Hidden resource instructions",
-			compact: "read resource .pi/AGENTS.md",
+			compact: "read resource .shuvpi/AGENTS.md",
 			hidden: "Hidden resource instructions",
 			absent: undefined,
 		},
 		{
 			title: "AGENTS.override.md",
-			path: join(process.cwd(), ".pi", "AGENTS.override.md"),
+			path: join(process.cwd(), ".shuvpi", "AGENTS.override.md"),
 			content: "Hidden override instructions",
-			compact: "read resource .pi/AGENTS.override.md",
+			compact: "read resource .shuvpi/AGENTS.override.md",
 			hidden: "Hidden override instructions",
 			absent: undefined,
 		},

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceEntry = new URL("../src/models.ts", import.meta.url).href;
+const sourceResolver = new URL("../../coding-agent/src/experimental/source-resolver.ts", import.meta.url).href;
 
 // Install before linking the static imports, so unused barrel re-exports are checked too.
 const preload = `data:text/javascript,${encodeURIComponent(`
@@ -28,13 +29,13 @@ const preload = `data:text/javascript,${encodeURIComponent(`
 `)}`;
 
 describe("lightweight models entry", () => {
-	it.each([sourceEntry, "@earendil-works/pi-ai/models"])(
+	it.each([sourceEntry, "@shuv1337/shuvpi-ai/models"])(
 		"runs a faux completion without TypeBox, catalogs, or SDKs through %s",
 		(entry) => {
 			const script = `
 				import assert from "node:assert/strict";
 				import { createModels, createProvider } from ${JSON.stringify(entry)};
-				import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai/providers/faux";
+				import { fauxAssistantMessage, fauxProvider } from "@shuv1337/shuvpi-ai/providers/faux";
 				assert.equal(typeof createProvider, "function");
 				const models = createModels();
 				assert.deepEqual(models.getModels(), []);
@@ -46,11 +47,15 @@ describe("lightweight models entry", () => {
 				assert.equal(response.stopReason, "stop");
 				assert.deepEqual(response.content, [{ type: "text", text: "OK" }]);
 			`;
-			const result = spawnSync(process.execPath, ["--import", preload, "--input-type=module", "--eval", script], {
-				cwd: packageRoot,
-				encoding: "utf8",
-				timeout: 10_000,
-			});
+			const result = spawnSync(
+				process.execPath,
+				["--import", preload, "--import", sourceResolver, "--input-type=module", "--eval", script],
+				{
+					cwd: packageRoot,
+					encoding: "utf8",
+					timeout: 10_000,
+				},
+			);
 			expect(result.error).toBeUndefined();
 			expect(result.status, result.stderr).toBe(0);
 		},

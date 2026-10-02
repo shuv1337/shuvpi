@@ -40,7 +40,19 @@ export { InboxDoc, type InboxItem, type InboxState } from "./harness/inbox.ts";
 export { type CompactionStatus, LiveDoc, type LiveState, type ToolSlot } from "./harness/live.ts";
 export { createRegistry } from "./harness/registry.ts";
 export type { TaskGraph, TaskGraphNode, TaskGraphState, TaskGraphWatch } from "./harness/task-graph.ts";
-export { ToolTask, type ToolTaskCheckpoint, type ToolTaskInput, type ToolTaskResult } from "./harness/tool.ts";
+export {
+	bindToolEffectScope,
+	readToolEffects,
+	resolveToolEffect,
+	type ToolEffect,
+	ToolEffectsDoc,
+	type ToolEffectsState,
+	type ToolPolicy,
+	ToolTask,
+	type ToolTaskCheckpoint,
+	type ToolTaskInput,
+	type ToolTaskResult,
+} from "./harness/tool.ts";
 export type {
 	Agent,
 	AgentChange,

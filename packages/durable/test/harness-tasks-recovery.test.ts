@@ -1,8 +1,8 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Context, JsonValue } from "@earendil-works/chord";
-import { createModels, Type } from "@earendil-works/pi-ai";
+import { createModels, Type } from "@shuv1337/shuvpi-ai";
+import type { Context, JsonValue } from "@shuv1337/shuvpi-chord";
 import {
 	createRegistry,
 	defineDoc,
@@ -14,7 +14,7 @@ import {
 	type Task,
 	type TaskId,
 	type TaskRuntime,
-} from "@earendil-works/pi-durable";
+} from "@shuv1337/shuvpi-durable";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { addTask, addTool } from "./harness-support.ts";

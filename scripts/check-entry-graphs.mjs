@@ -19,14 +19,14 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Workspace package name -> its source root, so cross-package imports are followed. */
 const WORKSPACE = {
-	"@earendil-works/chord": "packages/chord/src",
-	"@earendil-works/pi-ai": "packages/ai/src",
-	"@earendil-works/pi-durable": "packages/durable/src",
-	"@earendil-works/pi-agent-core": "packages/agent/src",
-	"@earendil-works/pi-codemode": "packages/codemode/src",
-	"@earendil-works/pi-telemetry": "packages/telemetry/src",
-	"@earendil-works/pi-mcp": "packages/mcp/src",
-	"@earendil-works/pi-tui": "packages/tui/src",
+	"@shuv1337/shuvpi-chord": "packages/chord/src",
+	"@shuv1337/shuvpi-ai": "packages/ai/src",
+	"@shuv1337/shuvpi-durable": "packages/durable/src",
+	"@shuv1337/shuvpi-agent-core": "packages/agent/src",
+	"@shuv1337/shuvpi-codemode": "packages/codemode/src",
+	"@shuv1337/shuvpi-telemetry": "packages/telemetry/src",
+	"@shuv1337/shuvpi-mcp": "packages/mcp/src",
+	"@shuv1337/shuvpi-tui": "packages/tui/src",
 };
 
 /**

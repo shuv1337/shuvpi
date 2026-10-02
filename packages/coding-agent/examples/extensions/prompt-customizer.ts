@@ -5,11 +5,11 @@
  * without replacing or reparsing the complete rendered prompt.
  *
  * Usage:
- * 1. Copy this file to ~/.pi/agent/extensions/ or your project's .pi/extensions/
+ * 1. Copy this file to ~/.shuvpi/agent/extensions/ or your project's .shuvpi/extensions/
  * 2. Use the extension — it automatically adapts to your active tools and skills
  */
 
-import type { BuildSystemPromptOptions, ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { BuildSystemPromptOptions, ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
 function buildToolGuidance(options: BuildSystemPromptOptions): string {
 	const hasTool = (name: string) => options.selectedTools?.includes(name) ?? false;

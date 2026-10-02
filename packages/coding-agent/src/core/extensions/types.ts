@@ -16,7 +16,7 @@ import type {
 	AgentToolUpdateCallback,
 	ThinkingLevel,
 	ToolExecutionMode,
-} from "@earendil-works/pi-agent-core";
+} from "@shuv1337/shuvpi-agent-core";
 import type {
 	AnyModel,
 	Api,
@@ -42,7 +42,7 @@ import type {
 	ToolResultMessage,
 	TranscriptContext,
 	Usage,
-} from "@earendil-works/pi-ai";
+} from "@shuv1337/shuvpi-ai";
 import type {
 	AutocompleteItem,
 	AutocompleteProvider,
@@ -53,7 +53,7 @@ import type {
 	OverlayHandle,
 	OverlayOptions,
 	TUI,
-} from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import type { Static, TSchema } from "typebox";
 import type { Theme } from "../../modes/interactive/theme/theme.ts";
 import type { BashResult } from "../bash-executor.ts";
@@ -251,12 +251,12 @@ export interface ExtensionUIContext {
 	 * - `keybindings`: KeybindingsManager for app-level keybindings
 	 *
 	 * For full app keybinding support (escape, ctrl+d, model switching, etc.),
-	 * extend `CustomEditor` from `@earendil-works/pi-coding-agent` and call
+	 * extend `CustomEditor` from `@shuv1337/shuvpi-coding-agent` and call
 	 * `super.handleInput(data)` for keys you don't handle.
 	 *
 	 * @example
 	 * ```ts
-	 * import { CustomEditor } from "@earendil-works/pi-coding-agent";
+	 * import { CustomEditor } from "@shuv1337/shuvpi-coding-agent";
 	 *
 	 * class VimEditor extends CustomEditor {
 	 *   private mode: "normal" | "insert" = "insert";
@@ -333,6 +333,8 @@ export interface ExtensionContext {
 	cwd: string;
 	/** Session manager (read-only) */
 	sessionManager: ReadonlySessionManager;
+	/** Append one durable, displayable custom message to the active transcript and return its entry ID. */
+	appendCustomMessageEntry?<T = unknown>(customType: string, content: string, display: boolean, details: T): string;
 	/** Model registry for API key resolution */
 	modelRegistry: ModelRegistry;
 	/** Current model (may be undefined) */
@@ -1688,6 +1690,9 @@ export interface ExtensionAPI {
 		options?: { deliverAs?: "steer" | "followUp"; expandPromptTemplates?: boolean },
 	): void;
 
+	/** Invoke a registered extension command with command context, without starting a model turn. */
+	runCommand(name: string, args?: string): Promise<void>;
+
 	/** Append a custom entry to the session for state persistence (not sent to LLM). */
 	appendEntry<T = unknown>(customType: string, data?: T): void;
 
@@ -1709,6 +1714,8 @@ export interface ExtensionAPI {
 
 	/** Get the names of the active tools, which are the tools declared to the model. */
 	getActiveTools(): string[];
+	/** Extension paths with interactive `tool_call` handlers; detached workflows cannot inherit these callbacks. */
+	getToolCallHandlerExtensions(): string[];
 
 	/** Get all configured tools with parameter schema, prompt guidelines, exposure, and source metadata. */
 	getAllTools(): ToolInfo[];
@@ -2062,6 +2069,7 @@ export type SetSessionNameHandler = (name: string) => void;
 export type GetSessionNameHandler = () => string | undefined;
 
 export type GetActiveToolsHandler = () => string[];
+export type GetToolCallHandlerExtensionsHandler = () => string[];
 
 /** Tool info with name, description, parameter schema, prompt guidelines, and source metadata. */
 export type ToolInfo = Pick<ToolDefinition, "name" | "description" | "parameters" | "promptGuidelines"> & {
@@ -2094,6 +2102,9 @@ export type SetLabelHandler = (entryId: string, label: string | undefined) => vo
  * Contains flag values (defaults set during registration, CLI values set after).
  */
 export interface ExtensionRuntimeState {
+	/** Command dispatch owned by the bound runner. Throws before binding. */
+	runCommand: ExtensionAPI["runCommand"];
+	getToolCallHandlerExtensions?: GetToolCallHandlerExtensionsHandler;
 	flagValues: Map<string, boolean | string>;
 	/** Legacy provider-config registrations queued during extension loading, processed when runner binds. */
 	pendingProviderRegistrations: Array<{ name: string; config: ProviderConfig; extensionPath: string }>;
@@ -2136,6 +2147,7 @@ export interface ExtensionActions {
 	getSessionName: GetSessionNameHandler;
 	setLabel: SetLabelHandler;
 	getActiveTools: GetActiveToolsHandler;
+	getToolCallHandlerExtensions?: GetToolCallHandlerExtensionsHandler;
 	getAllTools: GetAllToolsHandler;
 	getSettings: GetSettingsHandler;
 	setActiveTools: SetActiveToolsHandler;
@@ -2151,6 +2163,12 @@ export interface ExtensionActions {
  * Required by all modes.
  */
 export interface ExtensionContextActions {
+	appendCustomMessageEntry?: <T = unknown>(
+		customType: string,
+		content: string,
+		display: boolean,
+		details: T,
+	) => string;
 	getModel: () => Model<any> | undefined;
 	getScopedModels: () => readonly ScopedModel[];
 	isIdle: () => boolean;

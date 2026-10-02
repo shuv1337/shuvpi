@@ -21,10 +21,10 @@ Eval suites and their fixtures live under `evals/`. Image build files live in `d
 
 ## Run evals
 
-Host evals (smoke, documentation audit) and documentation-lift evals need `PI_PROVIDER` and `PI_MODEL`.
+Host evals (smoke, documentation audit) and documentation-lift evals need `SHUVPI_PROVIDER` and `SHUVPI_MODEL`.
 
 ```bash
-PI_PROVIDER=openai-codex PI_MODEL=gpt-5.6-sol npm run eval -w packages/evals
+SHUVPI_PROVIDER=openai-codex SHUVPI_MODEL=gpt-5.6-sol npm run eval -w packages/evals
 ```
 
 That runs host evals, then the documentation comparison. Extra CLI flags after `--` go to `eval:docs` only.
@@ -32,13 +32,13 @@ That runs host evals, then the documentation comparison. Extra CLI flags after `
 Host only:
 
 ```bash
-PI_PROVIDER=openai-codex PI_MODEL=gpt-5.6-sol npm run eval:host -w packages/evals
+SHUVPI_PROVIDER=openai-codex SHUVPI_MODEL=gpt-5.6-sol npm run eval:host -w packages/evals
 ```
 
 One host suite:
 
 ```bash
-PI_PROVIDER=openai-codex PI_MODEL=gpt-5.6-sol \
+SHUVPI_PROVIDER=openai-codex SHUVPI_MODEL=gpt-5.6-sol \
   npm run eval:host -w packages/evals -- evals/documentation-audit.eval.ts
 ```
 
@@ -52,7 +52,7 @@ npm run eval:docs -w packages/evals -- \
   --model gpt-5.6-sol
 ```
 
-`PI_PROVIDER` and `PI_MODEL` provide the same defaults. Both values are required.
+`SHUVPI_PROVIDER` and `SHUVPI_MODEL` provide the same defaults. Both values are required.
 
 The default is one run per variant. Increase repetitions explicitly when measuring stability:
 
@@ -62,7 +62,7 @@ npm run eval:docs -w packages/evals -- \
   --runs-per-variant 5
 ```
 
-`PI_EVAL_RUNS_PER_VARIANT=5` is equivalent. Vitest filters are applied during discovery:
+`SHUVPI_EVAL_RUNS_PER_VARIANT=5` is equivalent. Vitest filters are applied during discovery:
 
 ```bash
 npm run eval:docs -w packages/evals -- -t "adds the model"

@@ -55,7 +55,7 @@ describe("extensions discovery", () => {
 		fs.writeFileSync(
 			path.join(extensionsDir, "coding-agent-import.ts"),
 			`
-				import { getAgentDir } from "@earendil-works/pi-coding-agent";
+				import { getAgentDir } from "@shuv1337/shuvpi-coding-agent";
 				void getAgentDir;
 				export default function(pi) {
 					pi.registerCommand("test", { handler: async () => {} });
@@ -71,25 +71,25 @@ describe("extensions discovery", () => {
 
 	it("does not infer package ownership from ancestor manifests", async () => {
 		// Regression for #9863.
-		const dependencyDir = path.join(tempDir, "node_modules", "@earendil-works", "pi-coding-agent");
+		const dependencyDir = path.join(tempDir, "node_modules", "@shuv1337", "shuvpi-coding-agent");
 		fs.mkdirSync(dependencyDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(tempDir, "package.json"),
 			JSON.stringify({
 				name: "application",
 				type: "module",
-				dependencies: { "@earendil-works/pi-coding-agent": "1.0.0" },
+				dependencies: { "@shuv1337/shuvpi-coding-agent": "1.0.0" },
 			}),
 		);
 		fs.writeFileSync(
 			path.join(dependencyDir, "package.json"),
-			JSON.stringify({ name: "@earendil-works/pi-coding-agent", type: "module", exports: "./index.js" }),
+			JSON.stringify({ name: "@shuv1337/shuvpi-coding-agent", type: "module", exports: "./index.js" }),
 		);
 		fs.writeFileSync(path.join(dependencyDir, "index.js"), "export const physicalDependency = true;");
 		fs.writeFileSync(
 			path.join(extensionsDir, "compiled-esm-extension.js"),
 			`
-				import { physicalDependency } from "@earendil-works/pi-coding-agent";
+				import { physicalDependency } from "@shuv1337/shuvpi-coding-agent";
 				export default function(pi) {
 					if (physicalDependency) pi.registerCommand("physical-dependency", { handler: async () => {} });
 				}
@@ -108,7 +108,7 @@ describe("extensions discovery", () => {
 		fs.writeFileSync(
 			path.join(extensionsDir, "oauth-import.ts"),
 			`
-				import * as oauth from "@earendil-works/pi-ai/oauth";
+				import * as oauth from "@shuv1337/shuvpi-ai/oauth";
 				void oauth;
 				export default function(pi) {
 					pi.registerCommand("test", { handler: async () => {} });
@@ -180,7 +180,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				shuvpi: {
 					extensions: ["./src/main.ts"],
 				},
 			}),
@@ -205,7 +205,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "tilde-package",
-				pi: {
+				shuvpi: {
 					extensions: ["~entry.ts", "~/entry.ts"],
 				},
 			}),
@@ -228,7 +228,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				shuvpi: {
 					extensions: ["./ext1.ts", "./ext2.ts"],
 				},
 			}),
@@ -249,7 +249,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				shuvpi: {
 					extensions: ["./custom.ts"],
 				},
 			}),
@@ -323,7 +323,7 @@ describe("extensions discovery", () => {
 		const subdir2 = path.join(extensionsDir, "with-manifest");
 		fs.mkdirSync(subdir2);
 		fs.writeFileSync(path.join(subdir2, "entry.ts"), extensionCode);
-		fs.writeFileSync(path.join(subdir2, "package.json"), JSON.stringify({ pi: { extensions: ["./entry.ts"] } }));
+		fs.writeFileSync(path.join(subdir2, "package.json"), JSON.stringify({ shuvpi: { extensions: ["./entry.ts"] } }));
 
 		const result = await discoverAndLoadExtensions([], tempDir, tempDir);
 
@@ -338,7 +338,7 @@ describe("extensions discovery", () => {
 		fs.writeFileSync(
 			path.join(subdir, "package.json"),
 			JSON.stringify({
-				pi: {
+				shuvpi: {
 					extensions: ["./exists.ts", "./missing.ts"],
 				},
 			}),

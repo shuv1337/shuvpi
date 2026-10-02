@@ -109,7 +109,7 @@ return config
 If CJK IME candidates do not follow Pi's text cursor in WSL, show the hardware cursor:
 
 ```bash
-export PI_HARDWARE_CURSOR=1
+export SHUVPI_HARDWARE_CURSOR=1
 pi
 ```
 
@@ -200,7 +200,7 @@ IntelliJ IDEA's built-in terminal cannot reliably distinguish `Shift+Enter` from
 If an IME candidate window does not follow the text cursor, show the hardware cursor:
 
 ```bash
-export PI_HARDWARE_CURSOR=1
+export SHUVPI_HARDWARE_CURSOR=1
 pi
 ```
 
@@ -210,9 +210,9 @@ Pi automatically detects OSC 8 hyperlinks, inline image protocols, and truecolor
 
 | Capability | Environment variable | Setting |
 |---|---|---|
-| Hyperlinks | `PI_HYPERLINKS=1\|0\|auto` | `terminal.hyperlinks: true\|false\|"auto"` |
-| Inline images | `PI_IMAGE_PROTOCOL=kitty\|iterm2\|none\|auto` | `terminal.images: "kitty"\|"iterm2"\|false\|"auto"` |
-| Truecolor | `PI_TRUE_COLOR=1\|0\|auto` | `terminal.trueColor: true\|false\|"auto"` |
+| Hyperlinks | `SHUVPI_HYPERLINKS=1\|0\|auto` | `terminal.hyperlinks: true\|false\|"auto"` |
+| Inline images | `SHUVPI_IMAGE_PROTOCOL=kitty\|iterm2\|none\|auto` | `terminal.images: "kitty"\|"iterm2"\|false\|"auto"` |
+| Truecolor | `SHUVPI_TRUE_COLOR=1\|0\|auto` | `terminal.trueColor: true\|false\|"auto"` |
 
 Settings take precedence over environment variables. An unset value or `auto` preserves automatic detection.
 

@@ -5,10 +5,13 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpath
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getPublicWorkspacePackages } from "./release-packages.mjs";
+import { parsePackResult } from "./npm-pack.mjs";
+import { getReleasePackages } from "./release-packages.mjs";
 
-const codingAgentName = "@earendil-works/pi-coding-agent";
-const developmentPackages = new Set(["pi-client", "pi-protocol", "pi-server"].map((name) => `@earendil-works/${name}`));
+const cliManifest = JSON.parse(readFileSync(new URL("../packages/coding-agent/package.json", import.meta.url), "utf8"));
+const codingAgentName = cliManifest.name;
+const appName = Object.keys(cliManifest.bin)[0];
+const developmentPackages = new Set(["client", "protocol", "server"].map((name) => JSON.parse(readFileSync(new URL(`../packages/${name}/package.json`, import.meta.url), "utf8")).name));
 
 function run(command, args, options = {}) {
 	console.log(`$ ${[command, ...args].join(" ")}`);
@@ -31,9 +34,7 @@ export function packReleasePackages(packages, tarballDirectory) {
 		const manifest = JSON.parse(readFileSync(join(pkg.directory, "package.json"), "utf8"));
 		if (manifest.name !== pkg.name) throw new Error(`Unexpected package name in ${pkg.directory}`);
 		const output = run("npm", ["pack", "--ignore-scripts", "--json", "--pack-destination", tarballDirectory], { cwd: pkg.directory });
-		// npm <11.6 returns an array; newer npm can return an object keyed by package name.
-		const parsed = JSON.parse(output);
-		const packed = Array.isArray(parsed) ? parsed[0] : Object.values(parsed)[0];
+		const packed = parsePackResult(output);
 		tarballs.set(pkg.name, join(tarballDirectory, packed.filename));
 	}
 	return tarballs;
@@ -92,9 +93,9 @@ export function smokeTestCodingAgentConsumer(directory, runtime = process.execPa
 		LOCALAPPDATA: home,
 		XDG_CONFIG_HOME: home,
 		XDG_CACHE_HOME: home,
-		PI_CODING_AGENT_DIR: join(home, ".pi", "agent"),
-		PI_OFFLINE: "1",
-		PI_TELEMETRY: "0",
+		[`${appName.toUpperCase()}_CODING_AGENT_DIR`]: join(home, `.${appName}`, "agent"),
+		[`${appName.toUpperCase()}_OFFLINE`]: "1",
+		[`${appName.toUpperCase()}_TELEMETRY`]: "0",
 	};
 	for (const name of ["SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT"]) {
 		if (process.env[name]) env[name] = process.env[name];
@@ -105,15 +106,15 @@ import { createAgentSession, SessionManager, ModelRuntime } from "${codingAgentN
 assert.equal(typeof createAgentSession, "function");
 assert.equal(typeof SessionManager.inMemory, "function");
 assert.equal(typeof ModelRuntime.create, "function");
-for (const name of ["pi-client", "pi-protocol", "pi-server"]) {
-  assert.throws(() => import.meta.resolve("@earendil-works/" + name), /Cannot find|cannot find/, name + " must not be installed");
+for (const name of ${JSON.stringify([...developmentPackages])}) {
+  assert.throws(() => import.meta.resolve(name), /Cannot find|cannot find/, name + " must not be installed");
 }
 for (const subpath of ["/client", "/experimental/plugin"]) {
   assert.throws(() => import.meta.resolve("${codingAgentName}" + subpath), /not exported|not defined|Cannot find|cannot find/);
 }
 `);
 		run(runtime, [entry], { cwd: directory, env, timeout: 30_000 });
-		for (const cli of new Set([manifest.bin.pi, "dist/cli.js"])) {
+		for (const cli of new Set([manifest.bin[appName], "dist/cli.js"])) {
 			const output = run(runtime, [join(packageDir, cli), "--version"], { cwd: directory, env, timeout: 30_000 });
 			if (output.trim() !== manifest.version) throw new Error(`Unexpected version from ${cli}: ${output}`);
 		}
@@ -128,7 +129,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 	if (process.argv.length !== 2) throw new Error("Usage: node scripts/coding-agent-consumer.mjs");
 	const root = mkdtempSync(join(tmpdir(), "pi-package-consumer-"));
 	try {
-		const tarballs = packReleasePackages(getPublicWorkspacePackages(), join(root, "tarballs"));
+		const tarballs = packReleasePackages(getReleasePackages(), join(root, "tarballs"));
 		const directory = join(root, "consumer");
 		installCodingAgentConsumer(directory, tarballs);
 		smokeTestCodingAgentConsumer(directory);

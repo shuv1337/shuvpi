@@ -2,18 +2,18 @@
 
 # Command Line
 
-This page documents Pi's built-in command-line commands and options. Run `pi --help` or append `--help` to a command for the exact interface in your installed version. The top-level help also includes options registered by loaded extensions.
+This page documents Shuvpi's built-in command-line commands and options. Run `shuvpi --help` or append `--help` to a command for the exact interface in your installed version. The top-level help also includes options registered by loaded extensions.
 
 ```sh
-pi [options] [--] [@files...] [messages...]
-pi install <source> [options]
-pi remove <source> [options]
-pi uninstall <source> [options]
-pi update [target] [options]
-pi list
-pi config [options]
-pi auth <check|print-api-key|print-bearer-token> [options]
-pi mcp <list|login|logout> [options]
+shuvpi [options] [--] [@files...] [messages...]
+shuvpi install <source> [options]
+shuvpi remove <source> [options]
+shuvpi uninstall <source> [options]
+shuvpi update [target] [options]
+shuvpi list
+shuvpi config [options]
+shuvpi auth <check|print-api-key|print-bearer-token> [options]
+shuvpi mcp <list|login|logout> [options]
 ```
 
 <a id="modes"></a>
@@ -22,12 +22,12 @@ pi mcp <list|login|logout> [options]
 
 ```sh
 pi
-pi --print "Summarize this repository"
-git diff | pi --print "Review this change"
-pi --mode json "Inspect this repository" > events.jsonl
+shuvpi --print "Summarize this repository"
+git diff | shuvpi --print "Review this change"
+shuvpi --mode json "Inspect this repository" > events.jsonl
 ```
 
-With terminal stdin and stdout, Pi opens the terminal UI unless `--print`, `--mode json`, or `--mode rpc` selects another interface. When either stream is redirected and neither JSON nor RPC mode is selected, Pi uses print mode. See [CLI Integration](cli-integration.md) for choosing between interactive, print, JSON, RPC, and SDK integration.
+With terminal stdin and stdout, Shuvpi opens the terminal UI unless `--print`, `--mode json`, or `--mode rpc` selects another interface. When either stream is redirected and neither JSON nor RPC mode is selected, Shuvpi uses print mode. See [CLI Integration](cli-integration.md) for choosing between interactive, print, JSON, RPC, and SDK integration.
 
 | Input | Behavior |
 |---|---|
@@ -36,9 +36,9 @@ With terminal stdin and stdout, Pi opens the terminal UI unless `--print`, `--mo
 | Piped stdin | Prepend its contents to the first prompt |
 | `--` | Stop option parsing so a prompt can begin with `-` |
 
-Pi resolves `@path` from the current working directory. The working directory also controls project configuration, resource discovery, and session grouping.
+Shuvpi resolves `@path` from the current working directory. The working directory also controls project configuration, resource discovery, and session grouping.
 
-`--print` controls whether Pi runs once and exits. `--mode` selects the output interface. `--mode text` does not force one-shot execution when stdin and stdout are terminals; use `--print` for that behavior.
+`--print` controls whether Shuvpi runs once and exits. `--mode` selects the output interface. `--mode text` does not force one-shot execution when stdin and stdout are terminals; use `--print` for that behavior.
 
 | Option | Behavior |
 |---|---|
@@ -55,7 +55,7 @@ RPC mode rejects `@file` arguments. JSON and RPC modes reserve stdout for protoc
 ## Models
 
 ```sh
-pi --model sonnet:high
+shuvpi --model sonnet:high
 ```
 
 See [Choose a Model](models.md) for model selection and [Providers](providers.md) for credentials.
@@ -67,7 +67,7 @@ See [Choose a Model](models.md) for model selection and [Providers](providers.md
 - `--api-key <key>`<br>
   Uses a non-persistent API-key override. It requires a model selected through `--model` or `--models`.
 - `--thinking <level>`<br>
-  Sets `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. It overrides a `--model` suffix and is clamped to the model's capabilities.
+  Sets `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, or `ultra`. It overrides a `--model` suffix and is clamped to the model's capabilities.
 - `--models <patterns>`<br>
   Sets a comma-separated scope for startup and cycling. It accepts exact IDs, fuzzy matches, case-insensitive globs, and optional `:<thinking>` suffixes.
 - `--list-models [search]`<br>
@@ -78,7 +78,7 @@ See [Choose a Model](models.md) for model selection and [Providers](providers.md
 ## Sessions
 
 ```sh
-pi --continue
+shuvpi --continue
 ```
 
 See [Sessions and Context](sessions.md) for resuming, forking, naming, and storing sessions.
@@ -88,13 +88,13 @@ See [Sessions and Context](sessions.md) for resuming, forking, naming, and stori
 - `-r`, `--resume`<br>
   Opens the session selector.
 - `--session <path|id>`<br>
-  Opens by file path, exact ID, or partial ID. Pi searches the current project first and offers to fork a cross-project match.
+  Opens by file path, exact ID, or partial ID. Shuvpi searches the current project first and offers to fork a cross-project match.
 - `--session-id <id>`<br>
   Opens the exact project session ID or creates it if absent. IDs accept letters, numbers, `.`, `_`, and `-`.
 - `--fork <path|id>`<br>
   Forks an existing session into a new session for the current project.
 - `--session-dir <dir>`<br>
-  Overrides storage and lookup. It takes precedence over `PI_CODING_AGENT_SESSION_DIR` and the `sessionDir` setting.
+  Overrides storage and lookup. It takes precedence over `SHUVPI_CODING_AGENT_SESSION_DIR` and the `sessionDir` setting.
 - `--no-session`<br>
   Uses an in-memory session that is not persisted.
 - `-n`, `--name <name>`<br>
@@ -111,7 +111,7 @@ Constraints:
 ## Tools
 
 ```sh
-pi --tools read,grep,find,ls --print "Review this project"
+shuvpi --tools read,grep,find,ls --print "Review this project"
 ```
 
 See [Settings](settings.md#tools) for configuring the default tool selection.
@@ -138,16 +138,25 @@ Default enabled tools are `read`, `bash`, `edit`, and `write`, unless `defaultTo
 | `find` | Find paths using glob patterns |
 | `ls` | List directory contents |
 
-Built-in extensions add two more tools. They are off by default; the MCP extension turns them on when an MCP server needs them (see [MCP](mcp.md#exposure)). To enable them yourself, name them in `--tools` or `defaultTools`.
+Built-in extensions add tools. `codemode` and `tool_search` are off by default; the MCP extension turns them on when an MCP server needs them (see [MCP](mcp.md#exposure)). To enable them yourself, name them in `--tools` or `defaultTools`. `workflow` is enabled by default.
 
 | Built-in extension | Purpose |
 |---|---|
 | `codemode` | Run JavaScript that calls the other tools, for example in parallel with `Promise.allSettled`; only the script's output reaches the model |
 | `tool_search` | Search tools that are not declared to the model (`codemode` and `deferred` exposure, such as MCP tools) and declare the matches for the next call |
+| `workflow` | Run durable, replayable JavaScript orchestration using child agents |
+
+### Durable workflows
+
+The model-callable `workflow` tool receives a JavaScript script body, optional JSON `args`, and an optional `background` flag. Scripts use `agent(prompt, options?)` and `phase(label)`; up to four child agents can run at once. Foreground runs return their result to the active turn. Background runs continue in a local owner after the chat UI closes, and their results are saved to the originating branch when that chat is attached again.
+
+Use `/workflow` to open the run dashboard, `/workflow status workflow-<id>` to inspect a run, `/workflow cancel workflow-<id>` to stop it, or `/workflow drain` to retry pending result delivery. Workflows require a persisted chat. The dashboard follows run progress while open; the run owner stores its state under the agent directory.
+
+Each workflow snapshots the caller's active tools, model, effort, and required policy versions when admitted. Child agents get only that supported tool set; the owner substitutes `codemode` for `tool_search` and omits UI-only controls such as `workflow`, `ask_user`, and background-job commands. If a requested custom tool is unavailable to the owner, admission fails instead of widening access. Global MCP servers must be enabled and visible. Project MCP is loaded only when the project is trusted at the time this chat's owner starts; the owner never loads untrusted project configuration. MCP configuration or tool-schema changes block calls until the owner is restarted.
 
 ### Enable codemode
 
-To turn on `codemode` for every session, add it to the default tools in `~/.pi/agent/settings.json` or a project's `.pi/settings.json`:
+To turn on `codemode` for every session, add it to the default tools in `~/.shuvpi/agent/settings.json` or a project's `.shuvpi/settings.json`:
 
 ```json
 {
@@ -158,7 +167,7 @@ To turn on `codemode` for every session, add it to the default tools in `~/.pi/a
 This keeps `read`, `bash`, `edit`, and `write` and adds `codemode`. For one invocation, list every tool, since `--tools` replaces the selection:
 
 ```sh
-pi --tools read,bash,edit,write,codemode
+shuvpi --tools read,bash,edit,write,codemode
 ```
 
 Codemode is useful without MCP: scripts can run several tool calls in parallel, filter large output before it reaches the model, call classifier models such as TypeSafe's Jev through `models.classify()` (see [Classifier models](models.md#use-classifier-models)), and generate images through `models.generateImages()` (see [Image models](models.md#use-image-models)).
@@ -176,15 +185,15 @@ Scripts run in a QuickJS sandbox and reach the other tools through `tools.<name>
 ## Resources
 
 ```sh
-pi --extension ./review.ts
+shuvpi --extension ./review.ts
 ```
 
-See [Configuration](configuration.md) for conventional directories and project trust, [Settings](settings.md#resources) for configured paths, and [Pi Packages](packages.md) for package sources.
+See [Configuration](configuration.md) for conventional directories and project trust, [Settings](settings.md#resources) for configured paths, and [Shuvpi Packages](packages.md) for package sources.
 
 - `-e`, `--extension <path>`<br>
   Loads an extension file or directory, or a built-in extension such as `builtin:mcp`, and is repeatable.
 - `-ne`, `--no-extensions`<br>
-  Disables discovered, configured, and built-in extensions. Explicit `-e` paths still load, so `pi -ne -e builtin:mcp` keeps only the built-in MCP support.
+  Disables discovered, configured, and built-in extensions. Explicit `-e` paths still load, so `shuvpi -ne -e builtin:mcp` keeps only the built-in MCP support.
 - `--skill <path>`<br>
   Loads a skill file or directory and is repeatable.
 - `-ns`, `--no-skills`<br>
@@ -209,7 +218,7 @@ Resource paths apply only to the current process. Relative paths resolve from th
 ## Prompts and process
 
 ```sh
-pi --append-system-prompt ./instructions.md
+shuvpi --append-system-prompt ./instructions.md
 ```
 
 See [Configuration](configuration.md) for saved configuration, [Security](security.md#understand-project-trust) for project trust, and [Environment Variables](environment-variables.md) for process controls.
@@ -227,68 +236,68 @@ See [Configuration](configuration.md) for saved configuration, [Security](securi
 - `-na`, `--no-approve`<br>
   Ignores trust-gated project-local configuration and resources for this process.
 - `--offline`<br>
-  Disables automatic network activity, including model catalog refreshes. Equivalent to `PI_OFFLINE=1`.
+  Disables automatic network activity, including model catalog refreshes. Equivalent to `SHUVPI_OFFLINE=1`.
 - `-h`, `--help`<br>
   Shows help, including flags registered by loaded extensions, then exits.
 - `-v`, `--version`<br>
-  Shows the Pi version, then exits.
+  Shows the Shuvpi version, then exits.
 
 Extensions may register additional long-form options. Unknown short options are rejected.
 
 ## Package commands
 
 ```sh
-pi install npm:@scope/package
+shuvpi install npm:@scope/package
 ```
 
-See [Pi Packages](packages.md) for source formats, filtering, installation, and project scope.
+See [Shuvpi Packages](packages.md) for source formats, filtering, installation, and project scope.
 
 ### Common tasks
 
 | Task | Command |
 |---|---|
-| Install a package | `pi install <source>` |
-| List configured packages | `pi list` |
-| Remove a package and its settings entry | `pi remove <source>` |
-| Configure which package resources load | `pi config` |
+| Install a package | `shuvpi install <source>` |
+| List configured packages | `shuvpi list` |
+| Remove a package and its settings entry | `shuvpi remove <source>` |
+| Configure which package resources load | `shuvpi config` |
 
 Add `--local` or `-l` to `install`, `remove`, `uninstall`, or `config` to use project settings instead of global settings.
 
-### Update Pi or packages
+### Update Shuvpi or packages
 
-Running `pi update` without a target updates Pi itself.
+Running `shuvpi update` without a target updates Shuvpi itself.
 
 | Task | Command |
 |---|---|
-| Update Pi | `pi update` |
-| Update all installed packages | `pi update --extensions` |
-| Update one installed package | `pi update <source>` |
-| Refresh model catalogs | `pi update --models` |
-| Update Pi and all installed packages | `pi update --all` |
+| Update Shuvpi | `shuvpi update` |
+| Update all installed packages | `shuvpi update --extensions` |
+| Update one installed package | `shuvpi update <source>` |
+| Refresh model catalogs | `shuvpi update --models` |
+| Update Shuvpi and all installed packages | `shuvpi update --all` |
 
-Add `--force` to reinstall Pi when the selected update includes Pi.
+Add `--force` to reinstall Shuvpi when the selected update includes Shuvpi.
 
 ### Aliases and command options
 
-- `pi uninstall <source>` is an alias for `pi remove <source>`.
-- `pi update --self`, `pi update self`, and `pi update pi` are aliases for `pi update`.
-- `pi update --extension <source>` is an alias for `pi update <source>`.
+- `shuvpi uninstall <source>` is an alias for `shuvpi remove <source>`.
+- `shuvpi update --self`, `shuvpi update self`, and `shuvpi update pi` are aliases for `shuvpi update`.
+- `shuvpi update --extension <source>` is an alias for `shuvpi update <source>`.
 - `-a`, `--approve` trusts project-local files for one command. `-na`, `--no-approve` ignores trust-gated project-local files.
 - Append `-h` or `--help` to a command for its exact usage and option constraints.
 
 ## Credential commands
 
 ```sh
-pi auth check --provider openai --json
+shuvpi auth check --provider openai --json
 ```
 
 Authentication commands require `--provider <provider>` or `--model <model>`. See [Providers](providers.md) for supported methods.
 
 | Command | Description |
 |---|---|
-| `pi auth check` | Print `ready`, `not_ready`, or `invalid`; exit with status `0`, `1`, or `2`, respectively |
-| `pi auth print-api-key` | Print the resolved API key |
-| `pi auth print-bearer-token` | Print a resolved OAuth bearer token |
+| `shuvpi auth check` | Print `ready`, `not_ready`, or `invalid`; exit with status `0`, `1`, or `2`, respectively |
+| `shuvpi auth print-api-key` | Print the resolved API key |
+| `shuvpi auth print-bearer-token` | Print a resolved OAuth bearer token |
 
 | Option | Applies to | Description |
 |---|---|---|
@@ -307,13 +316,13 @@ These commands work outside a session, so agents can run them through `bash`. Se
 
 | Command | Description |
 |---|---|
-| `pi mcp add <server> [options] -- <command> [args...]` | Add or replace a stdio server in `mcp.json`; `--env KEY=VALUE` (repeatable) and `--cwd <dir>` set its environment and working directory. Arguments after the command are passed to it |
-| `pi mcp add <server> [options] --url <url>` | Add or replace a streamable HTTP server; `--header KEY=VALUE` (repeatable), `--bearer-token-env-var <NAME>` (sends `Authorization: Bearer ${NAME}`), `--oauth-client-id`, `--oauth-client-secret`, `--oauth-callback-port`, and `--oauth-client-name` configure authentication |
-| `pi mcp remove <server>` | Remove a server from `mcp.json`; stored OAuth credentials are kept |
-| `pi mcp list [--json]` | Connect to every enabled server and print its state, tools, and errors; exit with `1` when a config entry is invalid or an enabled server is not connected |
-| `pi mcp login <server> [--timeout <seconds>]` | Sign in to an OAuth server: open the authorization page and wait for the browser (default 300 seconds); a terminal also accepts the pasted redirect URL |
-| `pi mcp logout <server>` | Delete the stored OAuth credentials of a server |
+| `shuvpi mcp add <server> [options] -- <command> [args...]` | Add or replace a stdio server in `mcp.json`; `--env KEY=VALUE` (repeatable) and `--cwd <dir>` set its environment and working directory. Arguments after the command are passed to it |
+| `shuvpi mcp add <server> [options] --url <url>` | Add or replace a streamable HTTP server; `--header KEY=VALUE` (repeatable), `--bearer-token-env-var <NAME>` (sends `Authorization: Bearer ${NAME}`), `--oauth-client-id`, `--oauth-client-secret`, `--oauth-callback-port`, and `--oauth-client-name` configure authentication |
+| `shuvpi mcp remove <server>` | Remove a server from `mcp.json`; stored OAuth credentials are kept |
+| `shuvpi mcp list [--json]` | Connect to every enabled server and print its state, tools, and errors; exit with `1` when a config entry is invalid or an enabled server is not connected |
+| `shuvpi mcp login <server> [--timeout <seconds>]` | Sign in to an OAuth server: open the authorization page and wait for the browser (default 300 seconds); a terminal also accepts the pasted redirect URL |
+| `shuvpi mcp logout <server>` | Delete the stored OAuth credentials of a server |
 
-`add` and `remove` change `~/.pi/agent/mcp.json`, or `.pi/mcp.json` in the current directory with `--local` (`-l`). `add` also takes `--exposure <mode>` (see [Exposure](mcp.md#exposure)) and `--description <text>` and does not connect; run `pi mcp list` to check the server.
+`add` and `remove` change `~/.shuvpi/agent/mcp.json`, or `.shuvpi/mcp.json` in the current directory with `--local` (`-l`). `add` also takes `--exposure <mode>` (see [Exposure](mcp.md#exposure)) and `--description <text>` and does not connect; run `shuvpi mcp list` to check the server.
 
-Project `.pi/mcp.json` files are only read for projects that are already trusted.
+Project `.shuvpi/mcp.json` files are only read for projects that are already trusted.

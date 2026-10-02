@@ -358,7 +358,10 @@ const ANT_LING_RING_THINKING_LEVEL_MAP = {
 
 const BEDROCK_INFERENCE_PROFILE_ONLY_MODEL_IDS = new Set(["anthropic.claude-opus-5"]);
 const MODELS_DEV_OPENAI_UNSUPPORTED_MODEL_IDS = new Set(["gpt-5.6"]);
+const OPENAI_DAYBREAK_BLUE_MODEL_IDS = new Set(["daybreak-blue-latest", "gpt-daybreak-blue-latest"]);
 const OPENAI_TOOL_SEARCH_MODEL_IDS = new Set([
+	"daybreak-blue-latest",
+	"gpt-daybreak-blue-latest",
 	"gpt-5.4",
 	"gpt-5.4-mini",
 	"gpt-5.4-pro",
@@ -447,6 +450,7 @@ const OPENAI_STANDARD_COSTS: Record<string, ModelCost> = {
 };
 
 const OPENAI_RESPONSES_NONE_REASONING_MODELS = new Set([
+	"daybreak-blue-latest",
 	"gpt-5.1",
 	"gpt-5.2",
 	"gpt-5.3-codex",
@@ -571,6 +575,7 @@ function getTogetherThinkingLevelMap(
 
 function supportsOpenAiXhigh(modelId: string): boolean {
 	return (
+		OPENAI_DAYBREAK_BLUE_MODEL_IDS.has(modelId) ||
 		modelId.includes("gpt-5.2") ||
 		modelId.includes("gpt-5.3") ||
 		modelId.includes("gpt-5.4") ||
@@ -582,7 +587,7 @@ function supportsOpenAiXhigh(modelId: string): boolean {
 
 function supportsOpenAiMax(model: Model<Api>): boolean {
 	return (
-		(model.id.includes("gpt-5.6") || model.id.includes("gpt-6")) &&
+		(model.id.includes("gpt-5.6") || model.id.includes("gpt-6") || OPENAI_DAYBREAK_BLUE_MODEL_IDS.has(model.id)) &&
 		(model.api === "openai-responses" ||
 			model.api === "azure-openai-responses" ||
 			model.api === "openai-codex-responses" ||
@@ -883,7 +888,7 @@ const OPENAI_GRAMMAR_TOOL_APIS = new Set<Api>([
 function applyOpenAIGrammarToolCompatMetadata(model: Model<Api>): void {
 	if (!OPENAI_GRAMMAR_TOOL_APIS.has(model.api) || !OPENAI_GRAMMAR_TOOL_PROVIDERS.has(model.provider)) return;
 	const match = /^gpt-(\d+)/.exec(model.id);
-	if (!match || Number(match[1]) < 5) return;
+	if ((!match || Number(match[1]) < 5) && !OPENAI_DAYBREAK_BLUE_MODEL_IDS.has(model.id)) return;
 	model.compat = { ...(model.compat as OpenAIResponsesCompat | undefined), supportsOpenAIGrammarTools: true };
 }
 
@@ -1073,7 +1078,7 @@ function applyThinkingLevelMetadata(model: Model<any>): void {
 	if (supportsOpenAiMax(model)) {
 		mergeThinkingLevelMap(model, { max: "max" });
 	}
-	if (model.provider === "openai" && model.id === "gpt-5.5") {
+	if (model.provider === "openai" && (model.id === "gpt-5.5" || model.id === "daybreak-blue-latest")) {
 		mergeThinkingLevelMap(model, { minimal: null });
 	}
 	if (model.id.endsWith("gpt-5.5-pro")) {
@@ -1131,6 +1136,9 @@ function applyThinkingLevelMetadata(model: Model<any>): void {
 	}
 	if (model.provider === "openai-codex" && supportsOpenAiXhigh(model.id)) {
 		mergeThinkingLevelMap(model, { minimal: "low" });
+	}
+	if (model.provider === "openai-codex" && model.id === "gpt-daybreak-blue-latest") {
+		mergeThinkingLevelMap(model, { off: null, minimal: null, ultra: "ultra" });
 	}
 	if (
 		(model.provider === "moonshotai" || model.provider === "moonshotai-cn") &&
@@ -1967,7 +1975,7 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 					api = "anthropic-messages";
 					baseUrl = CLOUDFLARE_AI_GATEWAY_ANTHROPIC_BASE_URL;
 					id = nativeId;
-				} else if (upstream === "workers-ai") {
+				} else if (upstream === "workers-ai" || upstream === "moonshotai") {
 					api = "openai-completions";
 					baseUrl = CLOUDFLARE_AI_GATEWAY_COMPAT_BASE_URL;
 					id = prefixedId;
@@ -1978,7 +1986,9 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 				// Gateway passthroughs forward session affinity headers to upstreams that
 				// use them for cache/routing affinity.
 				const compat =
-					upstream === "anthropic" || upstream === "workers-ai" ? { sendSessionAffinityHeaders: true } : undefined;
+					upstream === "anthropic" || upstream === "workers-ai" || upstream === "moonshotai"
+						? { sendSessionAffinityHeaders: true }
+						: undefined;
 
 				cloudflareAIGatewayModelIds.add(id);
 				models.push({
@@ -2961,6 +2971,18 @@ async function generateModels() {
 	// Add missing gpt models
 	const missingOpenAiModels: Model<"openai-responses">[] = [
 		{
+			id: "daybreak-blue-latest",
+			name: "Daybreak Blue",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: withOpenAiLongContextPricing({ input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }),
+			contextWindow: OPENAI_LONG_CONTEXT_INPUT_THRESHOLD,
+			maxTokens: 128000,
+		},
+		{
 			id: "gpt-6.1-sol",
 			name: "GPT-6.1 Sol",
 			api: "openai-responses",
@@ -3206,6 +3228,18 @@ async function generateModels() {
 	const CODEX_MAX_TOKENS = 128000;
 	const codexModels: Model<"openai-codex-responses">[] = [
 		{
+			id: "gpt-daybreak-blue-latest",
+			name: "Daybreak Blue",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: CODEX_BASE_URL,
+			reasoning: true,
+			input: ["text", "image"],
+			cost: withOpenAiLongContextPricing({ input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }),
+			contextWindow: CODEX_GPT_56_CONTEXT,
+			maxTokens: CODEX_MAX_TOKENS,
+		},
+		{
 			id: "gpt-6.1-sol",
 			name: "GPT-6.1 Sol",
 			api: "openai-codex-responses",
@@ -3397,7 +3431,7 @@ async function generateModels() {
 		"gpt-5.6-terra": 1050000,
 	};
 	const azureOpenAiModels: Model<Api>[] = allModels
-		.filter((model) => model.provider === "openai" && model.api === "openai-responses")
+		.filter((model) => model.provider === "openai" && model.api === "openai-responses" && !OPENAI_DAYBREAK_BLUE_MODEL_IDS.has(model.id))
 		.map((model) => ({
 			...model,
 			api: "azure-openai-responses",

@@ -1,6 +1,7 @@
 import { homedir } from "node:os";
-import { getDocsPath, getExamplesPath, getReadmePath } from "@earendil-works/pi-coding-agent";
+import { getDocsPath, getExamplesPath, getReadmePath } from "@shuv1337/shuvpi-coding-agent";
 import { describe, expect, it, vi } from "vitest";
+import { APP_NAME } from "../../coding-agent/src/config.ts";
 import { buildSystemPrompt } from "../../coding-agent/src/core/system-prompt.ts";
 import {
 	applyIsolatedEnvironment,
@@ -17,19 +18,21 @@ describe("resolveModelSelection", () => {
 		expect(
 			resolveModelSelection(
 				{ provider: "anthropic", id: "claude-opus-4-6" },
-				{ PI_PROVIDER: "openai-codex", PI_MODEL: "gpt-5.6-sol" },
+				{ SHUVPI_PROVIDER: "openai-codex", SHUVPI_MODEL: "gpt-5.6-sol" },
 			),
 		).toEqual({ provider: "anthropic", id: "claude-opus-4-6" });
 	});
 
 	it("uses trimmed environment defaults", () => {
-		expect(resolveModelSelection(undefined, { PI_PROVIDER: " openai-codex ", PI_MODEL: " gpt-5.6-sol " })).toEqual({
+		expect(
+			resolveModelSelection(undefined, { SHUVPI_PROVIDER: " openai-codex ", SHUVPI_MODEL: " gpt-5.6-sol " }),
+		).toEqual({
 			provider: "openai-codex",
 			id: "gpt-5.6-sol",
 		});
 	});
 
-	it.each([{}, { PI_PROVIDER: "openai-codex" }, { PI_MODEL: "gpt-5.6-sol" }])(
+	it.each([{}, { SHUVPI_PROVIDER: "openai-codex" }, { SHUVPI_MODEL: "gpt-5.6-sol" }])(
 		"rejects incomplete model selection",
 		(environment) => {
 			expect(() => resolveModelSelection(undefined, environment)).toThrow("Select a harness model explicitly");
@@ -39,21 +42,21 @@ describe("resolveModelSelection", () => {
 
 describe("isolateProcessEnvironment", () => {
 	it("removes runner metadata and restores the process environment", () => {
-		vi.stubEnv("PI_EVAL_VARIANT", "with_docs");
-		vi.stubEnv("PI_EVAL_ARTIFACT_DIR", "/tmp/artifacts");
+		vi.stubEnv("SHUVPI_EVAL_VARIANT", "with_docs");
+		vi.stubEnv("SHUVPI_EVAL_ARTIFACT_DIR", "/tmp/artifacts");
 		const oldHome = process.env.HOME;
 		try {
 			const restore = applyIsolatedEnvironment("/tmp/eval-home", "/tmp/eval-agent");
 			try {
 				expect(homedir()).toBe("/tmp/eval-home");
-				expect(process.env.PI_CODING_AGENT_DIR).toBe("/tmp/eval-agent");
-				expect(process.env.PI_EVAL_VARIANT).toBeUndefined();
-				expect(process.env.PI_EVAL_ARTIFACT_DIR).toBeUndefined();
+				expect(process.env.SHUVPI_CODING_AGENT_DIR).toBe("/tmp/eval-agent");
+				expect(process.env.SHUVPI_EVAL_VARIANT).toBeUndefined();
+				expect(process.env.SHUVPI_EVAL_ARTIFACT_DIR).toBeUndefined();
 			} finally {
 				restore();
 			}
 			expect(process.env.HOME).toBe(oldHome);
-			expect(process.env.PI_EVAL_VARIANT).toBe("with_docs");
+			expect(process.env.SHUVPI_EVAL_VARIANT).toBe("with_docs");
 		} finally {
 			vi.unstubAllEnvs();
 		}
@@ -66,15 +69,15 @@ describe("documentation variant", () => {
 	});
 
 	it.each([undefined, "", "other"])("rejects invalid variant %s", (variant) => {
-		expect(() => resolveDocumentationVariant(variant)).toThrow("PI_EVAL_VARIANT");
+		expect(() => resolveDocumentationVariant(variant)).toThrow("SHUVPI_EVAL_VARIANT");
 	});
 
-	it("strips only the documentation routing section from the default Pi prompt", () => {
+	it("strips only the documentation routing section from the default Shuvpi prompt", () => {
 		const prompt = buildSystemPrompt({
 			cwd: "/workspace",
 			selectedTools: [...DOCUMENTATION_EVAL_TOOLS],
 		});
-		expect(prompt).toContain("\n<docs>\nPi documentation (read only");
+		expect(prompt).toContain(`\n<docs>\n${APP_NAME} documentation (read only`);
 		expect(prompt).toContain("\n<rules>\n");
 		expect(prompt).toContain("\n<cwd>\n/workspace\n</cwd>");
 		expect(prompt).toContain("docs/models.md");
@@ -83,7 +86,7 @@ describe("documentation variant", () => {
 		expect(stripped).toContain("\n<rules>\n");
 		expect(stripped).toContain("\n<cwd>\n/workspace\n</cwd>");
 		expect(stripped).not.toContain("<docs>");
-		expect(stripped).not.toContain("Pi documentation");
+		expect(stripped).not.toContain(`${APP_NAME} documentation`);
 		expect(stripped).not.toContain("docs/models.md");
 		expect(stripped).not.toContain(getReadmePath());
 		expect(stripped).not.toContain(getDocsPath());
@@ -104,8 +107,8 @@ describe("documentation variant", () => {
 	});
 
 	it("fails closed when prompt markers are missing", () => {
-		expect(() => excludePiDocumentation("Instructions")).toThrow("no Pi documentation section");
-		expect(() => excludePiDocumentation("\n<docs>\nPi documentation\n</docs>")).toThrow(
+		expect(() => excludePiDocumentation("Instructions")).toThrow(`no ${APP_NAME} documentation section`);
+		expect(() => excludePiDocumentation(`\n<docs>\n${APP_NAME} documentation\n</docs>`)).toThrow(
 			"no working-directory section",
 		);
 	});

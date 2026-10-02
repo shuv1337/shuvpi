@@ -1,5 +1,5 @@
-import { type Context, copyJson, type Draft, type JsonValue } from "@earendil-works/chord";
-import { type Change, type Op, type Prepared, type Tracker, track } from "@earendil-works/chord/delta";
+import { type Context, copyJson, type Draft, type JsonValue } from "@shuv1337/shuvpi-chord";
+import { type Change, type Op, type Prepared, type Tracker, track } from "@shuv1337/shuvpi-chord/delta";
 import {
 	type AnyDocDefinition,
 	type AnyDocToken,

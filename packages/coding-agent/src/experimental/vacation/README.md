@@ -1,6 +1,6 @@
 # vacation
 
-A durable vacation planning agent with a TUI, built on `@earendil-works/pi-durable`. It is a copy of the durable coding
+A durable vacation planning agent with a TUI, built on `@shuv1337/shuvpi-durable`. It is a copy of the durable coding
 agent in [`../durable`](../durable) with the coding tools and pi's coding prompt replaced by a vacation planner. It only
 looks like a coding agent because it reuses pi's interactive TUI components.
 
@@ -19,7 +19,7 @@ node --import ./packages/coding-agent/src/experimental/source-resolver.ts packag
 
 A new session starts with pi's default model and thinking level from `settings.json`. `--continue` opens the newest
 session for the current directory. Sessions live under
-`~/.pi/agent/experimental/vacation-sessions/<cwd-hash>/<session>/session.sqlite`. Log in with pi itself; credentials are
+`~/.shuvpi/agent/experimental/vacation-sessions/<cwd-hash>/<session>/session.sqlite`. Log in with pi itself; credentials are
 shared.
 
 ## What it shows

@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { convertMessages } from "../src/api/openai-completions.ts";
+import { convertMessages, stream as streamCompletions } from "../src/api/openai-completions.ts";
 import { getModel, normalizeContext, stream, streamSimple } from "../src/compat.ts";
 import type { AssistantMessage, Model, SimpleStreamOptions, Tool, ToolResultMessage } from "../src/types.ts";
 
@@ -150,7 +150,7 @@ describe("openai-completions tool_choice", () => {
 		expect(params.tools?.length ?? 0).toBeGreaterThan(0);
 	});
 
-	it("includes toolChoice when no tools are provided", async () => {
+	it("omits toolChoice when no tools are provided", async () => {
 		const { compat: _compat, ...baseModel } = getModel("openai", "gpt-4o-mini")!;
 		const model = { ...baseModel, api: "openai-completions" } as const;
 		let payload: unknown;
@@ -170,8 +170,60 @@ describe("openai-completions tool_choice", () => {
 		).result();
 
 		const params = (payload ?? mockState.lastParams) as { tool_choice?: string; tools?: unknown[] };
-		expect(params.tool_choice).toBe("none");
+		expect(params).not.toHaveProperty("tool_choice");
 		expect(params).not.toHaveProperty("tools");
+	});
+
+	describe.each(["absent", "empty", "nonempty"] as const)("with %s tool declarations", (declarations) => {
+		it.each(["auto", "required", "none", { type: "function", function: { name: "ping" } }] as const)(
+			"serializes toolChoice %j only with callable tools",
+			async (toolChoice) => {
+				const model = { ...localOpenAICompletionsModel, id: "fixture", name: "Fixture" };
+				const tool: Tool = { name: "ping", description: "Ping", parameters: Type.Object({}) };
+				const result = await streamCompletions(
+					model,
+					normalizeContext({
+						messages: [{ role: "user", content: "Hi", timestamp: 0 }],
+						...(declarations === "absent" ? {} : { tools: declarations === "empty" ? [] : [tool] }),
+					}),
+					{ apiKey: "fake-key", toolChoice },
+				).result();
+				expect(result.stopReason).toBe("stop");
+				const params = mockState.lastParams as { tool_choice?: unknown; tools?: unknown[] };
+				if (declarations === "nonempty") {
+					expect(params.tool_choice).toEqual(toolChoice);
+					expect(params.tools).toHaveLength(1);
+				} else {
+					expect(params).not.toHaveProperty("tool_choice");
+					expect(params).not.toHaveProperty("tools");
+				}
+			},
+		);
+	});
+
+	it("omits toolChoice while preserving the empty tools required by tool history", async () => {
+		const model = { ...localOpenAICompletionsModel, id: "fixture", name: "Fixture" };
+		const result = await streamCompletions(
+			model,
+			normalizeContext({
+				messages: [
+					{ role: "user", content: "continue", timestamp: 0 },
+					{
+						role: "toolResult",
+						toolCallId: "old",
+						toolName: "ping",
+						content: [{ type: "text", text: "done" }],
+						isError: false,
+						timestamp: 1,
+					},
+				],
+				tools: [],
+			}),
+			{ apiKey: "fake-key", toolChoice: "auto" },
+		).result();
+		expect(result.stopReason).toBe("stop");
+		expect(mockState.lastParams).toMatchObject({ tools: [] });
+		expect(mockState.lastParams).not.toHaveProperty("tool_choice");
 	});
 
 	it("omits strict when compat disables strict mode", async () => {

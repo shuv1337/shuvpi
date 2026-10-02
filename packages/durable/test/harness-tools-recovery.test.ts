@@ -1,7 +1,6 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import type { JsonValue } from "@earendil-works/chord";
 import {
 	type AssistantMessage,
 	fauxAssistantMessage,
@@ -9,7 +8,8 @@ import {
 	fauxToolCall,
 	type ToolResultMessage,
 	Type,
-} from "@earendil-works/pi-ai";
+} from "@shuv1337/shuvpi-ai";
+import type { JsonValue } from "@shuv1337/shuvpi-chord";
 import {
 	defineTool,
 	type EntryRecord,
@@ -20,7 +20,7 @@ import {
 	type ToolRegistration,
 	ToolResultEntry,
 	ToolTask,
-} from "@earendil-works/pi-durable";
+} from "@shuv1337/shuvpi-durable";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExecutionEnv } from "../src/env/index.ts";
 import { NodeExecutionEnv } from "../src/env/node.ts";
@@ -55,7 +55,14 @@ function tool(
 	execute: ToolRegistration["execute"],
 	extra: Partial<ToolRegistration> = {},
 ): ToolRegistration {
-	return defineTool({ name, description: name, parameters: Type.Object({}), execute, ...extra });
+	return defineTool({
+		name,
+		description: name,
+		parameters: Type.Object({}),
+		compatibility: "test-v1",
+		execute,
+		...extra,
+	});
 }
 
 function call(name: string, id = "c1"): AssistantMessage {
@@ -122,7 +129,10 @@ describe("tool recovery", () => {
 		expect((await opened.harness.getTask(taskId, context))?.state).toMatchObject({
 			checkpoint: { phase: "execute", arguments: {}, replay: "unsafe" },
 		});
-		expect((await (await opened.harness.submission(id, context))!.wait(context)).status).toBe("done");
+		expect(await (await opened.harness.submission(id, context))!.wait(context)).toMatchObject({
+			status: "unanswered",
+			reason: "unresolved_effect",
+		});
 		expect(state.runs).toBe(1);
 		const [result] = results(await allEntries(opened.root));
 		expect(result).toMatchObject({ isError: true, details: { run: 1 } });
@@ -153,7 +163,9 @@ describe("tool recovery", () => {
 			registration.dispose();
 			addTool(setup.registry, { ...blocking.registration, replay: current });
 			opened = await open(path, setup);
-			expect((await (await opened.harness.submission(id, context))!.wait(context)).status).toBe("done");
+			expect((await (await opened.harness.submission(id, context))!.wait(context)).status).toBe(
+				reruns ? "done" : "unanswered",
+			);
 			const [result] = results(await allEntries(opened.root));
 			expect(blocking.state.runs).toBe(reruns ? 2 : 1);
 			expect(result!.isError).toBe(!reruns);
@@ -196,15 +208,17 @@ describe("tool recovery", () => {
 			await opened.harness.close(context);
 
 			opened = await reopen();
-			expect((await (await opened.harness.submission(id, context))!.wait(context)).status).toBe("done");
+			expect((await (await opened.harness.submission(id, context))!.wait(context)).status).toBe(
+				change === "cwd" ? "done" : "unanswered",
+			);
 			const [result] = results(await allEntries(opened.root));
 			if (change === "cwd") {
 				expect(cwds).toEqual(["/one", "/two"]);
 				expect(result!.isError).toBe(false);
 			} else {
-				// A tool that no longer resolves is treated as unsafe: interrupted, not rerun.
+				// A tool that no longer resolves blocks recovery.
 				expect(cwds).toEqual(["/one"]);
-				expect(text(result)).toContain("was interrupted");
+				expect(text(result)).toContain("recovery blocked");
 			}
 			await opened.harness.close(context);
 		}
@@ -286,7 +300,7 @@ describe("tool recovery", () => {
 		await opened.harness.close(context);
 	});
 
-	it("answers an aborted tool with its partial output and continues the run", async () => {
+	it("answers an aborted mutation with its partial output and stops the run", async () => {
 		const path = await sqlitePath();
 		const setup = chatSetup();
 		const { registration, started } = blockingTool("work");
@@ -301,13 +315,13 @@ describe("tool recovery", () => {
 			status: "aborted",
 			result: { entryId: expect.any(Number) },
 		});
-		expect((await submission.wait(context)).status).toBe("done");
+		expect((await submission.wait(context)).status).toBe("unanswered");
 		const [result] = results(await allEntries(opened.root));
 		expect(text(result)).toBe("run 1\n|<harness>\n[error] Tool work was aborted\n</harness>");
 		await opened.harness.close(context);
 	});
 
-	it("lets context derivation answer a faulted tool and continues the run", async () => {
+	it("stops automatic continuation after a mutation result cannot be persisted", async () => {
 		const path = await sqlitePath();
 		const setup = chatSetup();
 		// A result that is not strict JSON makes the result commit throw, so the scheduler faults the task.
@@ -326,16 +340,16 @@ describe("tool recovery", () => {
 		]);
 		const opened = await open(path, setup);
 		const settled = await (await opened.root.submit({ type: "input", content: "go" }, context)).wait(context);
-		expect(settled.status).toBe("done");
+		expect(settled.status).toBe("unanswered");
 		expect(results(await allEntries(opened.root))).toEqual([]);
-		expect(requests).toEqual(["Tool result unavailable: history ends before this call completed."]);
+		expect(requests).toEqual([]);
 		const tasks = await opened.harness.commit((tx) => tx.scanTasks({ conversationId: opened.root.id }, 20), context);
 		const faulted = tasks.items.find((task) => task.kind === "pi.tool")!;
 		expect(faulted.state).toMatchObject({ status: "terminal", outcome: { status: "faulted" } });
 		await opened.harness.close(context);
 	});
 
-	it("answers a real bash command interrupted by close and reopen, then finishes the run", async () => {
+	it("answers a real interrupted bash command and blocks automatic continuation after reopen", async () => {
 		const path = await sqlitePath();
 		const env = new NodeExecutionEnv({ cwd: dirname(path) });
 		const setup = chatSetup();
@@ -355,7 +369,7 @@ describe("tool recovery", () => {
 		await opened.harness.close(context);
 
 		opened = await open(path, setup, env);
-		expect((await (await opened.harness.submission(id, context))!.wait(context)).status).toBe("done");
+		expect((await (await opened.harness.submission(id, context))!.wait(context)).status).toBe("unanswered");
 		const [result] = results(await allEntries(opened.root));
 		expect(text(result)).toBe(
 			"started\n|<harness>\n[error] Tool bash was interrupted and may have partially run\n</harness>",

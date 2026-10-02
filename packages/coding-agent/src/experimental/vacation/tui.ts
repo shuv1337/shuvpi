@@ -1,4 +1,4 @@
-import type { AssistantMessage, ToolResultMessage, Usage, UserMessage } from "@earendil-works/pi-ai";
+import type { AssistantMessage, ToolResultMessage, Usage, UserMessage } from "@shuv1337/shuvpi-ai";
 import type {
 	ConversationId,
 	EntryRecord,
@@ -7,7 +7,7 @@ import type {
 	TaskGraph,
 	TaskGraphNode,
 	UsageState,
-} from "@earendil-works/pi-durable";
+} from "@shuv1337/shuvpi-durable";
 import {
 	Box,
 	type Component,
@@ -29,7 +29,7 @@ import {
 	TruncatedText,
 	TuiAltScreen,
 	VStack,
-} from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import { getAgentDir } from "../../config.ts";
 import { KeybindingsManager } from "../../core/keybindings.ts";
 import type { SettingsManager } from "../../core/settings-manager.ts";

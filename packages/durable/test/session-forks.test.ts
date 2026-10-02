@@ -7,7 +7,7 @@ import {
 	StorageRejected,
 	type StorageWrite,
 	type TaskId,
-} from "@earendil-works/pi-durable";
+} from "@shuv1337/shuvpi-durable";
 import { describe, expect, it } from "vitest";
 import {
 	context,

@@ -1,5 +1,5 @@
-import { defineService, type ReplicatedState } from "@earendil-works/chord";
-import type { ConversationView } from "@earendil-works/pi-durable";
+import { defineService, type ReplicatedState } from "@shuv1337/shuvpi-chord";
+import type { ConversationView } from "@shuv1337/shuvpi-durable";
 
 /** The root conversation's durable view: active entries and its live, inbox, agent, and usage documents. */
 export interface Transcript {

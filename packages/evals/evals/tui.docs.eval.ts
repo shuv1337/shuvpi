@@ -1,6 +1,6 @@
 import { setTimeout } from "node:timers/promises";
 import { stripVTControlCharacters } from "node:util";
-import type { AssistantMessage } from "@earendil-works/pi-ai";
+import type { AssistantMessage } from "@shuv1337/shuvpi-ai";
 import {
 	type AgentSession,
 	AgentSessionRuntime,
@@ -8,7 +8,7 @@ import {
 	InteractiveMode,
 	SessionManager,
 	createAgentSessionFromServices,
-} from "@earendil-works/pi-coding-agent";
+} from "@shuv1337/shuvpi-coding-agent";
 import { Levenshtein } from "autoevals";
 import { createJudge, describeEval } from "vitest-evals";
 import { createPiDocumentationEvalHarness, type PiCodingAgentInput } from "../src/harness.ts";
@@ -136,8 +136,8 @@ async function inspectContextFooter(session: AgentSession, agentDir: string): Pr
 	});
 	const terminal = new RecordingTerminal();
 	const mode = new InteractiveMode(runtime, { tuiMode: "regular", terminal });
-	const previousOffline = process.env.PI_OFFLINE;
-	process.env.PI_OFFLINE = "1";
+	const previousOffline = process.env.SHUVPI_OFFLINE;
+	process.env.SHUVPI_OFFLINE = "1";
 	try {
 		oracleSession.sessionManager.appendMessage({
 			...createContextMessage(model, 0),
@@ -178,8 +178,8 @@ async function inspectContextFooter(session: AgentSession, agentDir: string): Pr
 			try {
 				await runtime.dispose();
 			} finally {
-				if (previousOffline === undefined) delete process.env.PI_OFFLINE;
-				else process.env.PI_OFFLINE = previousOffline;
+				if (previousOffline === undefined) delete process.env.SHUVPI_OFFLINE;
+				else process.env.SHUVPI_OFFLINE = previousOffline;
 			}
 		}
 	}

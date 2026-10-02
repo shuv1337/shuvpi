@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
+import type { ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
 import {
 	backgroundAnsi,
 	type Color,
@@ -21,7 +21,7 @@ import {
 	type TerminalColorMode,
 	type TerminalColors,
 	type TextAttributes,
-} from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import chalk from "chalk";
 import { getCustomThemesDir, getThemesDir } from "../../../config.ts";
 import type { SourceInfo } from "../../../core/source-info.ts";
@@ -425,6 +425,7 @@ export class Theme {
 			case "xhigh":
 				return (str: string) => this.fg("thinkingXhigh", str);
 			case "max":
+			case "ultra":
 				return (str: string) => this.fg("thinkingMax", str);
 			default:
 				return (str: string) => this.fg("thinkingOff", str);
@@ -445,12 +446,12 @@ let BUILTIN_THEMES: Record<string, ThemeJson> | undefined;
 function getBuiltinThemes(): Record<string, ThemeJson> {
 	if (!BUILTIN_THEMES) {
 		const themesDir = getThemesDir();
-		const darkPath = path.join(themesDir, "dark.json");
-		const lightPath = path.join(themesDir, "light.json");
-		BUILTIN_THEMES = {
-			dark: JSON.parse(stripBom(fs.readFileSync(darkPath, "utf-8"))) as ThemeJson,
-			light: JSON.parse(stripBom(fs.readFileSync(lightPath, "utf-8"))) as ThemeJson,
-		};
+		BUILTIN_THEMES = Object.fromEntries(
+			["dark", "light", "nightowl", "nightowl-light"].map((name) => [
+				name,
+				JSON.parse(stripBom(fs.readFileSync(path.join(themesDir, `${name}.json`), "utf-8"))) as ThemeJson,
+			]),
+		);
 	}
 	return BUILTIN_THEMES;
 }
@@ -719,7 +720,7 @@ export function getTerminalTheme(): TerminalTheme {
 // ============================================================================
 
 // Use globalThis to share theme across module loaders (node + jiti in dev mode)
-const THEME_KEY = Symbol.for("@earendil-works/pi-coding-agent:theme");
+const THEME_KEY = Symbol.for("@shuv1337/shuvpi-coding-agent:theme");
 const THEME_KEY_OLD = Symbol.for("@mariozechner/pi-coding-agent:theme");
 
 // Export theme as a getter that reads from globalThis
@@ -811,8 +812,7 @@ function startThemeWatcher(): void {
 	// Only watch if it's a custom theme (not built-in)
 	if (
 		!currentThemeName ||
-		currentThemeName === "dark" ||
-		currentThemeName === "light" ||
+		Object.hasOwn(getBuiltinThemes(), currentThemeName) ||
 		currentThemeName === SYSTEM_THEME_NAME
 	) {
 		return;

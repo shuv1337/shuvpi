@@ -1,7 +1,6 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { JsonValue } from "@earendil-works/chord";
 import {
 	type AssistantMessage,
 	type FauxResponseStep,
@@ -11,7 +10,8 @@ import {
 	type SystemMessage,
 	type ToolResultMessage,
 	Type,
-} from "@earendil-works/pi-ai";
+} from "@shuv1337/shuvpi-ai";
+import type { JsonValue } from "@shuv1337/shuvpi-chord";
 import {
 	AgentDoc,
 	type Conversation,
@@ -30,7 +30,7 @@ import {
 	type ToolRegistration,
 	ToolResultEntry,
 	ToolTask,
-} from "@earendil-works/pi-durable";
+} from "@shuv1337/shuvpi-durable";
 import { describe, expect, it } from "vitest";
 import { NodeExecutionEnv } from "../src/env/node.ts";
 import { createBashTool, createEditTool, createReadTool } from "../src/tools/index.ts";
@@ -345,7 +345,7 @@ describe("tool results", () => {
 		await harness.close(context);
 	});
 
-	it("turns a throw into a tool_error result with the partial output", async () => {
+	it("turns a mutation throw into a tool_error result and stops automatic continuation", async () => {
 		const setup = chatSetup();
 		addTool(
 			setup.registry,
@@ -355,7 +355,8 @@ describe("tool results", () => {
 			}),
 		);
 		const { harness, entries, status } = await run(setup, [calls(["fail", {}, "c1"]), DONE]);
-		expect(status).toBe("done");
+		expect(status).toBe("unanswered");
+		expect(setup.faux.state.callCount).toBe(1);
 		const [result] = results(entries);
 		expect(result!.isError).toBe(true);
 		expect(resultText(result!)).toBe("partial\n|<harness>\n[error] boom\n</harness>");

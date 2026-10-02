@@ -14,10 +14,10 @@ Typical extensions add an agent tool, protect paths, confirm dangerous commands,
 
 An extension exports a default factory that receives `ExtensionAPI`. The factory registers capabilities for the current extension runtime.
 
-Create `~/.pi/agent/extensions/hello.ts`:
+Create `~/.shuvpi/agent/extensions/hello.ts`:
 
 ```typescript
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@shuv1337/shuvpi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("hello", {
@@ -46,6 +46,8 @@ Pi uses `jiti`, so local TypeScript extensions do not need a separate compilatio
 Place the extension in your user or project extensions directory. Pi loads direct TypeScript or JavaScript files and subdirectories containing an `index.ts` or `index.js` entry point.
 
 Use a single file for a small extension and a directory for a multi-file implementation. Put npm dependencies in a nearby `package.json`. See [Configuration](configuration.md) for conventional locations and [Settings](settings.md#resources) for additional paths.
+
+Import host APIs from `@shuv1337/shuvpi-*`. Existing `@mariozechner/pi-*` imports use the same host module instances, including exported extension factories under `@shuv1337/shuvpi-coding-agent/extensions/*`. Package resource manifests use the `shuvpi` key; see [Packages](packages.md).
 
 Reload replaces the extension runtime, so code after `await ctx.reload()` must not reuse state from the old runtime. Only personal and explicit command-line extensions can participate in the `project_trust` event that runs before project extensions load.
 

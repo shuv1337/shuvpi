@@ -1,5 +1,5 @@
-import { defineFacet, type Facet, type JsonValue } from "@earendil-works/chord";
-import type { ModelThinkingLevel } from "@earendil-works/pi-ai";
+import type { ModelThinkingLevel } from "@shuv1337/shuvpi-ai";
+import { defineFacet, type Facet, type JsonValue } from "@shuv1337/shuvpi-chord";
 import { AgentController } from "./agent-controller.ts";
 import { type ModelSummary, Models, type Models as ModelsService } from "./models.ts";
 import { PresentationPlugins, SessionPlugins } from "./plugins.ts";
@@ -14,6 +14,7 @@ const THINKING_DESCRIPTIONS: Record<ModelThinkingLevel, string> = {
 	high: "Deep reasoning",
 	xhigh: "Extra-high reasoning",
 	max: "Maximum reasoning",
+	ultra: "Maximum advertised reasoning",
 };
 
 interface RegisteredSlashCommand {

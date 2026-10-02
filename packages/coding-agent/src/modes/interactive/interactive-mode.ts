@@ -7,8 +7,8 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { AgentMessage, ThinkingLevel } from "@earendil-works/pi-agent-core";
-import type { AuthEvent, AuthPrompt } from "@earendil-works/pi-ai";
+import type { AgentMessage, ThinkingLevel } from "@shuv1337/shuvpi-agent-core";
+import type { AuthEvent, AuthPrompt } from "@shuv1337/shuvpi-ai";
 import {
 	type AssistantMessage,
 	type ImageContent,
@@ -16,7 +16,7 @@ import {
 	type Message,
 	type Model,
 	type Usage,
-} from "@earendil-works/pi-ai/compat";
+} from "@shuv1337/shuvpi-ai/compat";
 import type {
 	AutocompleteItem,
 	AutocompleteProvider,
@@ -28,8 +28,8 @@ import type {
 	OverlayOptions,
 	SlashCommand,
 	TuiMainScreenRenderState,
-} from "@earendil-works/pi-tui";
-import * as TuiLayouts from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
+import * as TuiLayouts from "@shuv1337/shuvpi-tui";
 import {
 	CombinedAutocompleteProvider,
 	type Component,
@@ -51,7 +51,7 @@ import {
 	type TuiMouseEvent,
 	type TuiMouseEventResult,
 	visibleWidth,
-} from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import chalk from "chalk";
 import { spawn } from "child_process";
 import {
@@ -126,8 +126,8 @@ import { copyToClipboard, readClipboardFilePaths, readClipboardText } from "../.
 import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.ts";
 import { parseGitUrl } from "../../utils/git.ts";
 import { getCwdRelativePath } from "../../utils/paths.ts";
-import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
+import { getShuvpiUserAgent } from "../../utils/shuvpi-user-agent.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
@@ -426,7 +426,7 @@ export interface InteractiveModeOptions {
 	startupDiagnostics?: AgentSessionRuntimeDiagnostic[];
 	/** Warning message if session model couldn't be restored */
 	modelFallbackMessage?: string;
-	/** Cwd to trust after reload if it gained a .pi directory during this implicitly trusted session. */
+	/** Cwd to trust after reload if it gained a .shuvpi directory during this implicitly trusted session. */
 	autoTrustOnReloadCwd?: string;
 	/** Initial message to send on startup (can include @file content) */
 	initialMessage?: string;
@@ -1133,7 +1133,7 @@ export class InteractiveMode {
 	async run(): Promise<void> {
 		await this.init();
 
-		if (!process.env.PI_OFFLINE) {
+		if (!process.env.SHUVPI_OFFLINE) {
 			const controller = new AbortController();
 			const timeout = setTimeout(() => controller.abort(), 15_000);
 			void refreshModelCatalogs(this.session.modelRuntime, controller.signal)
@@ -1248,7 +1248,7 @@ export class InteractiveMode {
 	}
 
 	private async checkForPackageUpdates(): Promise<string[]> {
-		if (process.env.PI_OFFLINE) {
+		if (process.env.SHUVPI_OFFLINE) {
 			return [];
 		}
 
@@ -1344,7 +1344,7 @@ export class InteractiveMode {
 	}
 
 	private reportInstallTelemetry(version: string): void {
-		if (process.env.PI_OFFLINE) {
+		if (process.env.SHUVPI_OFFLINE) {
 			return;
 		}
 
@@ -1354,7 +1354,7 @@ export class InteractiveMode {
 
 		void fetch(`https://pi.dev/api/report-install?version=${encodeURIComponent(version)}`, {
 			headers: {
-				"User-Agent": getPiUserAgent(version),
+				"User-Agent": getShuvpiUserAgent(version),
 			},
 			signal: AbortSignal.timeout(5000),
 		})
@@ -2138,7 +2138,9 @@ export class InteractiveMode {
 	}
 
 	private crashReportInstructions(): string {
-		const resume = this.session.sessionFile ? `run \`${APP_NAME} -r\` to resume the session, then` : "start pi and";
+		const resume = this.session.sessionFile
+			? `run \`${APP_NAME} -r\` to resume the session, then`
+			: "start Shuvpi and";
 		return `To report this crash: ${resume} run /bug. The crash details are attached automatically.`;
 	}
 
@@ -3237,9 +3239,10 @@ export class InteractiveMode {
 				await this.handleLoginCommand(providerRef);
 				return;
 			}
-			if (text === "/logout") {
-				this.showOAuthSelector("logout");
+			if (text === "/logout" || text.startsWith("/logout ")) {
+				const providerRef = text.startsWith("/logout ") ? text.slice(8).trim() : undefined;
 				this.editor.setText("");
+				await this.handleLogoutCommand(providerRef);
 				return;
 			}
 			if (text === "/new") {
@@ -5759,6 +5762,58 @@ export class InteractiveMode {
 			.sort((a, b) => a.name.localeCompare(b.name));
 	}
 
+	private async logoutProvider(providerOption: AuthSelectorProvider): Promise<void> {
+		try {
+			await this.session.modelRuntime.logout(providerOption.id, {
+				signal: AbortSignal.timeout(15_000),
+			});
+			await this.updateAvailableProviderCount();
+			const message =
+				providerOption.authType === "oauth"
+					? `Logged out of ${providerOption.name}`
+					: `Removed stored API key for ${providerOption.name}. Environment variables and models.json config are unchanged.`;
+			this.showStatus(message);
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
+			this.showError(
+				error instanceof CredentialSynchronizationError
+					? `Credentials removed for ${providerOption.name}, but local model state could not be synchronized: ${message}`
+					: `Logout failed: ${message}`,
+			);
+		}
+	}
+
+	private async handleLogoutCommand(providerRef?: string): Promise<void> {
+		if (!providerRef) {
+			this.showOAuthSelector("logout");
+			return;
+		}
+
+		let providerOptions: AuthSelectorProvider[];
+		try {
+			providerOptions = await this.getLogoutProviderOptions();
+		} catch (error) {
+			this.showError(`Could not read stored credentials: ${error instanceof Error ? error.message : String(error)}`);
+			return;
+		}
+
+		const normalizedProviderRef = providerRef.trim().toLowerCase();
+		const matches = providerOptions.filter(
+			(provider) =>
+				provider.id.toLowerCase() === normalizedProviderRef ||
+				provider.name.toLowerCase() === normalizedProviderRef,
+		);
+		if (matches.length !== 1) {
+			this.showError(
+				matches.length === 0
+					? `No stored credentials found for provider "${providerRef}". Use /logout to choose a provider.`
+					: `Provider name "${providerRef}" is ambiguous. Use its provider id with /logout <provider>.`,
+			);
+			return;
+		}
+		await this.logoutProvider(matches[0]!);
+	}
+
 	private findLoginProviderOptions(providerRef: string): AuthSelectorProvider[] {
 		const normalizedProviderRef = providerRef.trim().toLowerCase();
 		if (!normalizedProviderRef) {
@@ -5959,24 +6014,7 @@ export class InteractiveMode {
 						return;
 					}
 
-					try {
-						await this.session.modelRuntime.logout(providerOption.id, {
-							signal: AbortSignal.timeout(15_000),
-						});
-						await this.updateAvailableProviderCount();
-						const message =
-							providerOption.authType === "oauth"
-								? `Logged out of ${providerOption.name}`
-								: `Removed stored API key for ${providerOption.name}. Environment variables and models.json config are unchanged.`;
-						this.showStatus(message);
-					} catch (error: unknown) {
-						const message = error instanceof Error ? error.message : String(error);
-						this.showError(
-							error instanceof CredentialSynchronizationError
-								? `Credentials removed for ${providerOption.name}, but local model state could not be synchronized: ${message}`
-								: `Logout failed: ${message}`,
-						);
-					}
+					await this.logoutProvider(providerOption);
 				},
 				() => {
 					done();

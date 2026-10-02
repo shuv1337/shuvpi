@@ -1,5 +1,5 @@
-import { copyJson, type JsonValue } from "@earendil-works/chord";
-import type { Op } from "@earendil-works/chord/delta";
+import { copyJson, type JsonValue } from "@shuv1337/shuvpi-chord";
+import type { Op } from "@shuv1337/shuvpi-chord/delta";
 import { idFromNumber } from "./ids.ts";
 import type {
 	CheckpointInfo,

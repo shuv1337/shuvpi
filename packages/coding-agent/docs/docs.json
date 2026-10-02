@@ -48,6 +48,10 @@
               "path": "llama-cpp.md"
             },
             {
+              "title": "Choose a Shell Editing Mode",
+              "path": "bash-mode.md"
+            },
+            {
               "title": "Configure Your Terminal",
               "path": "terminal-setup.md"
             },
@@ -85,6 +89,10 @@
               "path": "skills.md"
             },
             {
+              "title": "Browse and Activate Skills",
+              "path": "skill-browser.md"
+            },
+            {
               "title": "Create Themes",
               "path": "themes.md"
             },
@@ -112,6 +120,14 @@
             {
               "title": "Route with Virtual Models",
               "path": "virtual-models.md"
+            },
+            {
+              "title": "Add Native Model Variants",
+              "path": "native-model-variants.md"
+            },
+            {
+              "title": "Use Ported Extensions",
+              "path": "ported-extensions.md"
             },
             {
               "title": "Build Terminal UI Components",
@@ -159,6 +175,10 @@
         {
           "title": "Providers",
           "path": "providers.md"
+        },
+        {
+          "title": "Release Shuvpi",
+          "path": "releasing.md"
         },
         {
           "title": "Session File Format",

@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import type { Container, EditorComponent, TUI } from "@earendil-works/pi-tui";
+import type { Container, EditorComponent, TUI } from "@shuv1337/shuvpi-tui";
 import { getAuthCredential } from "../../cli/auth-command.ts";
 import type { AgentSession } from "../../core/agent-session.ts";
 import {
@@ -53,7 +53,7 @@ export async function reportBug(context: BugReportContext, initialHint?: string)
 		context.showStatus("Bug report cancelled");
 		return;
 	}
-	if (options.delivery === "upload" && process.env.PI_OFFLINE) {
+	if (options.delivery === "upload" && process.env.SHUVPI_OFFLINE) {
 		context.showError("Uploading bug reports requires online mode. Use Export as Zip instead.");
 		return;
 	}

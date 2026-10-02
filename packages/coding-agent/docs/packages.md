@@ -2,7 +2,7 @@
 
 Pi packages install and distribute extensions, skills, prompt templates, and themes as one unit. Use a package when a customization should be shared through npm or git, or when several resources belong together.
 
-A package is an ordinary directory or npm package. It can expose conventional resource directories, declare explicit paths under the `pi` key in `package.json`, and carry its own runtime dependencies.
+A package is an ordinary directory or npm package. It can expose conventional resource directories, declare explicit paths under the `shuvpi` key in `package.json`, and carry its own runtime dependencies.
 
 ## Install and manage packages
 
@@ -16,7 +16,7 @@ pi install ./local-package
 
 `pi list` shows configured packages. Use `pi remove <source>` to remove one and `pi update --extensions` to reconcile package installations. See [Command Line](cli.md#package-commands) for every package command and option.
 
-Personal installs are written to `~/.pi/agent/settings.json`. Add `--local` or `-l` to write the package declaration to `.pi/settings.json`. Pi reads declarations from that file only after project trust is granted.
+Personal installs are written to `~/.shuvpi/agent/settings.json`. Add `--local` or `-l` to write the package declaration to `.shuvpi/settings.json`. Pi reads declarations from that file only after project trust is granted.
 
 Project packages are installed and loaded only after project trust is resolved. Packages can execute extension code and can include skills that instruct the model to run programs. Review third-party package source before installing it. Review project package declarations before granting project trust.
 
@@ -52,7 +52,7 @@ my-pi-package/
 └── themes/
 ```
 
-Without a `pi` manifest, Pi discovers TypeScript and JavaScript extensions, skill directories, Markdown prompts, and JSON themes from those directories.
+Without a `shuvpi` manifest, shuvpi discovers TypeScript and JavaScript extensions, skill directories, Markdown prompts, and JSON themes from those directories.
 
 Use an explicit manifest when resources live elsewhere or need filtering:
 
@@ -60,7 +60,7 @@ Use an explicit manifest when resources live elsewhere or need filtering:
 {
   "name": "my-pi-package",
   "keywords": ["pi-package"],
-  "pi": {
+  "shuvpi": {
     "extensions": ["./src/extension.ts"],
     "skills": ["./resources/skills"],
     "prompts": ["./resources/prompts/*.md"],
@@ -69,9 +69,7 @@ Use an explicit manifest when resources live elsewhere or need filtering:
 }
 ```
 
-Paths are relative to the package root. Arrays accept glob patterns and exclusions. List dot-prefixed or symlinked resource roots directly when traversal through a glob would not discover them.
-
-The `pi-package` keyword makes an npm package eligible for discovery in the [Pi package gallery](https://pi.dev/packages). Optional `pi.image` and `pi.video` fields add gallery previews.
+Paths are relative to the package root. Arrays accept glob patterns and exclusions. List dot-prefixed or symlinked resource roots directly when traversal through a glob would not discover them. Only the `shuvpi` key declares resources; migrate existing `pi` manifests to `shuvpi`.
 
 ## Declare dependencies
 
@@ -79,11 +77,13 @@ Put runtime packages imported by extensions in `dependencies`. Pi installs packa
 
 Pi supplies these packages to extensions and skills:
 
-- `@earendil-works/pi-ai`
-- `@earendil-works/pi-agent-core`
-- `@earendil-works/pi-coding-agent`
-- `@earendil-works/pi-tui`
+- `@shuv1337/shuvpi-ai`
+- `@shuv1337/shuvpi-agent-core`
+- `@shuv1337/shuvpi-coding-agent`
+- `@shuv1337/shuvpi-tui`
 - `typebox`
+
+The existing `@mariozechner/pi-*` imports resolve to the same host modules as their `@shuv1337/shuvpi-*` counterparts. No `@earendil-works` import aliases are provided.
 
 Declare the host-provided packages listed above in `peerDependencies` with a `"*"` range and do not bundle them. Pi suppresses automatic peer installation for managed npm packages and git packages installed with npm, pnpm, or Bun. Local packages are not installed or modified, so their dependency tree remains the package author's responsibility.
 

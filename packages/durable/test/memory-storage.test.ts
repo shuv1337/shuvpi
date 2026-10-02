@@ -1,5 +1,5 @@
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { registerStorageConformance } from "@earendil-works/pi-durable/testing";
+import { BACKGROUND_CONTEXT } from "@shuv1337/shuvpi-chord/context";
+import { registerStorageConformance } from "@shuv1337/shuvpi-durable/testing";
 import { describe, expect, it } from "vitest";
 import { idFromNumber, seqFromNumber } from "../src/ids.ts";
 import { MemoryStorage } from "../src/storage/memory.ts";

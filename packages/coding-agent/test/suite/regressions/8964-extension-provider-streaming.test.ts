@@ -1,5 +1,5 @@
-import { type AssistantMessage, fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { getApiProvider } from "@earendil-works/pi-ai/compat";
+import { type AssistantMessage, fauxAssistantMessage, fauxProvider } from "@shuv1337/shuvpi-ai";
+import { getApiProvider } from "@shuv1337/shuvpi-ai/compat";
 import { expect, it } from "vitest";
 import { createHarness } from "../harness.ts";
 

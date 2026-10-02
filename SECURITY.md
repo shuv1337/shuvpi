@@ -1,87 +1,45 @@
 # Security Policy
 
-This document should guide you about understanding the security concept behind
-Pi and also where the boundaries are.
+Shuvpi is a coding agent that runs locally with the permissions of the user who starts it. It is not an operating-system sandbox. Users are responsible for reviewing its actions or running it inside a container, virtual machine, or other containment boundary.
 
-In general Pi is a coding agent that runs locally within the security boundary
-of the user that is running it.  It's the responsibility of the user to monitor
-its operations or to contain it within a container, virtual machine or other
-Sandbox solution.
+Shuvpi treats the local user account and files writable by that account as inside the same trust boundary as the process. Someone who can modify the user's home directory, workspace, shell startup files, environment, or Shuvpi configuration can generally influence Shuvpi and other local developer tools. Reports that rely on prior access to write those files are not vulnerabilities unless they show how Shuvpi grants that access or crosses an operating-system privilege boundary.
 
-Pi treats the local user account and files writable by that account as inside
-the same trust boundary as the Pi process itself.  If an attacker can modify files
-under the user's home directory, workspace, shell startup files, environment, or
-Pi configuration, they can generally influence Pi or other local developer tools.
-Reports that depend on such prior local write access are not security
-vulnerabilities unless they demonstrate how Pi grants that write access or crosses
-an operating-system privilege boundary.
+Shuvpi also relies on users loading trusted extensions and skills and working only in repositories they trust. Files such as `AGENTS.md` and source comments can contain prompt-injection instructions; the agent cannot prevent those instructions from influencing its behavior.
 
-Pi relies on users installing trustworthy extensions and loading trustworthy
-skills and only to use pi within trusted repositories.  This is because files
-like `AGENTS.md` or instructions in comments can be used to prompt inject the
-coding agent trivially and this cannot be protected against.
+## Reporting a vulnerability in Shuvpi
 
-## Reporting a Vulnerability
+As of October 2, 2026, GitHub private vulnerability reporting is disabled for this repository. If GitHub enables it later, use [Shuvpi's private vulnerability reporting page](https://github.com/shuv1337/shuvpi/security/advisories/new).
 
-If you believe you found a security vulnerability in pi or another package in
-this repository, please report it privately by either:
+Until then, open an issue in [shuv1337/shuvpi](https://github.com/shuv1337/shuvpi/issues) asking a maintainer to arrange a private contact. Do not include exploit details, proof-of-concept code, logs, or other sensitive information in that issue. The issue gate may close the request automatically, but the request remains visible to maintainers. You can identify maintainers through the [Shuvpi repository](https://github.com/shuv1337/shuvpi) or the [shuv1337 profile](https://github.com/shuv1337). Do not send reports to an unverified address.
 
-- Emailing `security@earendil.com`, or
-- Opening a private report through GitHub Security Advisories for this repository
+Please include the affected package, version or commit, configuration, impact, and reproduction details after a private channel has been arranged. Do not disclose the issue publicly before coordinating with the maintainer.
 
-Please include:
-
-- A description of the issue and its impact
-- Steps to reproduce, proof of concept, or relevant logs
-- Affected package, version, commit, or configuration
-- Any known mitigations
-
-Do not open a public issue for security-sensitive reports.  We will review
-reports and coordinate disclosure as appropriate.
+Security issues that affect only the original upstream Pi project belong to its [upstream security policy](https://github.com/earendil-works/pi/security/policy), not this fork. Reports about Shuvpi's packages, CLI, or repository should use the Shuvpi process above.
 
 ## Scope
 
-Security issues in the distributed packages, command-line tools, APIs, and
-repository code are in scope as well as earendil operated infrastructure
-on `pi.dev`.
+Security issues in Shuvpi's distributed packages, command-line tools, APIs, and repository code are in scope.
 
-## Out Of Scope
+## Out of scope
 
-- Local code execution or sandboxing behavior (the Pi coding agent intentionally does not have a sandbox)
-- Behavior of pi extensions or skills installed by the user
-- Risks from working in untrusted repositories
-- Risks from installing untrusted extensions, skills, packages, or tools
-- Isuses caused by non trustworthy MITM proxies
-- Public internet exposure of a Pi installation
-- Prompt injection attacks
-- Exposed secrets that are third-party/user-controlled credentials
-- Reports requiring the ability to create, modify, delete, or replace files,
-  directories, symlinks, environment variables, shell configuration, or other
-  user-controlled local state on the target machine. This includes `~/.pi`,
-  `~/.pi/agent/models.json`, workspace files, `AGENTS.md`, skills, extensions,
-  extension configuration, dotfiles, and files synchronized through NFS, roaming
-  profiles, or dotfile managers, unless the report shows how Pi itself grants
-  that access.
+- Local code execution or sandboxing behavior: the Shuvpi coding agent intentionally does not provide a sandbox.
+- Behavior of user-installed extensions or skills.
+- Risks from working in untrusted repositories.
+- Risks from installing untrusted extensions, skills, packages, or tools.
+- Issues caused by untrustworthy man-in-the-middle proxies.
+- Public internet exposure of a Shuvpi installation.
+- Prompt injection attacks.
+- Exposed secrets that are third-party or user-controlled credentials.
+- Reports requiring the ability to create, modify, delete, or replace user-controlled files, directories, symlinks, environment variables, shell configuration, or other local state. This includes `~/.shuvpi`, `~/.shuvpi/agent/models.json`, workspace files, `AGENTS.md`, skills, extensions, extension configuration, dotfiles, and files synchronized through NFS, roaming profiles, or dotfile managers, unless the report shows how Shuvpi itself grants that access.
 - Issues caused by intentionally weakened user configuration.
-- Resource/DOS claims that require trusted local input/config against the pi coding agent.
+- Resource-exhaustion claims that require trusted local input or configuration.
 - Reports about malicious model output.
 - User-approved or user-initiated local actions presented as vulnerabilities.
 
-## Notes for Reporters
+## Notes for reporters
 
-The most useful reports show a current, reproducible security boundary bypass
-with demonstrated impact.  Reports that only show expected local-agent behavior,
-prompt injection, or a malicious trusted extension/skill are not security
-vulnerabilities under this model.
+The most useful reports show a current, reproducible security-boundary bypass with demonstrated impact. Reports that show expected local-agent behavior, prompt injection, or a malicious trusted extension or skill are not security vulnerabilities under this model.
 
-For example, a report showing that malicious contents written to a trusted Pi
-configuration file cause Pi to execute commands, load attacker-controlled tools,
-send credentials to an attacker-controlled endpoint, or otherwise change behavior
-is out of scope.
+For example, a report showing that malicious contents written to a trusted Shuvpi configuration file cause Shuvpi to execute commands, load attacker-controlled tools, send credentials to an attacker-controlled endpoint, or otherwise change behavior is out of scope unless it demonstrates how Shuvpi itself grants the required write access.
 
-When possible, include the exact affected path, package version or commit SHA,
-configuration, and a proof of concept against the latest release or latest
-`main`.  For dependency reports, include evidence that the shipped dependency is
-affected and that the issue is reachable through Pi.  For exposed-secret reports,
-include evidence that the credential is owned by Earendil or grants access to
-Earendil-operated infrastructure or services.
+When possible, include the exact affected path, package version or commit, configuration, and a proof of concept against a current Shuvpi release or source revision. For dependency reports, show that the shipped dependency is affected and reachable through Shuvpi. For exposed-secret reports, show that the credential is owned by Shuvpi or grants access to a Shuvpi-operated service.

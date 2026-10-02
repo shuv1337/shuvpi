@@ -1,6 +1,6 @@
-import type { Context, JsonValue } from "@earendil-works/chord";
-import type { Op, Path } from "@earendil-works/chord/delta";
-import type { AssistantMessage, Message, Usage } from "@earendil-works/pi-ai";
+import type { AssistantMessage, Message, Usage } from "@shuv1337/shuvpi-ai";
+import type { Context, JsonValue } from "@shuv1337/shuvpi-chord";
+import type { Op, Path } from "@shuv1337/shuvpi-chord/delta";
 import { CommittedWatch } from "../session/observation.ts";
 import type {
 	CommitChange,

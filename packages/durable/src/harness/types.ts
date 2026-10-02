@@ -1,4 +1,3 @@
-import type { AttachedReplicatedState, Context, JsonValue } from "@earendil-works/chord";
 import type {
 	AssistantMessage,
 	CacheRetention,
@@ -13,7 +12,8 @@ import type {
 	TSchema,
 	Usage,
 	UserMessage,
-} from "@earendil-works/pi-ai";
+} from "@shuv1337/shuvpi-ai";
+import type { AttachedReplicatedState, Context, JsonValue } from "@shuv1337/shuvpi-chord";
 import type { ExecutionEnv } from "../env/index.ts";
 import type {
 	ConversationId,
@@ -40,6 +40,7 @@ import type {
 	WatchHandle,
 } from "../types.ts";
 import type { TaskGraph, TaskGraphWatch } from "./task-graph.ts";
+import type { ToolPolicy } from "./tool.ts";
 import type { UsageState } from "./usage.ts";
 import type { ConversationView } from "./view.ts";
 
@@ -146,6 +147,8 @@ export type ToolExecutionResult<TDetails extends JsonValue = JsonValue> = {
 	readonly isError?: boolean;
 	/** Omitted: the last `details()` value becomes the details. */
 	readonly details?: TDetails;
+	/** Full structured tool output, independent of the bounded model-facing text. */
+	readonly structuredContent?: JsonValue;
 	/** Added after those recorded through `api.diagnostic()`. */
 	readonly diagnostics?: readonly ToolDiagnostic[];
 	/** Spend of the execution itself, such as a model call; stored on the result and in `pi.usage.tools`. */
@@ -167,6 +170,8 @@ export interface ToolExecutionApi<TDetails extends JsonValue = JsonValue> extend
 	readonly taskId: TaskId;
 	readonly conversationId: ConversationId;
 	readonly callId: string;
+	/** Execute a nested call through the same durable admission, policy, and effect boundary. */
+	callTool(name: string, args: JsonObject, context: Context): Promise<ToolExecutionResult>;
 	/** The tool task's phase snapshot. */
 	readonly registry: RegistrySnapshot;
 	/** The calling conversation's agent, as the tool task's phase resolved it. */
@@ -202,6 +207,11 @@ export type ToolRegistration<
 	TParameters extends TSchema = TSchema,
 	TDetails extends JsonValue = JsonValue,
 > = Tool<TParameters> & {
+	/** Trusted host classification. MCP annotations alone must not determine this value. Default mutation. */
+	readonly effect?: "read" | "mutation";
+	/** Required for safe recovery. Change when implementation semantics change; schema and policies are also captured. */
+	readonly compatibility?: string;
+	readonly requiredPolicies?: readonly string[];
 	/** Whether an interrupted execution may rerun on recovery. Default `unsafe`. */
 	readonly replay?: "safe" | "unsafe";
 	/** Default: the settings' `toolExecution`. One sequential call makes its whole round sequential. */
@@ -421,6 +431,8 @@ export type EnvTarget = {
 };
 
 export type HarnessOptions<Tool extends ToolRegistration = ToolRegistration> = {
+	/** Mandatory dispatch authorization, separate from ordinary beforeTool hooks. */
+	readonly toolPolicies?: readonly ToolPolicy[];
 	/** pi-ai model access used by generation. */
 	readonly models: Models;
 	readonly registry: RegistryReader<Tool>;

@@ -8,8 +8,8 @@
  *   node test.ts claude-sonnet-4-5-20250929 --thinking
  */
 
-import { type Api, type Context, type Model, registerApiProvider, streamSimple } from "@earendil-works/pi-ai/compat";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { type Api, type Context, type Model, registerApiProvider, streamSimple } from "@shuv1337/shuvpi-ai/compat";
+import { getAgentDir } from "@shuv1337/shuvpi-coding-agent";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { MODELS, streamGitLabDuo } from "./index.ts";

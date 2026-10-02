@@ -1,6 +1,6 @@
-import type { AssistantMessage, ToolResultMessage, UserMessage } from "@earendil-works/pi-ai";
-import type { ConversationView, EntryRecord, InboxState, LiveState } from "@earendil-works/pi-durable";
-import { Container, Spacer, Text, TruncatedText, type TUI } from "@earendil-works/pi-tui";
+import type { AssistantMessage, ToolResultMessage, UserMessage } from "@shuv1337/shuvpi-ai";
+import type { ConversationView, EntryRecord, InboxState, LiveState } from "@shuv1337/shuvpi-durable";
+import { Container, Spacer, Text, TruncatedText, type TUI } from "@shuv1337/shuvpi-tui";
 import { createAllToolRenderers } from "../core/tools/renderers/index.ts";
 import { AssistantMessageComponent } from "../modes/interactive/components/assistant-message.ts";
 import { type StatusIndicator, WorkingStatusIndicator } from "../modes/interactive/components/status-indicator.ts";

@@ -16,6 +16,7 @@ type OAuthFlowLoaders = {
 	openaiCodex: () => OAuthAuth | Promise<OAuthAuth>;
 	openaiChatGPT: () => OAuthAuth | Promise<OAuthAuth>;
 	githubCopilot: () => OAuthAuth | Promise<OAuthAuth>;
+	googleAntigravity: () => OAuthAuth | Promise<OAuthAuth>;
 	openrouter: () => OAuthAuth | Promise<OAuthAuth>;
 	kimiCoding: () => OAuthAuth | Promise<OAuthAuth>;
 	meta: () => OAuthAuth | Promise<OAuthAuth>;
@@ -53,6 +54,12 @@ export const loadGitHubCopilotOAuth = async (): Promise<OAuthAuth> => {
 export const loadOpenRouterOAuth = async (): Promise<OAuthAuth> => {
 	if (bundledLoaders) return bundledLoaders.openrouter();
 	return ((await importOAuthModule("./openrouter.ts")) as { openRouterOAuth: OAuthAuth }).openRouterOAuth;
+};
+
+export const loadGoogleAntigravityOAuth = async (): Promise<OAuthAuth> => {
+	if (bundledLoaders) return bundledLoaders.googleAntigravity();
+	return ((await importOAuthModule("./google-antigravity.ts")) as { googleAntigravityOAuth: OAuthAuth })
+		.googleAntigravityOAuth;
 };
 
 export const loadKimiCodingOAuth = async (): Promise<OAuthAuth> => {

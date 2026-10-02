@@ -1,4 +1,4 @@
-import { setKeybindings } from "@earendil-works/pi-tui";
+import { type Keybinding, setKeybindings, visibleWidth } from "@shuv1337/shuvpi-tui";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { KeybindingsManager } from "../src/core/keybindings.ts";
 import { ScopedModelsSelectorComponent } from "../src/modes/interactive/components/scoped-models-selector.ts";
@@ -122,5 +122,43 @@ describe("scoped models selector", () => {
 		expect(models.map((model) => model.enabled)).toEqual([true, true, true]);
 		expect(getMarkerStates(selector, models)).toEqual([true, true, true]);
 		expect(stripAnsi(selector.render(120).join("\n"))).toContain("all enabled");
+	});
+
+	it.each([24, 80])("omits every disabled action hint at width %i", async (width) => {
+		setKeybindings(
+			new KeybindingsManager({
+				"tui.select.confirm": [],
+				"app.models.enableAll": [],
+				"app.models.clearAll": [],
+				"app.models.toggleProvider": [],
+				"app.models.reorderUp": [],
+				"app.models.reorderDown": [],
+				"app.models.save": [],
+			}),
+		);
+		const selector = await createSelector([{ id: "model-a", name: "Model A", enabled: true }]);
+		const lines = selector.render(width);
+		const text = stripAnsi(lines.join(" ")).replace(/\s+/gu, " ");
+		expect(text).toContain("Session-only.");
+		expect(text).not.toMatch(/toggle| clear| provider|reorder|save to settings| save/u);
+		expect(text).not.toContain("·");
+		for (const line of lines) expect(visibleWidth(line)).toBeLessThanOrEqual(width);
+	});
+
+	it.each([
+		["tui.select.confirm", "toggle"],
+		["app.models.enableAll", "all"],
+		["app.models.clearAll", "clear"],
+		["app.models.toggleProvider", "provider"],
+		["app.models.save", "save"],
+	] satisfies [Keybinding, string][])("shows the configured %s shortcut", async (action, label) => {
+		setKeybindings(
+			new KeybindingsManager({ [action]: "ctrl+y", "app.models.reorderUp": [], "app.models.reorderDown": "ctrl+r" }),
+		);
+		const selector = await createSelector([{ id: "model-a", name: "Model A", enabled: true }]);
+		const text = stripAnsi(selector.render(80).join(" ")).replace(/\s+/gu, " ");
+		expect(text).toContain(`Ctrl+Y ${label}`);
+		expect(text).toContain("Ctrl+R reorder");
+		expect(text).not.toContain("/Ctrl+R");
 	});
 });

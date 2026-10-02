@@ -1,4 +1,4 @@
-import type { Api, Model, ProviderHeaders } from "@earendil-works/pi-ai";
+import type { Api, Model, ProviderHeaders } from "@shuv1337/shuvpi-ai";
 import type { SettingsManager } from "./settings-manager.ts";
 import { isInstallTelemetryEnabled } from "./telemetry.ts";
 
@@ -44,7 +44,7 @@ function getDefaultAttributionHeaders(
 	if (isOpenRouterModel(model)) {
 		return {
 			"HTTP-Referer": "https://pi.dev",
-			"X-OpenRouter-Title": "pi",
+			"X-OpenRouter-Title": "shuvpi",
 			"X-OpenRouter-Categories": "cli-agent",
 		};
 	}
@@ -73,7 +73,7 @@ function getSessionHeaders(model: Model<Api>, sessionId: string | undefined): Re
 	) {
 		return undefined;
 	}
-	return { "x-opencode-session": sessionId, "x-opencode-client": "pi" };
+	return { "x-opencode-session": sessionId, "x-opencode-client": "shuvpi" };
 }
 
 export function mergeProviderAttributionHeaders(

@@ -71,6 +71,10 @@ test("redirects Pi user agents to an explicit catalog version", () => {
 		kind: "redirect",
 		location: "https://pi.dev/api/models?pi-version=0.84.4",
 	});
+	assert.deepEqual(parseModelCatalogRequest("https://pi.dev/api/models", "shuvpi/1.0.0 (linux; node/v26.0.0; x64)"), {
+		kind: "redirect",
+		location: "https://pi.dev/api/models?pi-version=1.0.0",
+	});
 });
 
 test("serves explicit and unversioned catalog requests without redirecting", () => {

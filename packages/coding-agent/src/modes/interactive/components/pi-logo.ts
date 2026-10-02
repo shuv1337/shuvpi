@@ -1,4 +1,4 @@
-import { backgroundAnsi, foregroundAnsi, isAppleTerminalSession, rgbColor } from "@earendil-works/pi-tui";
+import { backgroundAnsi, foregroundAnsi, isAppleTerminalSession, rgbColor } from "@shuv1337/shuvpi-tui";
 import { theme } from "../theme/theme.ts";
 
 const CORAL = rgbColor(228, 138, 122);

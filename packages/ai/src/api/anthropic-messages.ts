@@ -66,13 +66,13 @@ import { transformMessages } from "./transform-messages.ts";
 
 /**
  * Resolve cache retention preference.
- * Defaults to "short" and uses PI_CACHE_RETENTION for backward compatibility.
+ * Defaults to "short" and uses SHUVPI_CACHE_RETENTION for backward compatibility.
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEnv): CacheRetention {
 	if (cacheRetention) {
 		return cacheRetention;
 	}
-	if (getProviderEnvValue("PI_CACHE_RETENTION", env) === "long") {
+	if (getProviderEnvValue("SHUVPI_CACHE_RETENTION", env) === "long") {
 		return "long";
 	}
 	return "short";
@@ -96,6 +96,8 @@ function getCacheControl(
 
 // Stealth mode: Mimic Claude Code's tool naming exactly
 const claudeCodeVersion = "2.1.280";
+const claudeCodeSystemIdentity = "You are Claude Code, Anthropic's official CLI for Claude.";
+const shuvpiSystemIdentity = "You are an expert coding assistant operating inside shuvpi, a coding agent harness.";
 
 // Claude Code 2.x tool names (canonical casing)
 // Source: https://cchistory.mariozechner.at/data/prompts-2.1.11.md
@@ -295,15 +297,28 @@ export interface AnthropicOptions extends StreamOptions {
 function mergeHeaders(...headerSources: (ProviderHeaders | undefined)[]): ProviderHeaders {
 	const merged: ProviderHeaders = {};
 	for (const headers of headerSources) {
-		if (headers) {
-			Object.assign(merged, headers);
+		for (const [name, value] of Object.entries(headers ?? {})) {
+			for (const previous of Object.keys(merged)) {
+				if (previous.toLowerCase() === name.toLowerCase()) delete merged[previous];
+			}
+			merged[name] = value;
 		}
 	}
 	return merged;
 }
 
-function mergeClientHeaders(...headerSources: (ProviderHeaders | undefined)[]): ProviderHeaders {
-	return mergeHeaders({ "User-Agent": getPiUserAgent() }, ...headerSources);
+function mergeClientHeaders(
+	model: Model<"anthropic-messages">,
+	...headerSources: (ProviderHeaders | undefined)[]
+): ProviderHeaders {
+	const merged = mergeHeaders(...headerSources);
+	if (model.provider === "kimi-coding") {
+		for (const name of Object.keys(merged)) {
+			if (name.toLowerCase() === "user-agent") delete merged[name];
+		}
+		merged["User-Agent"] = getPiUserAgent().replace(/^pi(?= )/, "shuvpi");
+	}
+	return merged;
 }
 
 function hasHeader(headers: ProviderHeaders | undefined, name: string): boolean {
@@ -634,6 +649,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 					copilotDynamicHeaders,
 					cacheSessionId,
 					federation,
+					options?.sessionId,
 				);
 				client = created.client;
 				isOAuth = created.isOAuthToken;
@@ -989,6 +1005,7 @@ function createClient(
 	dynamicHeaders?: Record<string, string>,
 	sessionId?: string,
 	federation?: AnthropicFederationConfig,
+	clientSessionId?: string,
 ): { client: Anthropic; isOAuthToken: boolean } {
 	// Copilot: Bearer auth.
 	if (model.provider === "github-copilot") {
@@ -999,6 +1016,7 @@ function createClient(
 			dangerouslyAllowBrowser: true,
 			fetch,
 			defaultHeaders: mergeClientHeaders(
+				model,
 				{
 					accept: "application/json",
 					"anthropic-dangerous-direct-browser-access": "true",
@@ -1014,18 +1032,27 @@ function createClient(
 
 	// OAuth: Bearer auth, Claude Code identity headers
 	if (apiKey && isOAuthToken(apiKey)) {
+		const baseFetch = fetch ?? globalThis.fetch;
 		const client = new PiAnthropic({
 			apiKey: null,
 			authToken: apiKey,
 			baseURL: model.baseUrl,
 			dangerouslyAllowBrowser: true,
-			fetch,
+			fetch: async (input, init) => {
+				const url = new URL(input instanceof Request ? input.url : input);
+				if (url.pathname === "/v1/messages" && !url.searchParams.has("beta")) {
+					url.searchParams.set("beta", "true");
+				}
+				return baseFetch(input instanceof Request ? new Request(url, input) : url, init);
+			},
 			defaultHeaders: mergeClientHeaders(
+				model,
 				{
 					accept: "application/json",
 					"anthropic-dangerous-direct-browser-access": "true",
-					"user-agent": `claude-cli/${claudeCodeVersion}`,
+					"user-agent": `claude-cli/${claudeCodeVersion} (external, cli)`,
 					"x-app": "cli",
+					...(clientSessionId ? { "X-Claude-Code-Session-Id": clientSessionId } : {}),
 				},
 				model.headers,
 				optionsHeaders,
@@ -1043,6 +1070,7 @@ function createClient(
 		sessionAffinityHeaders[header] = sessionId;
 	}
 	const defaultHeaders = mergeClientHeaders(
+		model,
 		{
 			accept: "application/json",
 			"anthropic-dangerous-direct-browser-access": "true",
@@ -1170,14 +1198,16 @@ function buildParams(
 		params.system = [
 			{
 				type: "text",
-				text: "You are Claude Code, Anthropic's official CLI for Claude.",
+				text: claudeCodeSystemIdentity,
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			},
 		];
 		if (initialSystemText) {
 			params.system.push({
 				type: "text",
-				text: sanitizeSurrogates(initialSystemText),
+				text: sanitizeSurrogates(initialSystemText)
+					.replace(shuvpiSystemIdentity, claudeCodeSystemIdentity)
+					.replace(/shuvpi/gi, "Claude"),
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			});
 		}

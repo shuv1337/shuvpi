@@ -1,4 +1,5 @@
 import { arch, platform, release } from "node:os";
+import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { stream as streamOpenAICompletions } from "../src/api/openai-completions.ts";
 import type { OpenAIResponsesOptions } from "../src/api/openai-responses.ts";
@@ -6,10 +7,10 @@ import { stream as streamOpenAIResponses } from "../src/api/openai-responses.ts"
 import { getSupportedThinkingLevels } from "../src/models.ts";
 import { XAI_MODELS } from "../src/providers/xai.models.ts";
 import { xaiProvider } from "../src/providers/xai.ts";
-import type { Context, Model } from "../src/types.ts";
+import type { Context, Model, Tool } from "../src/types.ts";
 import { normalizeContext } from "../src/utils/transcript.ts";
 
-const PI_USER_AGENT = `pi (${platform()} ${release()}; ${arch()})`;
+const SHUVPI_USER_AGENT = `pi (${platform()} ${release()}; ${arch()})`;
 
 type CapturedRequest = {
 	url: string;
@@ -36,6 +37,13 @@ function completedResponse(): Response {
 	return new Response(`data: ${JSON.stringify(event)}\n\ndata: [DONE]\n\n`, {
 		status: 200,
 		headers: { "content-type": "text/event-stream" },
+	});
+}
+
+function retryableResponse(): Response {
+	return new Response(JSON.stringify({ error: { message: "temporary failure", type: "server_error" } }), {
+		status: 503,
+		headers: { "content-type": "application/json", "retry-after-ms": "0", "x-should-retry": "true" },
 	});
 }
 
@@ -178,7 +186,7 @@ describe("xAI Responses provider", () => {
 
 		expect(captured.url).toBe("https://api.x.ai/v1/responses");
 		expect(captured.headers.get("authorization")).toBe("Bearer xai-test-token");
-		expect(captured.headers.get("user-agent")).toBe(PI_USER_AGENT);
+		expect(captured.headers.get("user-agent")).toBe(SHUVPI_USER_AGENT);
 		expect(captured.headers.get("session_id")).toBe("pi-session-123");
 		expect(captured.body).toMatchObject({
 			model: "grok-4.5",
@@ -197,6 +205,84 @@ describe("xAI Responses provider", () => {
 				}),
 			]),
 		);
+	});
+
+	it("sends strict JSON-schema function tools when the xAI model declares support", async () => {
+		const tool: Tool = {
+			name: "lookup",
+			description: "Look up a value",
+			parameters: Type.Object({ value: Type.String() }),
+			constrainedSampling: { type: "json_schema", strict: "require" },
+		};
+		const model: Model<"openai-responses"> = {
+			...XAI_MODELS["grok-4.7"],
+			compat: { ...XAI_MODELS["grok-4.7"].compat, supportsStrictMode: true },
+		};
+		const captured = await captureRequest(
+			model,
+			{ messages: [{ role: "user", content: "Use the tool", timestamp: 1 }], tools: [tool] },
+			{ apiKey: "xai-test-token" },
+		);
+
+		expect(captured.body.tools).toEqual([
+			expect.objectContaining({
+				type: "function",
+				name: "lookup",
+				strict: true,
+				parameters: expect.objectContaining({ type: "object", additionalProperties: false }),
+			}),
+		]);
+	});
+
+	it("applies the configured retry count to xAI Responses requests", async () => {
+		let calls = 0;
+		vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+			calls++;
+			return calls === 1 ? retryableResponse() : completedResponse();
+		});
+
+		const result = await xaiProvider()
+			.stream(
+				XAI_MODELS["grok-4.7"],
+				normalizeContext({ messages: [{ role: "user", content: "hello", timestamp: 1 }] }),
+				{ apiKey: "xai-test-token", maxRetries: 1, maxRetryDelayMs: 0 },
+			)
+			.result();
+
+		expect(result.stopReason, result.errorMessage).toBe("stop");
+		expect(calls).toBe(2);
+	});
+
+	it("bounds each xAI Responses attempt with timeoutMs", async () => {
+		let calls = 0;
+		let requestAborted = false;
+		vi.spyOn(globalThis, "fetch").mockImplementation((_input, init) => {
+			calls++;
+			return new Promise((_resolve, reject) => {
+				const signal = init?.signal;
+				if (!signal) throw new Error("Expected the SDK to pass a request signal");
+				const onAbort = () => {
+					requestAborted = true;
+					const error = new Error("The operation was aborted");
+					error.name = "AbortError";
+					reject(error);
+				};
+				if (signal.aborted) onAbort();
+				else signal.addEventListener("abort", onAbort, { once: true });
+			});
+		});
+
+		const result = await xaiProvider()
+			.stream(
+				XAI_MODELS["grok-4.7"],
+				normalizeContext({ messages: [{ role: "user", content: "hello", timestamp: 1 }] }),
+				{ apiKey: "xai-test-token", timeoutMs: 25 },
+			)
+			.result();
+
+		expect(result.stopReason).toBe("error");
+		expect(calls).toBe(1);
+		expect(requestAborted).toBe(true);
 	});
 
 	it("requests encrypted reasoning without an effort override", async () => {
@@ -277,7 +363,7 @@ describe("xAI Responses provider", () => {
 		).result();
 
 		expect(result.stopReason, result.errorMessage).toBe("stop");
-		expect(userAgent).toBe(PI_USER_AGENT);
+		expect(userAgent).toBe(SHUVPI_USER_AGENT);
 	});
 
 	it("lets explicit headers override the default Responses User-Agent", async () => {
@@ -291,7 +377,7 @@ describe("xAI Responses provider", () => {
 	});
 
 	it("uses pi's User-Agent by default for Completions requests", async () => {
-		expect(await captureCompletionsUserAgent()).toBe(PI_USER_AGENT);
+		expect(await captureCompletionsUserAgent()).toBe(SHUVPI_USER_AGENT);
 	});
 
 	it("lets explicit headers override the default Completions User-Agent", async () => {

@@ -6,8 +6,8 @@ import {
 	type ModelsSimpleStreamOptions,
 	normalizeContext,
 	type Usage,
-} from "@earendil-works/pi-ai";
-import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
+} from "@shuv1337/shuvpi-ai";
+import { getBuiltinModel } from "@shuv1337/shuvpi-ai/providers/all";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import {
@@ -129,7 +129,7 @@ describe("cache warming", () => {
 			getPromptCacheTtlMs(adaptiveModel, undefined),
 			getPromptCacheTtlMs(adaptiveModel, { cacheRetention: "long" }),
 			getPromptCacheTtlMs(adaptiveModel, { cacheRetention: "none" }),
-			getPromptCacheTtlMs(adaptiveModel, { env: { PI_CACHE_RETENTION: "long" } }),
+			getPromptCacheTtlMs(adaptiveModel, { env: { SHUVPI_CACHE_RETENTION: "long" } }),
 			getPromptCacheTtlMs(openaiModel, { cacheRetention: "long" }),
 			getPromptCacheTtlMs(unknownModel, undefined),
 		]).toEqual([300_000, 3_600_000, undefined, 3_600_000, 86_400_000, undefined]);

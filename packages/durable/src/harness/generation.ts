@@ -1,4 +1,3 @@
-import { type Context, copyJson, type Draft, type JsonValue } from "@earendil-works/chord";
 import type {
 	Api,
 	AssistantMessage,
@@ -8,10 +7,11 @@ import type {
 	ModelThinkingLevel,
 	SimpleStreamOptions,
 	ToolCall,
-} from "@earendil-works/pi-ai";
-import { isContextOverflow } from "@earendil-works/pi-ai/utils/overflow";
-import { isRetryableAssistantError, retryDelayMs } from "@earendil-works/pi-ai/utils/retry";
-import { getCurrentTools } from "@earendil-works/pi-ai/utils/transcript";
+} from "@shuv1337/shuvpi-ai";
+import { isContextOverflow } from "@shuv1337/shuvpi-ai/utils/overflow";
+import { isRetryableAssistantError, retryDelayMs } from "@shuv1337/shuvpi-ai/utils/retry";
+import { getCurrentTools } from "@shuv1337/shuvpi-ai/utils/transcript";
+import { type Context, copyJson, type Draft, type JsonValue } from "@shuv1337/shuvpi-chord";
 import { AssistantEntry, ResetEntry, SystemEntry, UserEntry } from "../entries.ts";
 import type { ExecutionEnv } from "../env/index.ts";
 import { defineTask } from "../tasks.ts";
@@ -31,7 +31,7 @@ import { applyBoundary, prepareBoundary } from "./inbox.ts";
 import { assignJson } from "./json.ts";
 import { endRun, LiveDoc, type LiveState, type ToolSlot } from "./live.ts";
 import { planSystemEntries, renderSections, replaySections } from "./prompt.ts";
-import { appendToolResult, harnessError, ToolTask, type ToolTaskResult } from "./tool.ts";
+import { appendToolResult, harnessError, ToolTask, type ToolTaskResult, toolEffectScope } from "./tool.ts";
 import type {
 	CompactionPolicy,
 	CompactionResult,
@@ -123,6 +123,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 		 * conversation, so the transcript read here is still the tail at the commit.
 		 */
 		prepare: async (task, runtime, context) => {
+			if (await stopForEffect(runtime, context)) return;
 			const { conversationId } = runtime;
 			const agent = await runtime.agent(context);
 			const settings = runtime.settings;
@@ -182,6 +183,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 			}, context);
 		},
 		request: async (task, runtime, context) => {
+			if (await stopForEffect(runtime, context)) return;
 			const { attempt, compacted, model: ref, thinkingLevel, streamOptions, cutoff } = task.state.checkpoint;
 			const conversationId = runtime.conversationId;
 			await runtime.commit(async (tx) => {
@@ -230,6 +232,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 			await classify(runtime, request, message, context);
 		},
 		tools: async (task, runtime, context) => {
+			if (await stopForEffect(runtime, context, task.state.checkpoint.tools)) return;
 			const { assistant, tools, pending } = task.state.checkpoint;
 			const [next, ...rest] = pending;
 			if (next === undefined) return finishToolRound(runtime, assistant, tools, context);
@@ -279,6 +282,35 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 		}, context);
 	},
 });
+
+/** Stop automatic continuation at an ambiguous effect instead of requesting another model turn. */
+async function stopForEffect(
+	runtime: Runtime,
+	context: Context,
+	tools: readonly TaskId<ToolTaskResult>[] = [],
+): Promise<boolean> {
+	let blocked = false;
+	const outcomes = await runtime.outcomes(tools, context);
+	const policyBlocked = outcomes.some((outcome) => "result" in outcome && outcome.result?.blocked !== undefined);
+	await runtime.commit(async (tx) => {
+		const scope = await toolEffectScope(tx, runtime.conversationId, runtime.taskId);
+		const effectBlocked = await runtime.toolBoundary.blocked(tx, scope);
+		blocked = effectBlocked || policyBlocked;
+		if (!blocked) return undefined;
+		const reason = effectBlocked ? "unresolved_effect" : "tool_policy_blocked";
+		const message = `Generation blocked by ${reason} in ${scope}`;
+		endRun(tx, await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId, {
+			status: "unanswered",
+			reason,
+			detail: message,
+		});
+		return {
+			status: "terminal",
+			outcome: { status: "failed", error: { message, detail: { reason, scope } } },
+		};
+	}, context);
+	return blocked;
+}
 
 /** The calls `callIds` of the assistant entry, in the given order. */
 async function readCalls(

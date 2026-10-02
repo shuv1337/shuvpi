@@ -11,8 +11,8 @@ import type {
   JsonRepresentation,
   JsonValue,
   ReplicatedState,
-} from "@earendil-works/chord";
-import type { Op } from "@earendil-works/chord/delta";
+} from "@shuv1337/shuvpi-chord";
+import type { Op } from "@shuv1337/shuvpi-chord/delta";
 import type {
   AssistantMessage,
   CacheRetention,
@@ -27,8 +27,8 @@ import type {
   ToolResultMessage,
   Transport,
   UserMessage,
-} from "@earendil-works/pi-ai";
-import type { ExecutionEnv } from "@earendil-works/pi-durable/env";
+} from "@shuv1337/shuvpi-ai";
+import type { ExecutionEnv } from "@shuv1337/shuvpi-durable/env";
 
 type JsonObject = { [key: string]: JsonValue };
 type TaskOutcomeError = { message: string; detail?: JsonValue };
@@ -2989,7 +2989,7 @@ diagnostic with one of the codes `tool_unavailable`, `invalid_arguments`,
 and the error text as its message. Their content is the durable partial output,
 if any, and `details` is the tool's last reported value, if any.
 
-`@earendil-works/pi-durable/tools` provides `read`, `write`, `edit`, and `bash`
+`@shuv1337/shuvpi-durable/tools` provides `read`, `write`, `edit`, and `bash`
 factories, ported from the agent harness tools, and the `CodingTools` extension
 with all four. They use only `api.env`; nothing
 installs them automatically. `read` does not return images yet. `edit` and

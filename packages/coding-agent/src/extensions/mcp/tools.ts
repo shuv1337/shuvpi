@@ -14,16 +14,16 @@ import { createHash, randomBytes } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { ImageContent, JsonValue, TextContent } from "@earendil-works/pi-ai";
+import type { AgentToolResult } from "@shuv1337/shuvpi-agent-core";
+import type { ImageContent, JsonValue, TextContent } from "@shuv1337/shuvpi-ai";
 import {
 	type CallToolResult,
 	type ContentBlock,
 	type McpRequestOptions,
 	type Tool as McpTool,
 	toLlmContent,
-} from "@earendil-works/pi-mcp";
-import { Container, Spacer, Text } from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-mcp";
+import { Container, Spacer, Text } from "@shuv1337/shuvpi-tui";
 import type { TSchema } from "typebox";
 import type { ToolAnnotations, ToolDefinition, ToolExposure, ToolNamespace } from "../../core/extensions/types.ts";
 import { formatToolCallWithArgs, getTextOutput, replaceTabs } from "../../core/tools/render-utils.ts";

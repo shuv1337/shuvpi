@@ -11,7 +11,7 @@ import {
 	type TuiMouseEvent,
 	type TuiMouseEventResult,
 	visibleWidth,
-} from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-tui";
 import { theme } from "../theme/theme.ts";
 import { formatKeyText } from "./keybinding-hints.ts";
 

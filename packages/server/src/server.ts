@@ -7,8 +7,8 @@ import {
 	RemoteServiceError,
 	type ServiceCall,
 	type ServiceProviderUpdate,
-} from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT, TODO_CONTEXT, withAbortSignal } from "@earendil-works/chord/context";
+} from "@shuv1337/shuvpi-chord";
+import { BACKGROUND_CONTEXT, TODO_CONTEXT, withAbortSignal } from "@shuv1337/shuvpi-chord/context";
 import {
 	type CancelEnvelope,
 	type ClientHello,
@@ -27,7 +27,7 @@ import {
 	type ServerHello,
 	type ServerHelloError,
 	type ServerMessage,
-} from "@earendil-works/pi-protocol";
+} from "@shuv1337/shuvpi-protocol";
 import {
 	type ByteConnection,
 	type ByteConnectionHandler,

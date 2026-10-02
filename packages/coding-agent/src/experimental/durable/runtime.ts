@@ -1,6 +1,6 @@
-import type { AttachedReplicatedState } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { clampThinkingLevel, getSupportedThinkingLevels, type ModelThinkingLevel } from "@earendil-works/pi-ai";
+import { clampThinkingLevel, getSupportedThinkingLevels, type ModelThinkingLevel } from "@shuv1337/shuvpi-ai";
+import type { AttachedReplicatedState } from "@shuv1337/shuvpi-chord";
+import { BACKGROUND_CONTEXT } from "@shuv1337/shuvpi-chord/context";
 import {
 	type AgentState,
 	type Conversation,
@@ -13,17 +13,17 @@ import {
 	ROOT_CONVERSATION_ID,
 	type Submission,
 	type TaskGraph,
-} from "@earendil-works/pi-durable";
-import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
-import { ModelRuntime } from "../../core/model-runtime.ts";
-import { SettingsManager } from "../../core/settings-manager.ts";
+} from "@shuv1337/shuvpi-durable";
+import { openNodeSqliteStorage } from "@shuv1337/shuvpi-durable/storage/sqlite/node";
 import {
 	configureHarnessHttp,
 	createCodingRegistry,
 	createHarnessSettings,
 	ExecutionEnvs,
 	findInitialAgentModel,
-} from "./harness-setup.ts";
+} from "../../core/durable-workflows/harness-setup.ts";
+import { ModelRuntime } from "../../core/model-runtime.ts";
+import { SettingsManager } from "../../core/settings-manager.ts";
 import { selectSession } from "./sessions.ts";
 import { Subagent } from "./subagent.ts";
 

@@ -2,15 +2,15 @@
  * Extension runner - executes extensions and manages their lifecycle.
  */
 
-import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
+import type { AgentMessage, AgentTool } from "@shuv1337/shuvpi-agent-core";
 import {
 	getCurrentSystemMessage,
 	type ImageContent,
 	type Model,
 	type Provider,
 	type ProviderHeaders,
-} from "@earendil-works/pi-ai";
-import type { KeyId } from "@earendil-works/pi-tui";
+} from "@shuv1337/shuvpi-ai";
+import type { KeyId } from "@shuv1337/shuvpi-tui";
 import { type Theme, theme } from "../../modes/interactive/theme/theme.ts";
 import type { CacheWarmingAction } from "../cache-warmer.ts";
 import type { ResourceDiagnostic } from "../diagnostics.ts";
@@ -377,6 +377,9 @@ export class ExtensionRunner {
 		normalizeBuildSystemPromptOptions({ cwd: this.cwd });
 	private executeToolFn: ExtensionContextActions["executeTool"];
 	private getCallableToolsFn: () => readonly AgentTool[] = () => [];
+	private appendCustomMessageEntryFn: NonNullable<ExtensionContextActions["appendCustomMessageEntry"]> = () => {
+		throw new Error("Custom message persistence is unavailable");
+	};
 	/** Registered MCP servers already reported as unhandled. */
 	private readonly reportedMcpServers = new Set<string>();
 	private newSessionHandler: NewSessionHandler = async () => ({ cancelled: false });
@@ -420,11 +423,14 @@ export class ExtensionRunner {
 		// Copy actions into the shared runtime (all extension APIs reference this)
 		this.runtime.sendMessage = actions.sendMessage;
 		this.runtime.sendUserMessage = actions.sendUserMessage;
+		this.runtime.runCommand = (name, args) => this.runCommand(name, args);
 		this.runtime.appendEntry = actions.appendEntry;
 		this.runtime.setSessionName = actions.setSessionName;
 		this.runtime.getSessionName = actions.getSessionName;
 		this.runtime.setLabel = actions.setLabel;
 		this.runtime.getActiveTools = actions.getActiveTools;
+		this.runtime.getToolCallHandlerExtensions =
+			actions.getToolCallHandlerExtensions ?? (() => this.getToolCallHandlerExtensions());
 		this.runtime.getAllTools = actions.getAllTools;
 		this.runtime.getSettings = actions.getSettings;
 		this.runtime.setActiveTools = actions.setActiveTools;
@@ -437,6 +443,11 @@ export class ExtensionRunner {
 
 		// Context actions (required)
 		this.getModel = contextActions.getModel;
+		this.appendCustomMessageEntryFn =
+			contextActions.appendCustomMessageEntry ??
+			(() => {
+				throw new Error("Custom message persistence is unavailable");
+			});
 		this.getScopedModels = contextActions.getScopedModels;
 		this.isIdleFn = contextActions.isIdle;
 		this.isProjectTrustedFn = contextActions.isProjectTrusted;
@@ -623,6 +634,12 @@ export class ExtensionRunner {
 
 	getExtensionPaths(): string[] {
 		return this.extensions.map((e) => e.path);
+	}
+
+	getToolCallHandlerExtensions(): string[] {
+		return this.extensions
+			.filter((extension) => (extension.handlers.get("tool_call")?.length ?? 0) > 0)
+			.map((extension) => extension.path);
 	}
 
 	/** Get all registered tools from all extensions (first registration per name wins). */
@@ -848,6 +865,23 @@ export class ExtensionRunner {
 		return this.resolveRegisteredCommands().find((command) => command.invocationName === name);
 	}
 
+	/** Invoke a registered command without adding user input or starting a model turn. */
+	async runCommand(name: string, args = ""): Promise<void> {
+		this.assertActive();
+		const command = this.getCommand(name);
+		if (!command) throw new Error(`Unknown extension command: ${name}`);
+		try {
+			await command.handler(args, this.createCommandContext());
+		} catch (error) {
+			this.emitError({
+				extensionPath: `command:${name}`,
+				event: "command",
+				error: error instanceof Error ? error.message : String(error),
+			});
+			throw error;
+		}
+	}
+
 	/**
 	 * Request a graceful shutdown. Called by extension tools and event handlers.
 	 * The actual shutdown behavior is provided by the mode via bindExtensions().
@@ -889,6 +923,10 @@ export class ExtensionRunner {
 			get sessionManager() {
 				runner.assertActive();
 				return runner.sessionManager;
+			},
+			appendCustomMessageEntry: <T>(customType: string, content: string, display: boolean, details: T) => {
+				runner.assertActive();
+				return runner.appendCustomMessageEntryFn(customType, content, display, details);
 			},
 			get modelRegistry() {
 				runner.assertActive();

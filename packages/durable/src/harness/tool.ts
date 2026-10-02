@@ -1,8 +1,9 @@
-import { type Context, copyJson, type JsonValue } from "@earendil-works/chord";
-import { awaitWithContext } from "@earendil-works/chord/context";
-import { overlap } from "@earendil-works/chord/delta";
-import type { ImageContent, TextContent, ToolCall, ToolResultMessage } from "@earendil-works/pi-ai";
-import { validateToolArguments } from "@earendil-works/pi-ai/utils/validation";
+import type { ImageContent, TextContent, ToolCall, ToolResultMessage } from "@shuv1337/shuvpi-ai";
+import { validateToolArguments } from "@shuv1337/shuvpi-ai/utils/validation";
+import { type Context, copyJson, type JsonValue } from "@shuv1337/shuvpi-chord";
+import { awaitWithContext } from "@shuv1337/shuvpi-chord/context";
+import { overlap } from "@shuv1337/shuvpi-chord/delta";
+import { defineDoc, defineDocFamily } from "../documents.ts";
 import { AssistantEntry, ToolResultEntry } from "../entries.ts";
 import { defineTask } from "../tasks.ts";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, utf8ByteLength } from "../truncate.ts";
@@ -10,6 +11,7 @@ import type {
 	ConversationId,
 	EntryId,
 	JsonObject,
+	Session,
 	Task,
 	TaskId,
 	TaskOptions,
@@ -21,6 +23,7 @@ import { assignJson } from "./json.ts";
 import { clearProgress, finishSlot, LiveDoc, type ToolSlot, toolSlot } from "./live.ts";
 import { boundOutput, OutputBuffer, type OutputLimits, Progress } from "./output.ts";
 import type {
+	HookApi,
 	ToolControl,
 	ToolDiagnostic,
 	ToolExecutionApi,
@@ -30,14 +33,211 @@ import type {
 } from "./types.ts";
 import { recordUsage } from "./usage.ts";
 
-export type ToolTaskInput = { assistant: EntryId; callId: string };
+/** Critical authorization runs at execution, including a compatible recovery. A rejection vetoes execution. */
+export type ToolPolicy = {
+	readonly id: string;
+	readonly compatibility: string;
+	authorize(call: ToolCall, context: Context, api: HookApi): void | Promise<void>;
+};
+
+export type ToolEffect = {
+	taskId: TaskId;
+	callId: string;
+	tool: string;
+	status: "pending" | "resolved";
+	disposition?: "completed" | "reconciled" | "abandoned";
+	reason?: string;
+};
+
+export type ToolEffectsState = {
+	effects: Record<string, ToolEffect>;
+	blocked?: { taskId: TaskId; reason: string };
+};
+
+/** Effect intents survive task completion and are never copied by a conversation fork. */
+export const ToolEffectsDoc = defineDocFamily<ToolEffectsState, null>({
+	kind: "pi.tool-effects",
+	version: 1,
+	scope: "session",
+	family: true,
+	initial: () => ({ effects: {} }),
+	checkpointWhen: (_value, _ops, info) => info.deltasSinceBase >= 32,
+});
+
+const EffectScopesDoc = defineDoc<{ tasks: Record<string, string> }>({
+	kind: "pi.tool-effect-scopes",
+	version: 1,
+	scope: "session",
+	initial: () => ({ tasks: {} }),
+});
+
+/** Bind a workflow root in its creation commit. A binding cannot subsequently change. */
+export async function bindToolEffectScope(tx: Tx, rootTaskId: TaskId, scope = `task:${rootTaskId}`): Promise<string> {
+	if (scope.trim() === "") throw new Error("Tool effect scope must not be empty");
+	const scopes = await tx.doc(EffectScopesDoc);
+	const previous = scopes.tasks[String(rootTaskId)];
+	if (previous !== undefined && previous !== scope)
+		throw new Error(`Task ${rootTaskId} already has effect scope ${previous}`);
+	scopes.tasks[String(rootTaskId)] = scope;
+	return scope;
+}
+
+/** Resolve immutable ownership before acquiring documents, respecting table read-before-write rules. */
+export async function toolEffectScope(tx: Tx, conversationId: ConversationId, taskId: TaskId): Promise<string> {
+	const owners: TaskId[] = [];
+	let task: TaskId | undefined = taskId;
+	let conversation = conversationId;
+	const seen = new Set<TaskId>();
+	while (true) {
+		if (task !== undefined) {
+			if (seen.has(task)) throw new Error("Cyclic tool effect ownership");
+			seen.add(task);
+			owners.push(task);
+			const record = await tx.task(task);
+			if (record === undefined) throw new Error(`Missing effect owner task ${task}`);
+			conversation = record.conversationId;
+			task = record.owner;
+			if (task !== undefined) continue;
+		}
+		const record = await tx.conversation(conversation);
+		if (record === undefined) throw new Error(`Missing effect conversation ${conversation}`);
+		if (record.owner === undefined) break;
+		task = record.owner.taskId;
+	}
+	const scopes = await tx.doc(EffectScopesDoc);
+	for (const owner of owners) {
+		const scope = scopes.tasks[String(owner)];
+		if (scope !== undefined) return scope;
+	}
+	return `conversation:${conversation}`;
+}
+
+/** Read the durable barrier and audit trail without creating it. */
+export function readToolEffects(
+	session: Session,
+	scope: string,
+	context: Context,
+): Promise<Readonly<ToolEffectsState> | undefined> {
+	return session.snapshot(ToolEffectsDoc, scope, context);
+}
+
+/** Record an explicit human/application disposition. Never changes or replays the interrupted tool task. */
+export async function resolveToolEffect(
+	session: Session,
+	scope: string,
+	taskId: TaskId,
+	disposition: "reconciled" | "abandoned",
+	reason: string,
+	context: Context,
+): Promise<void> {
+	if (reason.trim() === "") throw new Error("Effect reconciliation requires a reason");
+	await session.commit(async (tx) => {
+		const task = await tx.task(taskId);
+		if (task !== undefined && task.state.status !== "terminal")
+			throw new Error(`Effect task ${taskId} is still live`);
+		const state = await tx.doc(ToolEffectsDoc, scope, null);
+		const effect = state.effects[String(taskId)];
+		if (effect === undefined) throw new Error(`Unknown tool effect ${taskId} in ${scope}`);
+		if (effect.status === "resolved") {
+			if (effect.disposition === disposition && effect.reason === reason) return;
+			throw new Error(`Tool effect ${taskId} is already resolved`);
+		}
+		effect.status = "resolved";
+		effect.disposition = disposition;
+		effect.reason = reason;
+		const pending = Object.values(state.effects).find((item) => item.status === "pending");
+		if (pending === undefined) delete state.blocked;
+		else state.blocked = { taskId: pending.taskId, reason: "Unresolved tool effect" };
+	}, context);
+}
+
+/** One Harness owns this set. Persisted intent without a live execution is ambiguous after any reopen. */
+export class ToolBoundary {
+	readonly active = new Set<TaskId>();
+	readonly policies: readonly ToolPolicy[];
+
+	constructor(policies: readonly ToolPolicy[] = []) {
+		if (new Set(policies.map((policy) => policy.id)).size !== policies.length)
+			throw new Error("Duplicate critical tool policy");
+		this.policies = [...policies];
+	}
+
+	compatibility(tool: ToolRegistration): string {
+		for (const id of tool.requiredPolicies ?? []) {
+			if (!this.policies.some((policy) => policy.id === id))
+				throw new Error(`Required tool policy ${id} is missing`);
+		}
+		return canonical({
+			name: tool.name,
+			implementation: tool.compatibility ?? null,
+			schema: JSON.parse(JSON.stringify(tool.parameters)) as JsonValue,
+			effect: tool.effect ?? "mutation",
+			replay: tool.replay ?? "unsafe",
+			requiredPolicies: [...(tool.requiredPolicies ?? [])].sort(),
+			policies: this.policies
+				.map(({ id, compatibility }) => ({ id, compatibility }))
+				.sort((a, b) => a.id.localeCompare(b.id)),
+		});
+	}
+
+	async authorize(call: ToolCall, context: Context, api: HookApi): Promise<void> {
+		for (const policy of this.policies) await policy.authorize(call, context, api);
+		context.abortSignal?.throwIfAborted();
+	}
+
+	async blocked(tx: Tx, scope: string, except?: TaskId): Promise<boolean> {
+		const state = await tx.doc(ToolEffectsDoc, scope, null);
+		const pending = Object.values(state.effects).find(
+			(effect) => effect.status === "pending" && effect.taskId !== except && !this.active.has(effect.taskId),
+		);
+		if (pending === undefined) {
+			delete state.blocked;
+			return false;
+		}
+		state.blocked = { taskId: pending.taskId, reason: "Unresolved tool effect" };
+		return true;
+	}
+}
+
+function canonical(value: JsonValue): string {
+	if (value === null || typeof value !== "object") return JSON.stringify(value);
+	if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+	return `{${Object.keys(value)
+		.sort()
+		.map((key) => `${JSON.stringify(key)}:${canonical(value[key]!)}`)
+		.join(",")}}`;
+}
+
+export type ToolTaskInput =
+	| { assistant: EntryId; callId: string }
+	| { name: string; arguments: JsonObject; callId: string };
 
 export type ToolTaskCheckpoint =
 	| { phase: "call" }
 	/** Durable intent: the final arguments and the replay policy recorded before execution. */
-	| { phase: "execute"; arguments: JsonObject; replay: "safe" | "unsafe" };
+	| {
+			phase: "execute";
+			arguments: JsonObject;
+			replay: "safe" | "unsafe";
+			compatibility: string;
+			scope: string;
+			effect: "read" | "mutation";
+	  };
 
-export type ToolTaskResult = { entryId: EntryId; control?: ToolControl };
+export type ToolTaskResult = {
+	entryId: EntryId;
+	control?: ToolControl;
+	result?: ToolExecutionResult;
+	/** A dispatch/recovery barrier requiring host action, distinct from ordinary tool failure. */
+	blocked?: "policy_blocked" | "recovery_blocked" | "unresolved_effect";
+};
+
+const NestedCallsDoc = defineDoc<{ calls: { name: string; arguments: JsonObject; taskId: TaskId<ToolTaskResult> }[] }>({
+	kind: "pi.nested-tool-calls",
+	version: 1,
+	scope: "task",
+	initial: () => ({ calls: [] }),
+});
 
 type Runtime = TaskRuntime<ToolTaskInput, ToolTaskCheckpoint, ToolTaskResult, ToolHooks>;
 type Content = (TextContent | ImageContent)[];
@@ -49,7 +249,7 @@ type Content = (TextContent | ImageContent)[];
  */
 export const ToolTask = defineTask<ToolTaskInput, ToolTaskCheckpoint, ToolTaskResult, ToolHooks>({
 	name: "pi.tool",
-	version: 1,
+	version: 2,
 	initial: () => ({ phase: "call" }),
 	phases: {
 		call: async (task, runtime, context) => {
@@ -82,32 +282,123 @@ export const ToolTask = defineTask<ToolTaskInput, ToolTaskCheckpoint, ToolTaskRe
 			const validated = validate(tool, call, args);
 			if ("error" in validated) return settle(runtime, call, COMPLETED, () => invalid(validated.error), context);
 			const final = validated.args;
-			await runtime.commit(async (tx) => {
-				const slot = toolSlot(await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId);
-				if (slot !== undefined) slot.status = "running";
-				const intent = { phase: "execute", arguments: final, replay: tool.replay ?? "unsafe" } as const;
-				return { status: "running", checkpoint: intent };
-			}, context);
-			await run(runtime, call, tool, final, context);
+			let compatibility: string;
+			try {
+				compatibility = runtime.toolBoundary.compatibility(tool);
+				await runtime.toolBoundary.authorize({ ...call, arguments: final }, context, runtime);
+			} catch (error) {
+				if (runtime.signal.aborted) throw error;
+				return settle(runtime, call, COMPLETED, () => harnessError("policy_blocked", errorText(error)), context);
+			}
+			let blocked = false;
+			runtime.toolBoundary.active.add(runtime.taskId);
+			try {
+				await runtime.commit(async (tx) => {
+					const scope = await toolEffectScope(tx, runtime.conversationId, runtime.taskId);
+					const effect = tool.effect ?? "mutation";
+					if (effect === "mutation" && (await runtime.toolBoundary.blocked(tx, scope))) {
+						blocked = true;
+						return undefined;
+					}
+					if (effect === "mutation") {
+						const effects = await tx.doc(ToolEffectsDoc, scope, null);
+						effects.effects[String(runtime.taskId)] = {
+							taskId: runtime.taskId,
+							callId: call.id,
+							tool: call.name,
+							status: "pending",
+						};
+					}
+					const slot = toolSlot(await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId);
+					if (slot !== undefined) slot.status = "running";
+					const intent = {
+						phase: "execute",
+						arguments: final,
+						replay: tool.replay ?? "unsafe",
+						compatibility,
+						scope,
+						effect,
+					} as const;
+					return { status: "running", checkpoint: intent };
+				}, context);
+				if (blocked)
+					return settle(
+						runtime,
+						call,
+						COMPLETED,
+						() => harnessError("unresolved_effect", "Mutating execution is blocked by an unresolved tool effect"),
+						context,
+					);
+				await run(runtime, call, tool, final, context);
+			} finally {
+				runtime.toolBoundary.active.delete(runtime.taskId);
+			}
 		},
 		/** Recovery after intent: rerun only when the stored and the current policy both say `safe`. */
 		execute: async (task, runtime, context) => {
 			const { arguments: args, replay } = task.state.checkpoint;
 			const call = await readCall(runtime, task.input, context);
 			const tool = (await runtime.agent(context)).tools.find((each) => each.name === call.name);
-			if (replay === "safe" && tool?.replay === "safe") {
+			let compatible = false;
+			let reason = "Tool implementation is unavailable or incompatible";
+			try {
+				compatible =
+					tool !== undefined && runtime.toolBoundary.compatibility(tool) === task.state.checkpoint.compatibility;
+				if (replay === "safe" && (tool?.compatibility === undefined || tool.compatibility.trim() === "")) {
+					compatible = false;
+					reason = "Safe recovery requires an explicit tool compatibility identity";
+				}
+			} catch (error) {
+				reason = errorText(error);
+			}
+			if (replay === "safe" && tool?.replay === "safe" && compatible) {
+				const checked = validate(tool, call, args);
+				if ("error" in checked)
+					return settle(
+						runtime,
+						call,
+						{ status: "failed", message: checked.error },
+						() => harnessError("recovery_blocked", checked.error),
+						context,
+					);
+				let blocked = false;
 				// The rerun reports from scratch; clear what the interrupted attempt published.
 				await runtime.commit(async (tx) => {
+					blocked =
+						task.state.checkpoint.effect === "mutation" &&
+						(await runtime.toolBoundary.blocked(tx, task.state.checkpoint.scope, runtime.taskId));
+					if (blocked) return undefined;
 					const slot = toolSlot(await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId);
 					if (slot !== undefined) clearProgress(slot);
 					return undefined;
 				}, context);
-				return run(runtime, call, tool, args, context);
+				if (blocked)
+					return settle(
+						runtime,
+						call,
+						{ status: "failed", message: "Unresolved tool effect" },
+						() => harnessError("unresolved_effect", "Mutating recovery is blocked by an unresolved tool effect"),
+						context,
+					);
+				runtime.toolBoundary.active.add(runtime.taskId);
+				try {
+					return await run(runtime, call, tool, checked.args, context, true);
+				} finally {
+					runtime.toolBoundary.active.delete(runtime.taskId);
+				}
 			}
-			const message = `Tool ${call.name} was interrupted and may have partially run`;
+			const message = compatible
+				? `Tool ${call.name} was interrupted and may have partially run`
+				: `Tool ${call.name} recovery blocked: ${reason}`;
 			// `failed` records cancellation intent, so the call's owned conversations, left unsupervised, are aborted.
 			const ending = { status: "failed", message } as const;
-			await settle(runtime, call, ending, (slot) => fromSlot(slot, "interrupted", message), context);
+			await settle(
+				runtime,
+				call,
+				ending,
+				(slot) => fromSlot(slot, compatible ? "interrupted" : "recovery_blocked", message),
+				context,
+			);
 		},
 	},
 	abort: async (task, runtime, context) => {
@@ -119,6 +410,7 @@ export const ToolTask = defineTask<ToolTaskInput, ToolTaskCheckpoint, ToolTaskRe
 
 /** The tool call `callId` of the assistant entry. */
 async function readCall(runtime: Runtime, input: ToolTaskInput, context: Context): Promise<ToolCall> {
+	if ("name" in input) return { type: "toolCall", id: input.callId, name: input.name, arguments: input.arguments };
 	const entry = await runtime.entry(AssistantEntry, input.assistant, context);
 	const message = entry?.model?.[0];
 	const call =
@@ -172,6 +464,7 @@ async function run(
 	tool: ToolRegistration,
 	args: JsonObject,
 	context: Context,
+	recovering = false,
 ): Promise<void> {
 	const limits: OutputLimits = {
 		maxBytes: tool.outputLimits?.maxBytes ?? DEFAULT_MAX_BYTES,
@@ -181,6 +474,8 @@ async function run(
 	const reported: Reported = { output: new OutputBuffer(limits), limits, diagnostics: [], details: undefined };
 	const progress = publishProgress(runtime, reported, context);
 	let ended = false;
+	let nestedIndex = 0;
+	let executionBlock: ToolTaskResult["blocked"];
 	const assertLive = (): void => {
 		if (ended) throw new Error(`Tool call ${call.id} has settled`);
 	};
@@ -188,6 +483,35 @@ async function run(
 		taskId: runtime.taskId,
 		conversationId: runtime.conversationId,
 		callId: call.id,
+		callTool: async (name, args, nestedContext) => {
+			assertLive();
+			const index = nestedIndex++;
+			let id: TaskId<ToolTaskResult> | undefined;
+			await runtime.commit(async (tx) => {
+				const calls = (await tx.doc(NestedCallsDoc, runtime.taskId)).calls;
+				const previous = calls[index];
+				if (previous !== undefined) {
+					if (previous.name !== name || JSON.stringify(previous.arguments) !== JSON.stringify(args))
+						throw new Error(`Nested tool call ${index} diverged during replay`);
+					id = previous.taskId;
+				} else {
+					if (calls.length !== index) throw new Error("Nested tool call order diverged");
+					id = await tx.createTask(
+						ToolTask,
+						{ name, arguments: args, callId: `nested:${runtime.taskId}:${index}` },
+						{ ownership: { kind: "task", taskId: runtime.taskId } },
+					);
+					calls.push({ name, arguments: args, taskId: id });
+				}
+				return undefined;
+			}, nestedContext);
+			const outcome = (await runtime.waitForTask(id!, nestedContext)).state.outcome;
+			if (outcome.status === "completed" || outcome.status === "failed" || outcome.status === "aborted") {
+				executionBlock ??= outcome.result?.blocked;
+				if (outcome.result?.result !== undefined) return outcome.result.result;
+			}
+			return harnessError("nested_tool_failed", `Nested tool ${name} ended ${outcome.status}`);
+		},
 		registry: runtime.registry,
 		agent: runtime.agent,
 		output: (chunk) => {
@@ -240,17 +564,41 @@ async function run(
 
 	let result: ToolExecutionResult;
 	let ending = COMPLETED;
+	let enteredExecution = false;
+	let authorizing = false;
 	try {
 		// Built for this call, so a rerun after recovery gets the conversation's environment at that time.
 		const env = await runtime.env(context);
-		result = await tool.execute(args, { ...api, env }, context);
+		authorizing = true;
+		await runtime.toolBoundary.authorize({ ...call, arguments: args }, context, runtime);
+		authorizing = false;
+		let blocked = false;
+		await runtime.commit(async (tx, current) => {
+			const checkpoint = current.state.checkpoint;
+			if (checkpoint.phase === "execute" && checkpoint.effect === "mutation") {
+				blocked = await runtime.toolBoundary.blocked(tx, checkpoint.scope, runtime.taskId);
+			}
+			return undefined;
+		}, context);
+		if (blocked) {
+			executionBlock = "unresolved_effect";
+			result = harnessError("unresolved_effect", "Mutating dispatch is blocked by an unresolved tool effect");
+			ending = { status: "failed", message: "Unresolved tool effect" };
+		} else {
+			enteredExecution = true;
+			result = await tool.execute(args, { ...api, env }, context);
+		}
 	} catch (error) {
 		if (runtime.signal.aborted) {
 			ended = true;
 			for (const waiter of await progress.stop()) waiter.reject(error);
 			throw error;
 		}
-		result = { isError: true, diagnostics: [toolDiagnostic("tool_error", errorText(error))] };
+		if (authorizing) executionBlock = "policy_blocked";
+		result = {
+			isError: true,
+			diagnostics: [toolDiagnostic(authorizing ? "policy_blocked" : "tool_error", errorText(error))],
+		};
 		// A throw, from `execute()` or from building the environment, ends the task `failed`, which cancels what the call owned; it no longer supervises it. The error text
 		// is already in the result entry.
 		ending = { status: "failed", message: `Tool ${call.name} threw` };
@@ -261,7 +609,7 @@ async function run(
 	const pending = await progress.stop();
 	try {
 		const settled = await finalResult(runtime, call, result, reported, context);
-		await settle(runtime, call, ending, () => settled, context);
+		await settle(runtime, call, ending, () => settled, context, !enteredExecution && !recovering, executionBlock);
 	} catch (error) {
 		for (const waiter of pending) waiter.reject(error);
 		throw error;
@@ -365,25 +713,70 @@ async function settle(
 	ending: Ending,
 	build: (slot: Readonly<ToolSlot> | undefined) => ToolExecutionResult,
 	context: Context,
+	noEffect = false,
+	authoritativeBlock?: ToolTaskResult["blocked"],
 ): Promise<void> {
-	await runtime.commit(async (tx) => {
+	await runtime.commit(async (tx, current) => {
 		const slot = toolSlot(await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId);
 		const result = build(slot);
-		const entry = await appendToolResult(tx, runtime.conversationId, call, result, runtime.now());
+		const nested = "name" in current.input;
+		const entry = nested
+			? await tx.appendEntry(runtime.conversationId, {
+					kind: "pi.nested-tool-result",
+					data: copyJson(result as JsonValue, { omitUndefinedProperties: true }),
+				})
+			: await appendToolResult(tx, runtime.conversationId, call, result, runtime.now());
+		if (current.state.checkpoint.phase === "execute" && current.state.checkpoint.effect === "mutation") {
+			const effects = await tx.doc(ToolEffectsDoc, current.state.checkpoint.scope, null);
+			const effect = effects.effects[String(runtime.taskId)];
+			if (effect !== undefined && (ending.status === "completed" || noEffect)) {
+				effect.status = "resolved";
+				effect.disposition = "completed";
+			} else if (effect?.status === "pending") {
+				effects.blocked = {
+					taskId: runtime.taskId,
+					reason: ending.status === "failed" ? ending.message : "Tool execution aborted",
+				};
+			}
+		}
 		if (slot !== undefined) finishSlot(slot, entry.id);
 		const entryId = entry.id;
+		const code =
+			authoritativeBlock ??
+			result.diagnostics?.find(
+				(diagnostic) =>
+					diagnostic.code === "policy_blocked" ||
+					diagnostic.code === "recovery_blocked" ||
+					diagnostic.code === "unresolved_effect",
+			)?.code;
+		const barrier: Pick<ToolTaskResult, "blocked"> =
+			code === "policy_blocked" || code === "recovery_blocked" || code === "unresolved_effect"
+				? { blocked: code }
+				: {};
+		const nestedResult = nested
+			? { result: copyJson(result as JsonValue, { omitUndefinedProperties: true }) as ToolExecutionResult }
+			: {};
 		if (ending.status === "aborted")
-			return { status: "terminal", outcome: { status: "aborted", result: { entryId } } };
+			return {
+				status: "terminal",
+				outcome: { status: "aborted", result: { entryId, ...nestedResult, ...barrier } },
+			};
 		if (ending.status === "failed") {
 			const error = { message: ending.message };
-			return { status: "terminal", outcome: { status: "failed", error, result: { entryId } } };
+			return {
+				status: "terminal",
+				outcome: { status: "failed", error, result: { entryId, ...nestedResult, ...barrier } },
+			};
 		}
 		// Tools build control objects freely; drop keys set to undefined so the task result is strict JSON.
 		const control =
 			result.control === undefined
 				? {}
 				: { control: copyJson(result.control as JsonValue, { omitUndefinedProperties: true }) as ToolControl };
-		return { status: "terminal", outcome: { status: "completed", result: { entryId, ...control } } };
+		return {
+			status: "terminal",
+			outcome: { status: "completed", result: { entryId, ...control, ...nestedResult, ...barrier } },
+		};
 	}, context);
 }
 
@@ -451,6 +844,7 @@ export async function appendToolResult(
 		toolName: call.name,
 		content,
 		...(result.details === undefined ? {} : { details: result.details }),
+		...(result.structuredContent === undefined ? {} : { structuredContent: result.structuredContent }),
 		...(result.usage === undefined ? {} : { usage: result.usage }),
 		isError: result.isError ?? false,
 		timestamp,

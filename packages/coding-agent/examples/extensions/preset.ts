@@ -6,8 +6,8 @@
  * and can be activated via CLI flag, /preset command, or Ctrl+Shift+U to cycle.
  *
  * Config files (merged, project takes precedence):
- * - ~/.pi/agent/presets.json (global)
- * - <cwd>/.pi/presets.json (project-local)
+ * - ~/.shuvpi/agent/presets.json (global)
+ * - <cwd>/.shuvpi/presets.json (project-local)
  *
  * Example presets.json:
  * ```json
@@ -40,10 +40,10 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Api, Model } from "@earendil-works/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { CONFIG_DIR_NAME, DynamicBorder, getAgentDir } from "@earendil-works/pi-coding-agent";
-import { Container, Key, type SelectItem, SelectList, Text } from "@earendil-works/pi-tui";
+import type { Api, Model, ModelThinkingLevel } from "@shuv1337/shuvpi-ai";
+import type { ExtensionAPI, ExtensionContext } from "@shuv1337/shuvpi-coding-agent";
+import { CONFIG_DIR_NAME, DynamicBorder, getAgentDir } from "@shuv1337/shuvpi-coding-agent";
+import { Container, Key, type SelectItem, SelectList, Text } from "@shuv1337/shuvpi-tui";
 
 // Preset configuration
 interface Preset {
@@ -52,7 +52,7 @@ interface Preset {
 	/** Model ID (e.g., "claude-sonnet-4-5") */
 	model?: string;
 	/** Thinking level */
-	thinkingLevel?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	thinkingLevel?: ModelThinkingLevel;
 	/** Tools to enable (replaces default set) */
 	tools?: string[];
 	/** Instructions to append to system prompt */
@@ -100,7 +100,7 @@ function loadPresets(cwd: string): PresetsConfig {
 
 interface OriginalState {
 	model: Model<Api> | undefined;
-	thinkingLevel: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	thinkingLevel: ModelThinkingLevel;
 	tools: string[];
 }
 
