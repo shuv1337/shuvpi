@@ -27,7 +27,7 @@ function fixture(t, { packages = selectedPackages, notes = "# Reviewed Shuvpi 1.
 	const root = mkdtempSync(join(tmpdir(), "shuvpi-distribution-contract-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	mkdirSync(join(root, "scripts"));
-	for (const name of ["release-target.mjs", "check-release-target.mjs", "release.mjs"]) {
+	for (const name of ["release-target.mjs", "check-release-target.mjs", "release.mjs", "npm-registry.mjs"]) {
 		copyFileSync(new URL(name, import.meta.url), join(root, "scripts", name));
 	}
 	writeFileSync(join(root, "selected-packages.json"), JSON.stringify(packages));
