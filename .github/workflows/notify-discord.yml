@@ -17,6 +17,14 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # release events check out the tag, which can predate this script.
+          # The workflow file itself comes from the default branch.
+          ref: ${{ github.event_name == 'release' && github.event.repository.default_branch || github.sha }}
+          persist-credentials: false
+
       - id: release
         name: Load release for a manual run
         if: github.event_name == 'workflow_dispatch'
@@ -36,11 +44,9 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Post release notes to Discord
-        uses: SethCohen/github-releases-to-discord@24d166886aee4646d448c8a389ff9e1ebcab3682 # v1.20.0
-        with:
-          webhook_url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
-          release_name: ${{ steps.release.outputs.name }}
-          release_body: ${{ steps.release.outputs.body }}
-          release_html_url: ${{ steps.release.outputs.url }}
-          username: shuvpi releases
-          reduce_headings: true
+        env:
+          DISCORD_RELEASE_WEBHOOK_URL: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+          DISCORD_RELEASE_NAME: ${{ github.event.release.name || steps.release.outputs.name }}
+          DISCORD_RELEASE_BODY: ${{ github.event.release.body || steps.release.outputs.body }}
+          DISCORD_RELEASE_URL: ${{ github.event.release.html_url || steps.release.outputs.url }}
+        run: node scripts/post-github-release-discord.mjs
