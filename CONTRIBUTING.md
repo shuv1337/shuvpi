@@ -37,6 +37,22 @@ If you're adding a new provider to `packages/ai`, see `AGENTS.md` for required t
 
 shuvpi's core is minimal. If your feature doesn't belong in the core, it should be an extension. PRs that bloat the core will likely be rejected.
 
+## Publishing a new package
+
+Maintainers only. npm trusted publishing cannot create a package. Before a new public workspace package is included in a release:
+
+1. Build it, then from its directory publish it once with an npm account that can publish the scope (not GitHub Actions):
+   ```bash
+   npm publish --access public --ignore-scripts
+   ```
+2. Attach the trusted publisher used by `.github/workflows/build-binaries.yml` (`publish-npm`, environment `npm-publish`) and allow publish. This requires npm 11.15 or newer and account 2FA:
+   ```bash
+   npm trust github <name> --repo shuv1337/shuvpi --file build-binaries.yml --env npm-publish --allow-publish
+   ```
+3. Confirm bootstrap with `npm view <name> version`.
+
+`SHUVPI_RELEASE_ALLOW_NEW_PACKAGES` does not skip this. The release script rejects a package until that `npm view` succeeds. CI then exchanges an OIDC token for every unpublished package in the closure before it publishes any of them. See `AGENTS.md` for the rest of the release steps.
+
 ## Questions?
 
 Open an issue or ask on [Discord](https://discord.com/invite/nKXTsAcmbT).

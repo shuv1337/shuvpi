@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { parsePackResult } from "./npm-pack.mjs";
+import { npmViewError, publishAfterPreflight, queryNpmViewVersion } from "./npm-publish-preflight.mjs";
 import { getPublicWorkspacePackages } from "./release-packages.mjs";
 
 const packages = getPublicWorkspacePackages();
@@ -94,18 +95,45 @@ for (const pkg of packageStates) {
 	console.log();
 }
 
-if (dryRun) {
-	process.exit(0);
-}
+console.log("All packages validated; checking registration and trusted publishers before publication.\n");
 
-console.log("All packages validated; starting publication.\n");
-
+const pending = packageStates.filter((pkg) => !pkg.published);
 for (const pkg of packageStates) {
 	if (pkg.published) {
-		console.log(`Skipping ${pkg.name}@${pkg.version}: already published\n`);
-		continue;
+		console.log(`Skipping ${pkg.name}@${pkg.version}: already published`);
 	}
-
-	run("npm", ["publish", "--access", "public", "--provenance", "--ignore-scripts"], { cwd: pkg.directory });
+}
+if (packageStates.some((pkg) => pkg.published)) {
 	console.log();
+}
+
+try {
+	await publishAfterPreflight({
+		packageNames: pending.map((pkg) => pkg.name),
+		dryRun,
+		env: process.env,
+		fetchImpl: globalThis.fetch,
+		viewPackage(packageName) {
+			const registration = queryNpmViewVersion(packageName);
+			if (registration.kind === "error") {
+				throw npmViewError(packageName, registration);
+			}
+			return registration.kind;
+		},
+		publishPackage(packageName) {
+			const pkg = pending.find((item) => item.name === packageName);
+			if (!pkg) {
+				throw new Error(`Missing publish package ${packageName}. No further packages were published.`);
+			}
+			run("npm", ["publish", "--access", "public", "--provenance", "--ignore-scripts"], { cwd: pkg.directory });
+			console.log();
+		},
+	});
+} catch (error) {
+	console.error(error instanceof Error ? error.message : error);
+	process.exit(1);
+}
+
+if (dryRun) {
+	process.exit(0);
 }
