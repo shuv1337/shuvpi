@@ -8,7 +8,8 @@
  *
  * Steps:
  * 1. Check for uncommitted changes
- * 2. Verify every public workspace package is registered on npm
+ * 2. Verify every public workspace package is registered on npm.
+ *    Unregistered packages fail; CI OIDC cannot bootstrap them.
  * 3. Bump version via npm run version:xxx or set an explicit version
  * 4. Update CHANGELOG.md files: [Unreleased] -> [version] - date
  * 5. Regenerate release artifacts
@@ -20,10 +21,15 @@
  * 11. Announce the release on Discord (DISCORD_RELEASE_WEBHOOK_URL)
  */
 
-import { execSync, spawnSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { notifyDiscordRelease } from "./notify-discord-release.mjs";
+import {
+	formatUnregisteredPackageError,
+	npmViewError,
+	queryNpmViewVersion,
+} from "./npm-publish-preflight.mjs";
 import { findPackageDirectories } from "./package-workspaces.mjs";
 import { getPublicWorkspacePackages } from "./release-packages.mjs";
 
@@ -60,46 +66,31 @@ function assertPackagesAreRegisteredWithNpm() {
 
 	console.log("Checking npm package registration...");
 	for (const packageName of packageNames) {
-		const result = spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", ["view", packageName, "version", "--json"], {
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "pipe"],
-		});
-
-		if (result.status === 0 && result.stdout.trim()) {
-			console.log(`  ${packageName}`);
-			continue;
+		const registration = queryNpmViewVersion(packageName);
+		switch (registration.kind) {
+			case "registered":
+				console.log(`  ${packageName}`);
+				break;
+			case "unregistered":
+				unregisteredPackages.push(packageName);
+				break;
+			case "error":
+				throw npmViewError(packageName, registration);
+			default: {
+				const unexpected = registration.kind;
+				throw new Error(`Unexpected npm registration result for ${packageName}: ${unexpected}`);
+			}
 		}
-
-		const output = [result.stdout, result.stderr, result.error?.message].filter(Boolean).join("\n");
-		if (output.includes("E404") || output.includes("404 Not Found")) {
-			unregisteredPackages.push(packageName);
-			continue;
-		}
-
-		throw new Error(output ? `Failed to query npm registration for ${packageName}\n${output}` : `Failed to query npm registration for ${packageName}`);
 	}
 
-
-
+	// pc_e7c7d6c0c39b: an allowlist is not bootstrap. OIDC cannot create the package.
 	if (unregisteredPackages.length > 0) {
-		// CI trusted publishing creates new packages on first publish (e.g. protocol and
-		// sqlite-node on 2026-08-10), so intentionally-new packages may be allowlisted.
-		const allowedNewPackages = new Set(
-			(process.env.SHUVPI_RELEASE_ALLOW_NEW_PACKAGES ?? "")
-				.split(",")
-				.map((name) => name.trim())
-				.filter((name) => name.length > 0),
+		throw new Error(
+			formatUnregisteredPackageError(unregisteredPackages, process.env.SHUVPI_RELEASE_ALLOW_NEW_PACKAGES),
 		);
-		const unexpectedPackages = unregisteredPackages.filter((packageName) => !allowedNewPackages.has(packageName));
-		if (unexpectedPackages.length > 0) {
-			throw new Error(`The following public workspace packages are not registered on npm:\n${unexpectedPackages.map((packageName) => `  ${packageName}`).join("\n")}\nRegister them before running a release, or list intentionally-new packages in SHUVPI_RELEASE_ALLOW_NEW_PACKAGES.`);
-		}
-		for (const packageName of unregisteredPackages) {
-			console.log(`  ${packageName} (new package; will be created on first CI publish)`);
-		}
 	}
 
-	console.log("  All public workspace packages are registered on npm or allowlisted as new\n");
+	console.log("  All public workspace packages are registered on npm\n");
 }
 
 function compareVersions(a, b) {
@@ -240,7 +231,12 @@ if (status && status.trim()) {
 console.log("  Working directory clean\n");
 
 // 2. Verify npm package registration before modifying the worktree.
-assertPackagesAreRegisteredWithNpm();
+try {
+	assertPackagesAreRegisteredWithNpm();
+} catch (error) {
+	console.error(error instanceof Error ? error.message : error);
+	process.exit(1);
+}
 
 // 3. Bump or set version
 const version = bumpOrSetVersion(RELEASE_TARGET);

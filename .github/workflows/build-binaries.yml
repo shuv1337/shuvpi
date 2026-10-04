@@ -91,6 +91,9 @@ jobs:
           npm --version
 
       - name: Publish npm packages
+        # scripts/publish.mjs checks registration and exchanges OIDC for every
+        # unpublished package before the first npm publish. A new package must
+        # already exist and have this workflow as a trusted publisher.
         run: node scripts/publish.mjs
 
   publish-github-release:

@@ -141,6 +141,18 @@ Attribution:
    ```
    Verify both Node and Bun startup, model/account listing, interactive startup, and at least one real prompt with the intended default provider. The bare commands `/tmp/shuvpi-local-release/node/shuvpi` and `/tmp/shuvpi-local-release/bun/shuvpi` start interactive mode; run each in tmux, submit a prompt, and wait for the model reply before considering the interactive smoke test passed. Failures are release blockers unless the user explicitly accepts the risk.
 
+   **New public package:** bootstrap it before the release script. npm trusted publishing can publish only a package that already exists and already has a trusted publisher, so CI cannot create the first version. `SHUVPI_RELEASE_ALLOW_NEW_PACKAGES` does not skip that. Allow the package into a release only after `npm view <name> version` confirms bootstrap.
+
+   - Build the package, then from its directory publish it once with an npm account that can publish the scope. Do not use `node scripts/publish.mjs` or GitHub Actions for this publish:
+     ```bash
+     npm publish --access public --ignore-scripts
+     ```
+   - Attach the trusted publisher and allow publish. `npm trust` requires npm 11.15 or newer and account 2FA. The workflow file is `.github/workflows/build-binaries.yml`. The environment name is the `publish-npm` job's `environment: npm-publish`.
+     ```bash
+     npm trust github <name> --repo shuv1337/shuvpi --file build-binaries.yml --env npm-publish --allow-publish
+     ```
+   - Confirm `npm view <name> version` prints a version.
+
 2. **Run the release script**:
    ```bash
    SHUVPI_ALLOW_LOCKFILE_CHANGE=1 npm_config_min_release_age=0 npm run release:patch    # fixes + additions
@@ -148,11 +160,11 @@ Attribution:
    ```
    Use `npm_config_min_release_age=0` only for the release command. The repo's normal npm age gate can otherwise block the release lockfile refresh when the current workspace package version was published recently. Review any lockfile or shrinkwrap diffs the release creates before push.
 
-   The release script bumps all package versions, updates changelogs, regenerates release artifacts, runs `npm run check`, commits `Release vX.Y.Z`, tags `vX.Y.Z`, adds fresh `## [Unreleased]` changelog sections, commits `Add [Unreleased] section for next cycle`, pushes `main` and the tag (CI publishes npm + GitHub release), then posts a short Discord announcement when `DISCORD_RELEASE_WEBHOOK_URL` is set. A missing webhook or Discord failure does not fail the release. Do not rerun the release script after a tag was pushed.
+   The release script bumps all package versions, updates changelogs, regenerates release artifacts, runs `npm run check`, commits `Release vX.Y.Z`, tags `vX.Y.Z`, adds fresh `## [Unreleased]` changelog sections, commits `Add [Unreleased] section for next cycle`, pushes `main` and the tag (CI publishes npm + GitHub release), then posts a short Discord announcement when `DISCORD_RELEASE_WEBHOOK_URL` is set. A missing webhook or Discord failure does not fail the release. The script refuses to start when any public workspace package is missing from npm. Do not rerun the release script after a tag was pushed.
 
-3. **CI publishes and announces the release**: pushing the `vX.Y.Z` tag triggers `.github/workflows/build-binaries.yml`. The `publish-npm` job uses npm trusted publishing through GitHub Actions OIDC with environment `npm-publish`; no local `npm publish`, `npm whoami`, OTP, or WebAuthn flow is required. After npm publication succeeds, CI creates the GitHub release and posts the Discord announcement. Shuvpi update checks resolve the latest `@shuv1337/shuvpi-coding-agent` version directly from the npm registry.
+3. **CI publishes and announces the release**: pushing the `vX.Y.Z` tag triggers `.github/workflows/build-binaries.yml`. The `publish-npm` job uses npm trusted publishing through GitHub Actions OIDC with environment `npm-publish`. For packages that already exist and have that trusted publisher, no local `npm publish`, `npm whoami`, OTP, or WebAuthn flow is required. Before `npm publish` of any package in the closure, `scripts/publish.mjs` checks that every not-yet-published package name exists and, on GitHub Actions, exchanges an OIDC token for each of them. A failed check publishes nothing from that attempt. After npm publication succeeds, CI creates the GitHub release and posts the Discord announcement. Shuvpi update checks resolve the latest `@shuv1337/shuvpi-coding-agent` version directly from the npm registry.
 
-4. **If CI publish or announcement fails**: inspect the failed job. The publish helper is idempotent and skips package versions already present on npm. Rerun the failed job or workflow after fixing CI or transient npm issues. Do not rerun `npm run release:patch` or `npm run release:minor` for the same version.
+4. **If CI publish or announcement fails**: inspect the failed job. The publish helper is idempotent and skips package versions already present on npm. A trusted-publisher preflight failure publishes nothing from that attempt; bootstrap the missing package, then rerun the failed job or workflow. Do not rerun `npm run release:patch` or `npm run release:minor` for the same version.
 
 ## User Override
 
