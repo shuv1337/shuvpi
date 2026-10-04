@@ -150,9 +150,19 @@ Attribution:
 
    The release script bumps all package versions, updates changelogs, regenerates release artifacts, runs `npm run check`, commits `Release vX.Y.Z`, tags `vX.Y.Z`, adds fresh `## [Unreleased]` changelog sections, commits `Add [Unreleased] section for next cycle`, pushes `main` and the tag (CI publishes npm + GitHub release), then posts a short Discord announcement when `DISCORD_RELEASE_WEBHOOK_URL` is set. A missing webhook or Discord failure does not fail the release. Do not rerun the release script after a tag was pushed.
 
-3. **CI publishes and announces the release**: pushing the `vX.Y.Z` tag triggers `.github/workflows/build-binaries.yml`. The `publish-npm` job uses npm trusted publishing through GitHub Actions OIDC with environment `npm-publish`; no local `npm publish`, `npm whoami`, OTP, or WebAuthn flow is required. After npm publication succeeds, CI creates the GitHub release and posts the Discord announcement. Shuvpi update checks resolve the latest `@shuv1337/shuvpi-coding-agent` version directly from the npm registry.
+3. **Refresh the daily local tree**: `~/.local/share/shuvpi-local` stays at the version last written there. `node scripts/local-release.mjs` with no `--out` creates a temp directory and leaves that path alone. From the release commit, replace the daily tree:
 
-4. **If CI publish or announcement fails**: inspect the failed job. The publish helper is idempotent and skips package versions already present on npm. Rerun the failed job or workflow after fixing CI or transient npm issues. Do not rerun `npm run release:patch` or `npm run release:minor` for the same version.
+   ```bash
+   npm run release:local -- --out ~/.local/share/shuvpi-local --force
+   ```
+
+   `npm run release:local` runs `node scripts/local-release.mjs`. `--force` is required when the directory already exists; the script deletes it, then writes `node/`, `bun/`, `bun-install/`, `tarballs/`, and the platform archive. Confirm `~/.local/share/shuvpi-local/bun/shuvpi --version` matches the tag. This build comes from the local release commit and does not wait on npm publish.
+
+   If `/login` fails while loading `dist/bundle/chunks/<file>.js`, run `--version` on the binary that was started. 0.85.1 failed this way for `google-antigravity.js`; 0.86.1 added that chunk. When the binary is older than the release that added the file, refresh this tree before debugging the provider.
+
+4. **CI publishes and announces the release**: pushing the `vX.Y.Z` tag triggers `.github/workflows/build-binaries.yml`. The `publish-npm` job uses npm trusted publishing through GitHub Actions OIDC with environment `npm-publish`; no local `npm publish`, `npm whoami`, OTP, or WebAuthn flow is required. After npm publication succeeds, CI creates the GitHub release and posts the Discord announcement. Shuvpi update checks resolve the latest `@shuv1337/shuvpi-coding-agent` version directly from the npm registry.
+
+5. **If CI publish or announcement fails**: inspect the failed job. The publish helper is idempotent and skips package versions already present on npm. Rerun the failed job or workflow after fixing CI or transient npm issues. Do not rerun `npm run release:patch` or `npm run release:minor` for the same version.
 
 ## User Override
 

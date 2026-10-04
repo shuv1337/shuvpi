@@ -13,6 +13,8 @@ Run `/login` and select a provider. Shuvpi guides you through its OAuth or API-k
 
 On a remote or headless machine, an OAuth callback may not reach the local process. When prompted, paste the final redirect URL or authorization code back into Shuvpi.
 
+If `/login` fails because it cannot load a file under `dist/bundle/chunks/`, the process you started is an older build than the one that added that file. Run `shuvpi --version` on that binary. For an install from the installer or npm, run `shuvpi update --self`. For a local release directory produced by `npm run release:local`, rebuild that directory from the current checkout (maintainers: [AGENTS.md](https://github.com/shuv1337/shuvpi/blob/main/AGENTS.md#releasing)).
+
 Run `/logout` and select a provider to remove its stored credential. This does not unset environment variables, remove authentication from `models.json`, or revoke the credential at the provider.
 
 `auth.json` can contain API keys and OAuth tokens. Keep it private and do not commit it.
