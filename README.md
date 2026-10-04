@@ -65,12 +65,12 @@ npm run check        # Lint, format, and type check
 
 ## Config migration
 
-Shuvpi uses `~/.shuvpi` and project-local `.shuvpi` directories. It does not automatically read, move, or delete upstream `~/.shuvpi` or `.shuvpi` data. To reuse selected settings, copy them explicitly and review paths before launching:
+Shuvpi uses `~/.shuvpi` and project-local `.shuvpi` directories. It does not automatically read, move, or delete upstream `~/.pi` or `.pi` data. To reuse selected settings, copy them explicitly and review paths before launching:
 
 ```bash
 mkdir -p ~/.shuvpi
-cp -a ~/.shuvpi/agent ~/.shuvpi/
-cp -a .shuvpi .shuvpi
+cp -a ~/.pi/agent ~/.shuvpi/
+cp -a .pi .shuvpi
 ```
 
 Use either command only when its source exists. A copy keeps the upstream installation intact.
