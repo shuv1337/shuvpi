@@ -75,5 +75,12 @@ for name in CI GITHUB_ACTIONS; do
 	[[ -z "$value" ]] || test_env+=("$name=$value")
 done
 
+# Trust records live under the real HOME. Isolating HOME makes ~/.config/mise/config.toml
+# an untrusted parent config on the walk from the repo, and mise shims abort.
+real_home="${HOME-}"
+if [[ -n "$real_home" && -d "$real_home/.config/mise" ]]; then
+	test_env+=("MISE_TRUSTED_CONFIG_PATHS=$real_home/.config/mise")
+fi
+
 echo "Running tests without API keys in isolated home: $test_root/home"
 env -i "${test_env[@]}" npm test
