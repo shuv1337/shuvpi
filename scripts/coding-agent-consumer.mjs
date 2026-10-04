@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpath
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { omitInheritedAllowScripts } from "./omit-inherited-allow-scripts.mjs";
 import { getPublicWorkspacePackages } from "./release-packages.mjs";
 
 const codingAgentName = "@shuv1337/shuvpi-coding-agent";
@@ -17,6 +18,7 @@ function run(command, args, options = {}) {
 		shell: process.platform === "win32",
 		timeout: 300_000,
 		...options,
+		env: omitInheritedAllowScripts(options.env ?? process.env),
 	});
 	if (result.status !== 0) {
 		throw new Error(`Command failed: ${command} ${args.join(" ")}\n${result.stdout ?? ""}${result.stderr ?? ""}${result.error?.message ?? ""}`);
