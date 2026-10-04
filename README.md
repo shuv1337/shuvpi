@@ -97,7 +97,7 @@ We treat npm dependency changes as reviewed code changes.
 - `package-lock.json` is the dependency ground truth. Pre-commit blocks accidental lockfile commits unless `SHUVPI_ALLOW_LOCKFILE_CHANGE=1` is set.
 - `npm run check` verifies pinned direct deps, native TypeScript import compatibility, and the generated coding-agent shrinkwrap.
 - The published CLI package includes `packages/coding-agent/npm-shrinkwrap.json`, generated from the root lockfile, to pin transitive deps for npm users.
-- Release smoke tests use `npm run release:local` to build, pack, and create isolated npm and Bun installs outside the repo before tagging a release.
+- Release smoke tests use `npm run release:local` to build, pack, and create isolated npm and Bun installs outside the repo before tagging a release. A persistent tree such as `~/.local/share/shuvpi-local` stays at its last build until `npm run release:local -- --out ~/.local/share/shuvpi-local --force` (`node scripts/local-release.mjs` with the same flags).
 - Local release installs, documented npm installs, and `shuvpi update --self` use `--ignore-scripts` where supported.
 - CI installs with `npm ci --ignore-scripts`, and a scheduled GitHub workflow runs `npm audit --omit=dev` plus `npm audit signatures --omit=dev`.
 - Shrinkwrap generation has an explicit allowlist for dependency lifecycle scripts; new lifecycle-script deps fail checks until reviewed.

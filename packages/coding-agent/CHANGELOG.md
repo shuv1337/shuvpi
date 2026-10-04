@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Documented that a `/login` failure loading `dist/bundle/chunks/*.js` means the running install is older than that provider. Check `shuvpi --version` and update before debugging the provider ([#239](https://github.com/shuv1337/shuvpi/issues/239)).
+
 ## [0.87.1] - 2026-09-23
 
 ### Breaking Changes
