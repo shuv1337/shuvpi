@@ -1,4 +1,5 @@
 import { symlink } from "node:fs/promises";
+import { validateToolArguments } from "@shuv1337/shuvpi-ai";
 import { applyPatch } from "diff";
 import { describe, expect, it, vi } from "vitest";
 import { BACKGROUND_CONTEXT, type Context, withAbortSignal } from "../../src/harness/context.ts";
@@ -573,6 +574,60 @@ describe("AgentHarness tools", () => {
 	});
 
 	describe("bash", () => {
+		// Regression for https://github.com/shuv1337/shuvpi/issues/242 (pc_722aa7ffff78)
+		it("runs in working_dir and lets prepare override it", async () => {
+			const env = new NodeExecutionEnv({ cwd: createTempDir() });
+			getOrThrow(await env.createDir("nested", undefined, BACKGROUND_CONTEXT));
+			getOrThrow(await env.createDir("forced", undefined, BACKGROUND_CONTEXT));
+			const nested = await createBashTool().execute(
+				"bash-working-dir",
+				{ command: "pwd", working_dir: "nested" },
+				noUpdate,
+				{ env },
+				invocation,
+				BACKGROUND_CONTEXT,
+			);
+			expect(textOutput(nested).trim()).toBe(
+				getOrThrow(await env.canonicalPath(`${env.cwd}/nested`, BACKGROUND_CONTEXT)),
+			);
+
+			const overridden = await createBashTool({
+				prepare: (execution) => {
+					execution.cwd = `${env.cwd}/forced`;
+				},
+			}).execute(
+				"bash-working-dir-prepare",
+				{ command: "pwd", working_dir: "nested" },
+				noUpdate,
+				{ env },
+				invocation,
+				BACKGROUND_CONTEXT,
+			);
+			expect(textOutput(overridden).trim()).toBe(
+				getOrThrow(await env.canonicalPath(`${env.cwd}/forced`, BACKGROUND_CONTEXT)),
+			);
+		});
+
+		it("rejects unknown bash arguments and keeps working_dir", () => {
+			const tool = createBashTool();
+			expect(
+				validateToolArguments(tool, {
+					type: "toolCall",
+					id: "bash-working-dir",
+					name: "bash",
+					arguments: { command: "pwd", timeout: null, working_dir: "nested" },
+				}),
+			).toEqual({ command: "pwd", working_dir: "nested" });
+			expect(() =>
+				validateToolArguments(tool, {
+					type: "toolCall",
+					id: "bash-unknown",
+					name: "bash",
+					arguments: { command: "pwd", cwd: "nested" },
+				}),
+			).toThrow(/Validation failed[\s\S]*cwd/);
+		});
+
 		it("executes commands and combines stdout and stderr", async () => {
 			const context = createContext();
 			const result = await createBashTool().execute(

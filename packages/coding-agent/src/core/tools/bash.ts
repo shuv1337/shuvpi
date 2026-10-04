@@ -5,6 +5,7 @@ import type { AgentTool } from "@shuv1337/shuvpi-agent-core";
 import { spawn } from "child_process";
 import { type Static, Type } from "typebox";
 import { waitForChildProcess } from "../../utils/child-process.ts";
+import { resolvePath } from "../../utils/paths.ts";
 import {
 	getShellConfig,
 	getShellEnv,
@@ -35,10 +36,20 @@ function resolveTimeoutMs(timeout: number | undefined): number | undefined {
 	return timeoutMs;
 }
 
-const bashSchema = Type.Object({
-	command: Type.String({ description: "Shell command to execute" }),
-	timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
-});
+// Unknown arguments must fail validation. Dropping them runs the command in the session directory.
+const bashSchema = Type.Object(
+	{
+		command: Type.String({ description: "Shell command to execute" }),
+		timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
+		working_dir: Type.Optional(
+			Type.String({
+				description:
+					"Directory for this command. Relative paths resolve from the session working directory. Omit to use the session working directory.",
+			}),
+		),
+	},
+	{ additionalProperties: false },
+);
 
 export const bashToolSystemPromptContribution = {
 	snippet: "Execute bash commands (ls, grep, find, etc.)",
@@ -236,22 +247,24 @@ export function createShellToolDefinition(
 	return {
 		name: config.name,
 		label: config.label,
-		description: `Execute a ${config.shellName} command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
+		description: `Execute a ${config.shellName} command. Uses the session working directory unless working_dir is set. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
 		promptSnippet: config.promptSnippet,
 		promptGuidelines: exposeSessionEnvironment && config.promptGuidelines ? [...config.promptGuidelines] : undefined,
 		parameters: bashSchema,
 		constrainedSampling: { type: "json_schema", strict: "prefer" },
 		async execute(
 			_toolCallId,
-			{ command, timeout }: { command: string; timeout?: number },
+			{ command, timeout, working_dir }: BashToolInput,
 			signal?: AbortSignal,
 			onUpdate?,
 			ctx?: ExtensionContext,
 		) {
 			const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;
+			const sessionCwd = ctx?.cwd || cwd;
+			const commandCwd = working_dir ? resolvePath(working_dir, sessionCwd) : sessionCwd;
 			const spawnContext = resolveSpawnContext(
 				resolvedCommand,
-				ctx?.cwd || cwd,
+				commandCwd,
 				spawnHook,
 				exposeSessionEnvironment,
 				ctx,
