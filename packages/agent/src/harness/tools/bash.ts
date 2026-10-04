@@ -8,10 +8,20 @@ import type { ExecutionToolContext } from "./tool-context.ts";
 const MAX_TIMEOUT_SECONDS = 2_147_483_647 / 1000;
 const BASH_CHECKPOINT_INTERVAL_MS = 2_000;
 
-const bashSchema = Type.Object({
-	command: Type.String({ description: "Bash command to execute" }),
-	timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
-});
+// Unknown arguments must fail validation. Dropping them runs the command in the session directory.
+const bashSchema = Type.Object(
+	{
+		command: Type.String({ description: "Bash command to execute" }),
+		timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
+		working_dir: Type.Optional(
+			Type.String({
+				description:
+					"Directory for this command. Relative paths resolve from the session working directory. Omit to use the session working directory.",
+			}),
+		),
+	},
+	{ additionalProperties: false },
+);
 
 export type BashToolInput = Static<typeof bashSchema>;
 
@@ -54,14 +64,14 @@ export function createBashTool<TContext extends ExecutionToolContext = Execution
 	return {
 		name: "bash",
 		label: "bash",
-		description: `Execute a bash command in the current working directory. Returns combined stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
+		description: `Execute a bash command. Uses the session working directory unless working_dir is set. Returns combined stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
 		parameters: bashSchema,
-		async execute(_toolCallId, { command, timeout }, onUpdate, toolContext, _invocation, context) {
+		async execute(_toolCallId, { command, timeout, working_dir }, onUpdate, toolContext, _invocation, context) {
 			validateTimeout(timeout);
 			const { env } = toolContext;
 			const execution: BashExecution = {
 				command: options?.commandPrefix ? `${options.commandPrefix}\n${command}` : command,
-				cwd: env.cwd,
+				cwd: working_dir ? working_dir : env.cwd,
 				env: {},
 				inheritEnv: true,
 			};

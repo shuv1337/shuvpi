@@ -1,3 +1,4 @@
+import { validateToolArguments } from "@shuv1337/shuvpi-ai";
 import { applyPatch } from "diff";
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
@@ -26,6 +27,7 @@ import {
 	createReadTool,
 	createWriteTool,
 } from "../src/index.ts";
+import { resolvePath } from "../src/utils/paths.ts";
 import * as shellModule from "../src/utils/shell.ts";
 
 const readTool = createReadTool(process.cwd());
@@ -1054,6 +1056,77 @@ describe("tool cwd resolution", () => {
 		);
 		const output = getTextOutput(result);
 		expect(output).toContain(testDir);
+	});
+
+	// Regression for https://github.com/shuv1337/shuvpi/issues/242 (pc_722aa7ffff78)
+	it("bash runs in working_dir resolved from ctx.cwd", async () => {
+		const nested = join(testDir, "nested");
+		mkdirSync(nested);
+		const tool = createBashToolDefinition("/", { exposeSessionEnvironment: false });
+		const result = await tool.execute(
+			"test-bash-working-dir",
+			{ command: "pwd", working_dir: "nested" },
+			undefined,
+			undefined,
+			fakeCtx(testDir),
+		);
+		expect(getTextOutput(result)).toContain(nested);
+	});
+
+	it("bash reports a missing working_dir", async () => {
+		const tool = createBashToolDefinition(testDir, { exposeSessionEnvironment: false });
+		await expect(
+			tool.execute(
+				"test-bash-missing-working-dir",
+				{ command: "pwd", working_dir: "missing-dir" },
+				undefined,
+				undefined,
+				fakeCtx(testDir),
+			),
+		).rejects.toThrow(/Working directory does not exist/);
+	});
+
+	it("bash applies working_dir before the spawn hook", async () => {
+		let seenCwd: string | undefined;
+		const operations: BashOperations = {
+			exec: async (_command, cwd) => {
+				seenCwd = cwd;
+				return { exitCode: 0 };
+			},
+		};
+		const tool = createBashToolDefinition("/", {
+			exposeSessionEnvironment: false,
+			operations,
+			spawnHook: (context) => ({ ...context, cwd: join(context.cwd, "hooked") }),
+		});
+		await tool.execute(
+			"test-bash-working-dir-hook",
+			{ command: "pwd", working_dir: "nested" },
+			undefined,
+			undefined,
+			fakeCtx(testDir),
+		);
+		expect(seenCwd).toBe(join(resolvePath("nested", testDir), "hooked"));
+	});
+
+	it("rejects unknown bash arguments and keeps working_dir", () => {
+		const tool = createBashToolDefinition(testDir, { exposeSessionEnvironment: false });
+		expect(
+			validateToolArguments(tool, {
+				type: "toolCall",
+				id: "bash-working-dir",
+				name: "bash",
+				arguments: { command: "pwd", timeout: null, working_dir: "nested" },
+			}),
+		).toEqual({ command: "pwd", working_dir: "nested" });
+		expect(() =>
+			validateToolArguments(tool, {
+				type: "toolCall",
+				id: "bash-unknown",
+				name: "bash",
+				arguments: { command: "pwd", cwd: "nested" },
+			}),
+		).toThrow(/Validation failed[\s\S]*cwd/);
 	});
 });
 
